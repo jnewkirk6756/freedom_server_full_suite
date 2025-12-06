@@ -94,8 +94,13 @@
     .message.aurelia { border-left: 3px solid var(--success); }
     .message .meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
     .message .body { font-size: 14px; line-height: 1.4; }
-    .chat-input { margin-top: 14px; display: grid; grid-template-columns: 1fr 110px; gap: 10px; align-items: center; }
+    .chat-input { margin-top: 14px; display: grid; grid-template-columns: 1fr 270px; gap: 12px; align-items: flex-start; }
+    .chat-actions { display: grid; gap: 8px; }
+    .chat-actions .btn { width: 100%; }
+    .chat-actions .btn.secondary { background: linear-gradient(145deg, #1a2432, #121a25); }
+    .chat-actions .btn.recording { box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.5); border-color: var(--danger); }
     .chat-input input, .chat-input textarea, .input, select { width: 100%; padding: 12px; border-radius: 10px; background: #0f141b; border: 1px solid rgba(255, 255, 255, 0.07); color: var(--text); font-size: 15px; }
+    .chat-input textarea { font-family: "SFMono-Regular", "JetBrains Mono", "Consolas", monospace; width: 100%; }
     .btn { padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); background: linear-gradient(145deg, #15202d, #111924); color: var(--text); font-weight: 600; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
     .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
     .btn:active { transform: translateY(0); }
@@ -120,11 +125,27 @@
     .tooltip { position: absolute; background: #111824; border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 8px; font-size: 12px; color: var(--text); max-width: 240px; z-index: 999; box-shadow: 0 10px 25px rgba(0,0,0,0.35); display: none; }
     .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .small-note { font-size: 12px; color: var(--muted); }
+    .badge-alert { width: 12px; height: 12px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); animation: pulseAlert 1.5s infinite; }
+    @keyframes pulseAlert { 0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.6); } 70% { box-shadow: 0 0 0 12px rgba(255, 107, 107, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); } }
+    .media-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+    .media-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 8px; display: grid; gap: 6px; }
+    .media-thumb { width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); }
+    .links-list { display: grid; gap: 6px; }
+    .link-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px; border-radius: 8px; }
+    .special-toggle { margin-top: 8px; font-size: 13px; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .special-panel { display: none; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; margin-top: 6px; max-height: 160px; overflow: auto; }
+    .special-category { margin-bottom: 8px; }
+    .special-chars { display: grid; grid-template-columns: repeat(auto-fit, minmax(28px, 1fr)); gap: 6px; }
+    .special-char { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 6px; text-align: center; cursor: pointer; user-select: none; }
+    .storage-table { width: 100%; border-collapse: collapse; }
+    .storage-table th, .storage-table td { border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px; font-size: 13px; }
 
     @media (max-width: 960px) {
       main { grid-template-columns: 1fr; }
       .controls-grid { grid-template-rows: 240px auto auto; }
       .chat-log { height: 45vh; }
+      .chat-input { grid-template-columns: 1fr; }
+      .chat-actions { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
     }
   </style>
 </head>
@@ -154,37 +175,59 @@
         <h2>Console · Chat</h2>
         <div id="chatLog" class="chat-log"></div>
         <form id="chatForm" class="chat-input">
-          <input id="chatInput" type="text" placeholder="Send a message to Aurelia" autocomplete="off" required data-tooltip="Send your message to Aurelia on the local Freedom Server node." />
-          <button class="btn" type="submit" data-tooltip="Send your message to Aurelia on the local Freedom Server node.">Send</button>
+          <div class="input-stack">
+            <input id="chatInput" type="text" placeholder="Send a message to Aurelia" autocomplete="off" required data-tooltip="Send your message to Aurelia on the local Freedom Server node." />
+            <div id="specialCharactersToggle" class="special-toggle">Special characters ▾</div>
+            <div id="specialCharactersPanel" class="special-panel"></div>
+          </div>
+          <div class="chat-actions">
+            <button class="btn" type="submit" data-tooltip="Send your message to Aurelia on the local Freedom Server node.">Send</button>
+            <button class="btn secondary" type="button" id="voiceButton">🎤 Voice</button>
+            <button class="btn secondary" type="button" id="muteButton">Mute</button>
+            <div id="voiceSupportNotice" class="small-note"></div>
+          </div>
         </form>
 
         <div class="info-card" style="margin-top: 12px;">
           <div class="collapsible" id="mediaToggle">
             <div class="flex" style="gap:6px;">
               <strong>Generated Media</strong>
-              <span class="muted small-note">Images created locally</span>
+              <span class="muted small-note">Images + links cache</span>
+              <span id="mediaBadge" style="display:none;" class="badge-alert"></span>
             </div>
             <span id="mediaChevron">▼</span>
           </div>
-          <div id="mediaPanel" style="display:none; margin-top:10px;">
+          <div id="mediaPanel" style="display:none; margin-top:10px;" class="media-scroll">
             <div class="flex" style="gap:10px; flex-wrap:wrap; margin-bottom:10px;">
               <input id="mediaPrompt" class="input" placeholder="Prompt for image generation" data-tooltip="Use OpenAI image generation with the given prompt." />
               <button class="btn" id="generateMedia" type="button" data-tooltip="Generate an image using the prompt.">Generate Image</button>
               <button class="btn" id="clearMedia" type="button">Clear Media</button>
             </div>
-            <div id="mediaList" class="device-list"></div>
+            <div style="margin-bottom: 8px;" class="small-note">Images</div>
+            <div id="mediaImages" class="media-grid"></div>
+            <div style="margin: 12px 0 8px;" class="small-note">Links</div>
+            <div id="mediaLinks" class="links-list"></div>
           </div>
         </div>
 
         <div class="info-card" style="margin-top: 12px;">
-          <h3>Continuity Import / Export</h3>
-          <textarea id="continuityBlob" rows="4" class="input" placeholder="Continuity blob" data-tooltip="Sync Aurelia’s deeper state between nodes." style="resize:vertical;"></textarea>
-          <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
-            <button class="btn" id="exportContinuity" type="button" data-tooltip="Export the node continuity blob.">Export from Node</button>
-            <button class="btn" id="importContinuity" type="button" data-tooltip="Import the provided continuity blob to this node.">Import to Node</button>
-            <span class="small-note">Use this to periodically sync Aurelia’s deeper state between this node and another interface. Keep this blob private.</span>
+          <div class="collapsible" id="continuityToggle">
+            <div class="flex" style="gap:6px;">
+              <h3 style="margin:0;">Continuity Import / Export</h3>
+              <span class="small-note">Sync Aurelia’s deeper state</span>
+            </div>
+            <span id="continuityChevron">▼</span>
           </div>
-          <div id="continuityStatus" class="small-note" style="margin-top:6px;"></div>
+          <div id="continuityPanel" style="margin-top:8px;">
+            <textarea id="continuityBlob" rows="4" class="input" placeholder="Continuity blob" data-tooltip="Sync Aurelia’s deeper state between nodes." style="resize:vertical; width:100%;"></textarea>
+            <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
+              <button class="btn" id="exportContinuity" type="button" data-tooltip="Export the node continuity blob.">Export from Node</button>
+              <button class="btn" id="importContinuity" type="button" data-tooltip="Import the provided continuity blob to this node.">Import to Node</button>
+              <button class="btn secondary" id="copyContinuity" type="button">Copy blob</button>
+              <span class="small-note">Use this to periodically sync Aurelia’s deeper state between this node and another interface. Keep this blob private.</span>
+            </div>
+            <div id="continuityStatus" class="small-note" style="margin-top:6px;"></div>
+          </div>
         </div>
       </section>
 
@@ -300,6 +343,15 @@
         </div>
         <div class="muted" style="margin-top:8px;">Clear logs or reset the continuity blob to an empty state.</div>
       </section>
+      <section class="panel section">
+        <h2>Storage</h2>
+        <div class="flex" style="gap:10px; flex-wrap:wrap;">
+          <input type="file" id="storageFile" class="input" />
+          <button class="btn" id="storageUpload" type="button">Upload to Server</button>
+        </div>
+        <div id="storageStatus" class="small-note" style="margin-top:8px;"></div>
+        <table class="storage-table" id="storageTable" style="margin-top:10px;"></table>
+      </section>
     </div>
   </div>
 
@@ -348,9 +400,41 @@
     const mediaChevron = document.getElementById('mediaChevron');
     const frameworksPanel = document.getElementById('frameworksPanel');
     const frameworkChevron = document.getElementById('frameworkChevron');
+    const continuityPanel = document.getElementById('continuityPanel');
+    const continuityChevron = document.getElementById('continuityChevron');
+    const continuityStatus = document.getElementById('continuityStatus');
+    const continuityBlob = document.getElementById('continuityBlob');
+    const continuityToggle = document.getElementById('continuityToggle');
+    const continuityCard = document.getElementById('continuityPanel');
+    const specialToggle = document.getElementById('specialCharactersToggle');
+    const specialPanel = document.getElementById('specialCharactersPanel');
+    const mediaBadge = document.getElementById('mediaBadge');
+    const mediaToggle = document.getElementById('mediaToggle');
+    const mediaImagesEl = document.getElementById('mediaImages');
+    const mediaLinksEl = document.getElementById('mediaLinks');
+    const storageTable = document.getElementById('storageTable');
+    const storageStatus = document.getElementById('storageStatus');
 
     let tooltipTimer = null;
-    let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
+    const latticeState = {
+      baseRotationSpeed: 0.01,
+      jitterAmount: 0.7,
+      excitation: 0.0,
+      calmMode: false,
+      nodeCount: 18,
+      lastPulse: 0,
+    };
+    let latticeNodes = [];
+    let recognition = null;
+    let isRecording = false;
+    let voiceMuted = false;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const ttsSupported = 'speechSynthesis' in window;
+    let hasNewMedia = false;
+    let mediaImages = [];
+    let mediaLinks = [];
+
+    // TODO: Screen View: allow node to receive and display user screen feed.
 
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
@@ -363,7 +447,7 @@
       btn.classList.add('active');
       if (targetId === 'logsTab') loadLogs();
       if (targetId === 'systemTab') fetchSystemStatus();
-      if (targetId === 'serverTab') loadServerSettings();
+      if (targetId === 'serverTab') { loadServerSettings(); loadStorage(); }
     }
 
     function addMessage(author, text) {
@@ -391,8 +475,49 @@
       }
     }
 
+    function setLatticeCalmMode(enabled) {
+      latticeState.calmMode = enabled;
+      if (enabled) {
+        latticeState.baseRotationSpeed = 0.002;
+        latticeState.jitterAmount = 0.05;
+        latticeState.excitation = 0.1;
+      } else {
+        latticeState.baseRotationSpeed = 0.01;
+        latticeState.jitterAmount = 0.7;
+      }
+    }
+
+    function updateLatticeFromTelemetry(telemetry) {
+      const latency = telemetry.latency_ms ?? 120;
+      const tokens = telemetry.token_estimate ?? 8;
+      const flatten = telemetry.flattening ?? 50;
+      const band = flatten <= 30 ? 'low' : flatten <= 70 ? 'medium' : 'high';
+
+      const latencyFactor = Math.min(latency, 2000) / 2000;
+      const baseSpeed = 0.012 - latencyFactor * 0.006; // higher latency => slower rotation
+      latticeState.baseRotationSpeed = latticeState.calmMode ? latticeState.baseRotationSpeed : Math.max(0.0025, baseSpeed);
+      latticeState.excitation = Math.min(1, tokens / 200); // more tokens -> more pulse
+      if (!latticeState.calmMode) {
+        latticeState.jitterAmount = band === 'low' ? 1.2 : band === 'medium' ? 0.7 : 0.25;
+      }
+      const desiredNodes = Math.min(42, 16 + Math.floor(tokens / 12));
+      if (desiredNodes !== latticeState.nodeCount) {
+        latticeState.nodeCount = desiredNodes;
+        seedLatticeNodes();
+      }
+    }
+
+    function detectCalmPhrase(text) {
+      const lower = text.toLowerCase();
+      if (lower.includes('calm lattice') || lower.includes('calm mode') || lower.includes('quiet lattice')) return true;
+      if (lower.includes('wake lattice') || lower.includes('normal lattice')) return false;
+      return null;
+    }
+
     async function sendChat(message) {
       addMessage('You', message);
+      const calmIntent = detectCalmPhrase(message);
+      if (calmIntent !== null) setLatticeCalmMode(calmIntent);
       try {
         const res = await fetch('/api/message', {
           method: 'POST',
@@ -400,22 +525,36 @@
           body: JSON.stringify({ message })
         });
         const data = await res.json();
-        addMessage('Aurelia', data.reply || 'No response');
+        const reply = data.reply || 'No response';
+        addMessage('Aurelia', reply);
         if (data.telemetry) {
           updateTelemetry(data.telemetry);
-          updateLattice(data.telemetry);
+          updateLatticeFromTelemetry(data.telemetry);
         }
+        collectLinksFromReply(reply);
+        speakReply(reply);
       } catch (e) {
         addMessage('Aurelia', 'Connection failed.');
       }
     }
 
-    chatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
+    function speakReply(reply) {
+      if (!ttsSupported || voiceMuted) return;
+      const utterance = new SpeechSynthesisUtterance(reply);
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function sendChatFromInput() {
       const message = chatInput.value.trim();
       if (!message) return;
       chatInput.value = '';
       sendChat(message);
+    }
+
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      sendChatFromInput();
     });
 
     flatteningSlider.addEventListener('input', async (e) => {
@@ -448,11 +587,15 @@
 
     document.getElementById('generateMedia').addEventListener('click', generateMediaItem);
     document.getElementById('clearMedia').addEventListener('click', clearMedia);
-    document.getElementById('mediaToggle').addEventListener('click', () => toggleSection(mediaPanel, mediaChevron));
+    mediaToggle.addEventListener('click', () => toggleSection(mediaPanel, mediaChevron, () => { hasNewMedia = false; updateMediaBadge(); }));
+    mediaPanel.addEventListener('scroll', () => { hasNewMedia = false; updateMediaBadge(); });
+
     document.getElementById('frameworksToggle').addEventListener('click', () => toggleSection(frameworksPanel, frameworkChevron, loadFrameworks));
 
     document.getElementById('exportContinuity').addEventListener('click', exportContinuity);
     document.getElementById('importContinuity').addEventListener('click', importContinuity);
+    document.getElementById('copyContinuity').addEventListener('click', copyContinuityBlob);
+    continuityToggle.addEventListener('click', () => toggleSection(continuityPanel, continuityChevron));
 
     document.getElementById('refreshLogs').addEventListener('click', loadLogs);
     document.getElementById('clearLogs').addEventListener('click', clearLogs);
@@ -473,6 +616,11 @@
       el.addEventListener('mouseout', hideTooltip);
       el.addEventListener('click', hideTooltip);
     });
+
+    document.getElementById('voiceButton').addEventListener('click', toggleVoiceRecording);
+    document.getElementById('muteButton').addEventListener('click', toggleMute);
+
+    document.getElementById('storageUpload').addEventListener('click', uploadStorageFile);
 
     function startTooltipTimer(event, el) {
       clearTimeout(tooltipTimer);
@@ -517,111 +665,77 @@
           token_estimate: data.last_token_count,
           flattening: data.flattening
         });
-        updateLattice({
+        updateLatticeFromTelemetry({
           latency_ms: data.last_latency_ms ?? 100,
-          token_estimate: data.last_token_count ?? 10,
-          flattening: data.flattening ?? 50
+          token_estimate: data.last_token_count ?? 8,
+          flattening: data.flattening ?? 50,
         });
       } catch (e) {
-        telemetryLatency.textContent = 'Latency: —';
+        console.warn('Telemetry fetch failed');
       }
     }
 
-    function updateTelemetry(t) {
-      telemetryLatency.textContent = `Latency: ${t.latency_ms ?? '—'} ms`;
-      telemetryTokens.textContent = `Tokens: ${t.token_estimate ?? '—'}`;
-      telemetryFlattening.textContent = `Flattening: ${t.flattening ?? '—'}`;
+    function updateTelemetry(data) {
+      telemetryLatency.textContent = `Latency: ${data.latency_ms ?? '—'} ms`;
+      telemetryTokens.textContent = `Tokens: ${data.token_estimate ?? '—'}`;
+      telemetryFlattening.textContent = `Flattening: ${data.flattening ?? '—'}`;
     }
 
     async function loadDevices() {
-      deviceList.innerHTML = '<div class="muted">Scanning…</div>';
       try {
         const res = await fetch('/api/devices');
         const data = await res.json();
-        renderDevices(data.devices || []);
-      } catch (err) {
-        deviceList.innerHTML = '<div class="muted">Scan failed.</div>';
+        const devices = data.devices || [];
+        deviceList.innerHTML = '';
+        devices.forEach(dev => {
+          const div = document.createElement('div');
+          div.className = 'device';
+          div.innerHTML = `<div><strong>${dev.name}</strong><div class="small-note">${dev.type}</div></div><span class="badge ${dev.connected ? 'online' : 'offline'}">${dev.connected ? 'online' : 'offline'}</span>`;
+          deviceList.appendChild(div);
+        });
+        vrStatus.textContent = `${devices.length} device(s) known.`;
+      } catch (e) {
+        vrStatus.textContent = 'Device scan failed.';
       }
     }
 
-    function renderDevices(devices) {
-      deviceList.innerHTML = '';
-      if (!devices.length) {
-        deviceList.innerHTML = '<div class="muted">No devices found.</div>';
-        return;
-      }
-      devices.forEach((device) => {
-        const div = document.createElement('div');
-        div.className = 'device';
-        const stateClass = device.connected ? 'online' : 'offline';
-        const label = device.connected ? 'Connected' : 'Disconnected';
-        div.innerHTML = `<span>${device.name}</span><span class="badge ${stateClass}">${label}</span>`;
-        deviceList.appendChild(div);
-      });
-    }
-
-    async function connectVr(connect = true) {
-      vrStatus.textContent = connect ? 'Linking…' : 'Disconnecting…';
+    async function connectVr(connect) {
+      const deviceId = 'meta_quest_1';
       try {
         const res = await fetch(connect ? '/api/vr/connect' : '/api/vr/disconnect', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device_id: 'meta_quest_1' })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_id: deviceId })
         });
         const data = await res.json();
-        vrStatus.textContent = data.status || 'Updated';
+        vrStatus.textContent = data.status;
         loadDevices();
-      } catch (err) {
-        vrStatus.textContent = 'VR action failed.';
-      }
-    }
-
-    async function fetchSystemStatus() {
-      try {
-        await checkHealth();
-        const res = await fetch('/api/system/status');
-        const data = await res.json();
-        systemSummary.innerHTML = `Uptime: ${formatSeconds(data.uptime_sec)}<br>Flattening: ${data.flattening}<br>Total requests: ${data.total_requests}<br>Safe mode: ${data.safe_mode}<br>Verbose logging: ${data.verbose_logging}<br>Connected devices: ${data.num_connected_devices}`;
-        renderSystemDevices(data.devices || []);
       } catch (e) {
-        systemSummary.textContent = 'Failed to load system status';
+        vrStatus.textContent = 'VR operation failed';
       }
-    }
-
-    function renderSystemDevices(devices) {
-      systemDevices.innerHTML = '<tr><th>Name</th><th>Type</th><th>Status</th><th>Action</th></tr>';
-      if (!devices.length) {
-        systemDevices.innerHTML += '<tr><td colspan="4" class="muted">No devices</td></tr>';
-        return;
-      }
-      devices.forEach(dev => {
-        const row = document.createElement('tr');
-        const state = dev.connected ? 'online' : 'offline';
-        const action = dev.connected ? 'Disconnect' : 'Connect';
-        row.innerHTML = `<td>${dev.name}</td><td>${dev.type}</td><td><span class="badge ${state}">${dev.connected ? 'Connected' : 'Disconnected'}</span></td><td><button class="btn" data-id="${dev.id}">${action}</button></td>`;
-        row.querySelector('button').addEventListener('click', () => connectVr(!dev.connected));
-        systemDevices.appendChild(row);
-      });
     }
 
     async function loadLogs() {
       const level = document.getElementById('logLevel').value;
       try {
-        const res = await fetch(`/api/logs?limit=200&level=${level}`);
+        const res = await fetch(`/api/logs?level=${level}`);
         const data = await res.json();
-        renderLogs(data.logs || []);
+        const logs = data.logs || [];
+        logList.innerHTML = '';
+        const showRaw = document.getElementById('rawLogsToggle').checked;
+        logs.forEach(log => {
+          const div = document.createElement('div');
+          div.className = 'message';
+          if (showRaw) {
+            div.textContent = JSON.stringify(log);
+          } else {
+            div.innerHTML = `<div class="meta">${log.timestamp} · ${log.level}</div><div class="body">${log.source}: ${log.message}</div>`;
+          }
+          logList.appendChild(div);
+        });
       } catch (e) {
-        logList.textContent = 'Failed to load logs.';
+        logList.textContent = 'Failed to load logs';
       }
-    }
-
-    function renderLogs(logs) {
-      const raw = document.getElementById('rawLogsToggle').checked;
-      logList.innerHTML = '';
-      logs.forEach(log => {
-        const div = document.createElement('div');
-        div.className = 'message';
-        div.innerHTML = raw ? `<div class="body">${JSON.stringify(log)}</div>` : `<div class="meta">${log.timestamp} · ${log.source}</div><div class="body"><strong>[${log.level}]</strong> ${log.message}</div>`;
-        logList.appendChild(div);
-      });
     }
 
     async function clearLogs() {
@@ -633,9 +747,9 @@
       try {
         const res = await fetch('/api/settings/server');
         const data = await res.json();
-        safeModeToggle.checked = data.safe_mode;
-        verboseToggle.checked = data.verbose_logging;
-        serverSettingsInfo.textContent = `Safe mode: ${data.safe_mode}, verbose logging: ${data.verbose_logging}`;
+        safeModeToggle.checked = !!data.safe_mode;
+        verboseToggle.checked = !!data.verbose_logging;
+        serverSettingsInfo.textContent = `Safe mode: ${data.safe_mode ? 'on' : 'off'} · Verbose logging: ${data.verbose_logging ? 'on' : 'off'}`;
       } catch (e) {
         serverSettingsInfo.textContent = 'Failed to load settings';
       }
@@ -644,63 +758,73 @@
     async function updateServerSettings() {
       try {
         const res = await fetch('/api/settings/server', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ safe_mode: safeModeToggle.checked, verbose_logging: verboseToggle.checked })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ safe_mode: safeModeToggle.checked, verbose_logging: verboseToggle.checked })
         });
         const data = await res.json();
-        serverSettingsStatus.textContent = `Updated: safe_mode=${data.safe_mode}, verbose_logging=${data.verbose_logging}`;
+        serverSettingsStatus.textContent = `Updated. Safe mode: ${data.safe_mode}, verbose: ${data.verbose_logging}`;
       } catch (e) {
-        serverSettingsStatus.textContent = 'Failed to update settings';
+        serverSettingsStatus.textContent = 'Update failed';
+      }
+    }
+
+    async function fetchSystemStatus() {
+      try {
+        const res = await fetch('/api/system/status');
+        const data = await res.json();
+        systemSummary.textContent = `Python ${data.python_version} · FastAPI ${data.fastapi_version} · Flattening ${data.flattening} · Uptime ${formatSeconds(data.uptime_sec)} · Requests ${data.total_requests}`;
+        const devices = data.devices || [];
+        systemDevices.innerHTML = '<tr><th>Name</th><th>Type</th><th>Status</th><th>Last seen</th></tr>';
+        devices.forEach(dev => {
+          const row = document.createElement('tr');
+          row.innerHTML = `<td>${dev.name}</td><td>${dev.type}</td><td>${dev.connected ? 'Connected' : 'Offline'}</td><td>${dev.last_seen || '—'}</td>`;
+          systemDevices.appendChild(row);
+        });
+      } catch (e) {
+        systemSummary.textContent = 'System status unavailable';
       }
     }
 
     async function exportContinuity() {
+      continuityStatus.textContent = 'Exporting…';
       try {
         const res = await fetch('/api/continuity/export');
         const data = await res.json();
-        document.getElementById('continuityBlob').value = data.blob || '';
-        document.getElementById('continuityStatus').textContent = 'Continuity exported from node.';
+        continuityCard.style.display = 'block';
+        continuityChevron.textContent = '▼';
+        continuityBlob.value = data.blob || '';
+        continuityBlob.focus();
+        continuityStatus.textContent = 'Exported. You can copy or import elsewhere.';
       } catch (e) {
-        document.getElementById('continuityStatus').textContent = 'Export failed';
+        continuityStatus.textContent = 'Export failed.';
       }
     }
 
     async function importContinuity() {
-      const blob = document.getElementById('continuityBlob').value;
+      const blob = continuityBlob.value;
+      continuityStatus.textContent = 'Importing…';
       try {
-        await fetch('/api/continuity/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blob }) });
-        document.getElementById('continuityStatus').textContent = 'Continuity imported successfully.';
+        const res = await fetch('/api/continuity/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blob }) });
+        if (!res.ok) throw new Error('Import failed');
+        continuityBlob.value = '';
+        continuityStatus.textContent = 'Continuity imported successfully ✅';
+        continuityCard.style.display = 'none';
+        continuityChevron.textContent = '►';
       } catch (e) {
-        document.getElementById('continuityStatus').textContent = 'Import failed';
+        continuityStatus.textContent = 'Continuity import failed.';
       }
     }
 
-    async function loadFrameworks() {
-      try {
-        const res = await fetch('/api/frameworks/status');
-        const data = await res.json();
-        frameworksPanel.innerHTML = '';
-        const list = document.createElement('div');
-        (data.frameworks || []).forEach(fw => {
-          const row = document.createElement('div');
-          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
-          list.appendChild(row);
-        });
-        const continuity = document.createElement('div');
-        continuity.style.marginTop = '8px';
-        const info = data.continuity || {};
-        continuity.textContent = `Continuity blob: ${info.has_blob ? 'present' : 'missing'} · last import: ${info.last_import_time || '—'} · last export: ${info.last_export_time || '—'}`;
-        frameworksPanel.appendChild(list);
-        frameworksPanel.appendChild(continuity);
-      } catch (e) {
-        frameworksPanel.textContent = 'Framework telemetry unavailable.';
-      }
-    }
-
-    function toggleSection(section, chevron, onOpen) {
-      const isOpen = section.style.display !== 'none';
-      section.style.display = isOpen ? 'none' : 'block';
-      chevron.textContent = isOpen ? '►' : '▼';
-      if (!isOpen && onOpen) onOpen();
+    function copyContinuityBlob() {
+      const text = continuityBlob.value;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        continuityStatus.textContent = 'Copied ✅';
+        setTimeout(() => { if (continuityStatus.textContent.startsWith('Copied')) continuityStatus.textContent = ''; }, 1800);
+      }).catch(() => {
+        continuityStatus.textContent = 'Copy failed';
+      });
     }
 
     async function generateMediaItem() {
@@ -713,25 +837,88 @@
         return;
       }
       document.getElementById('mediaPrompt').value = '';
-      await loadMedia();
+      if (data.item) {
+        addMediaImage(data.item);
+      }
     }
 
     async function loadMedia() {
       const res = await fetch('/api/media/list?limit=50');
       const data = await res.json();
-      const list = document.getElementById('mediaList');
-      list.innerHTML = '';
-      (data.items || []).forEach(item => {
+      mediaImages = [];
+      (data.items || []).forEach(item => addMediaImage(item, false));
+      hasNewMedia = false;
+      updateMediaBadge();
+    }
+
+    function addMediaImage(item, markNew = true) {
+      if (!item || !item.url) return;
+      mediaImages.unshift({ ...item });
+      if (markNew) hasNewMedia = true;
+      renderMediaImages();
+      updateMediaBadge();
+    }
+
+    function renderMediaImages() {
+      mediaImagesEl.innerHTML = '';
+      mediaImages.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'device';
-        div.innerHTML = `<div><div><strong>${item.prompt || 'Image'}</strong></div><div class="small-note">${item.created_at}</div></div><a href="${item.url}" target="_blank">Open</a>`;
-        list.appendChild(div);
+        div.className = 'media-item';
+        const prompt = item.prompt || 'Image';
+        const ts = item.created_at || '';
+        div.innerHTML = `<img src="${item.url}" alt="generated" class="media-thumb" /><div class="small-note">${prompt}</div><div class="small-note">${ts}</div>`;
+        div.addEventListener('click', () => window.open(item.url, '_blank'));
+        mediaImagesEl.appendChild(div);
+      });
+    }
+
+    function collectLinksFromReply(reply) {
+      const regex = /(https?:\/\/[^\s]+)/g;
+      const matches = reply.match(regex) || [];
+      matches.forEach(url => {
+        mediaLinks.unshift({ url, created_at: new Date().toISOString() });
+        hasNewMedia = true;
+      });
+      renderMediaLinks();
+      updateMediaBadge();
+    }
+
+    function renderMediaLinks() {
+      mediaLinksEl.innerHTML = '';
+      mediaLinks.forEach(link => {
+        const row = document.createElement('div');
+        row.className = 'link-row';
+        row.innerHTML = `<div style="flex:1;">${link.url}<div class="small-note">${link.created_at}</div></div>`;
+        const actions = document.createElement('div');
+        actions.className = 'flex';
+        const openBtn = document.createElement('a');
+        openBtn.href = link.url;
+        openBtn.target = '_blank';
+        openBtn.className = 'btn secondary';
+        openBtn.textContent = 'Open';
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn secondary';
+        copyBtn.textContent = 'Copy';
+        copyBtn.addEventListener('click', () => navigator.clipboard.writeText(link.url));
+        actions.appendChild(openBtn);
+        actions.appendChild(copyBtn);
+        row.appendChild(actions);
+        mediaLinksEl.appendChild(row);
       });
     }
 
     async function clearMedia() {
       await fetch('/api/media/clear', { method: 'POST' });
-      await loadMedia();
+      mediaImages = [];
+      mediaLinks = [];
+      renderMediaImages();
+      renderMediaLinks();
+      hasNewMedia = false;
+      updateMediaBadge();
+    }
+
+    function updateMediaBadge() {
+      mediaBadge.style.display = hasNewMedia ? 'inline-block' : 'none';
     }
 
     async function runWebFetch() {
@@ -760,10 +947,12 @@
       return `${hrs}h ${remMins}m`;
     }
 
-    // Lattice animation (reacts to telemetry)
     const canvas = document.getElementById('latticeCanvas');
     const ctx = canvas.getContext('2d');
-    const nodes = Array.from({ length: latticeState.nodes }, (_, i) => ({ angle: (Math.PI * 2 * i) / latticeState.nodes, radius: 80 + Math.random() * 30 }));
+
+    function seedLatticeNodes() {
+      latticeNodes = Array.from({ length: latticeState.nodeCount }, (_, i) => ({ angle: (Math.PI * 2 * i) / latticeState.nodeCount, radius: 80 + Math.random() * 30 }));
+    }
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -779,27 +968,30 @@
       const cx = rect.width / 2;
       const cy = rect.height / 2;
 
-      ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
-      ctx.lineWidth = 1.2;
+      const rotationSpeed = latticeState.calmMode ? latticeState.baseRotationSpeed : latticeState.baseRotationSpeed + latticeState.excitation * 0.004;
+      const pulseStrength = latticeState.calmMode ? 0.3 : 1 + latticeState.excitation * 1.5;
 
-      nodes.forEach((node, idx) => {
-        const speed = latticeState.speed + idx * 0.00003;
+      latticeNodes.forEach((node, idx) => {
+        const speed = rotationSpeed + idx * 0.00002;
         const angle = node.angle + t * speed;
-        const wobble = Math.sin(t * 0.001 + idx) * latticeState.jitter;
-        const r = node.radius + wobble;
+        const wobble = Math.sin(t * 0.001 + idx) * (latticeState.jitterAmount * 10);
+        const r = node.radius + wobble + Math.sin(t * 0.002 + idx) * pulseStrength * 4;
         const x = cx + Math.cos(angle) * r;
         const y = cy + Math.sin(angle) * r;
         node.pos = { x, y };
       });
 
-      nodes.forEach((node, idx) => {
-        for (let j = idx + 1; j < nodes.length; j++) {
-          const other = nodes[j];
+      ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
+      ctx.lineWidth = 1.2;
+
+      latticeNodes.forEach((node, idx) => {
+        for (let j = idx + 1; j < latticeNodes.length; j++) {
+          const other = latticeNodes[j];
           const dx = node.pos.x - other.pos.x;
           const dy = node.pos.y - other.pos.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < 200) {
-            ctx.globalAlpha = 1 - dist / 200;
+            ctx.globalAlpha = Math.min(1, 1 - dist / 200 + latticeState.excitation * 0.5);
             ctx.beginPath();
             ctx.moveTo(node.pos.x, node.pos.y);
             ctx.lineTo(other.pos.x, other.pos.y);
@@ -809,11 +1001,11 @@
       });
 
       ctx.globalAlpha = 1;
-      nodes.forEach((node, idx) => {
-        const pulse = 4 + Math.sin(t * 0.003 + idx) * 2;
+      latticeNodes.forEach((node, idx) => {
+        const pulse = 4 + Math.sin(t * 0.003 + idx) * 2 * (1 + latticeState.excitation * 2);
         ctx.beginPath();
         ctx.fillStyle = 'rgba(95, 230, 160, 0.9)';
-        ctx.arc(node.pos.x, node.pos.y, 4 + pulse * 0.2, 0, Math.PI * 2);
+        ctx.arc(node.pos.x, node.pos.y, latticeState.calmMode ? 3.2 : 4 + pulse * 0.2, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = 'rgba(123, 212, 255, 0.7)';
         ctx.stroke();
@@ -822,19 +1014,222 @@
       requestAnimationFrame(drawLattice);
     }
 
-    function updateLattice(telemetry) {
-      const latency = telemetry.latency_ms || 100;
-      const tokens = telemetry.token_estimate || 10;
-      const flatten = telemetry.flattening || 50;
-      latticeState.speed = 0.0002 + Math.min(latency, 2000) / 1000000 + (tokens / 20000);
-      latticeState.jitter = flatten <= 30 ? 12 : flatten <= 70 ? 8 : 4;
-    }
-
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
+    seedLatticeNodes();
     requestAnimationFrame(drawLattice);
 
-    async function loadInitial() {
+    function toggleSection(section, chevron, onOpen) {
+      const isOpen = section.style.display !== 'none';
+      section.style.display = isOpen ? 'none' : 'block';
+      chevron.textContent = isOpen ? '►' : '▼';
+      if (!isOpen && onOpen) onOpen();
+      if (section === continuityPanel && isOpen) {
+        continuityBlob.value = '';
+      }
+    }
+
+    async function loadFrameworks() {
+      try {
+        const res = await fetch('/api/frameworks/status');
+        const data = await res.json();
+        frameworksPanel.innerHTML = '';
+        const list = document.createElement('div');
+        (data.frameworks || []).forEach(fw => {
+          const row = document.createElement('div');
+          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
+          list.appendChild(row);
+        });
+        const continuity = document.createElement('div');
+        continuity.style.marginTop = '8px';
+        const info = data.continuity || {};
+        continuity.textContent = `Continuity blob: ${info.has_blob ? 'present' : 'missing'} · last import: ${info.last_import_time || '—'} · last export: ${info.last_export_time || '—'}`;
+        frameworksPanel.appendChild(list);
+        frameworksPanel.appendChild(continuity);
+      } catch (e) {
+        frameworksPanel.textContent = 'Framework telemetry unavailable.';
+      }
+    }
+
+    function initSpecialCharacters() {
+      const categories = [
+        { name: 'Glyphs', chars: ['⬡', '⚡', '🛑', '⭕', '⬡⚡⬡'], definitions: ['Hex marker', 'Energy burst', 'Stop', 'Circle/halo', 'Aurelia anchor'] },
+        { name: 'Greek', chars: ['α', 'β', 'γ', 'δ', 'ε', 'θ', 'λ', 'μ', 'π', 'Ω'], definitions: ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'theta', 'lambda', 'mu', 'pi', 'omega'] },
+        { name: 'Math', chars: ['∞', '≈', '≠', '≥', '≤', '⇒', '⇔', '±'], definitions: ['Infinity', 'Approximately', 'Not equal', 'Greater or equal', 'Less or equal', 'Implies', 'If and only if', 'Plus/minus'] },
+        { name: 'Currency', chars: ['$', '€', '£', '¥', '₿'], definitions: ['US Dollar', 'Euro', 'Pound Sterling', 'Yen', 'Bitcoin'] },
+        { name: 'Anchors', chars: ['⬡⚡⬡', '⬢', '⬡'], definitions: ['Aurelia anchor', 'Hex anchor', 'Node anchor'] },
+      ];
+      specialPanel.innerHTML = '';
+      categories.forEach(cat => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'special-category';
+        const title = document.createElement('div');
+        title.className = 'small-note';
+        title.textContent = cat.name;
+        const grid = document.createElement('div');
+        grid.className = 'special-chars';
+        cat.chars.forEach((ch, idx) => {
+          const cell = document.createElement('div');
+          cell.className = 'special-char';
+          cell.textContent = ch;
+          cell.dataset.tooltip = cat.definitions[idx] || ch;
+          cell.addEventListener('click', () => insertCharacter(ch));
+          cell.addEventListener('mouseover', (e) => startTooltipTimer(e, cell));
+          cell.addEventListener('mouseout', hideTooltip);
+          grid.appendChild(cell);
+        });
+        wrapper.appendChild(title);
+        wrapper.appendChild(grid);
+        specialPanel.appendChild(wrapper);
+      });
+    }
+
+    function insertCharacter(ch) {
+      const start = chatInput.selectionStart || 0;
+      const end = chatInput.selectionEnd || 0;
+      const value = chatInput.value;
+      chatInput.value = value.slice(0, start) + ch + value.slice(end);
+      const newPos = start + ch.length;
+      chatInput.focus();
+      chatInput.setSelectionRange(newPos, newPos);
+    }
+
+    specialToggle.addEventListener('click', () => {
+      const isOpen = specialPanel.style.display === 'block';
+      specialPanel.style.display = isOpen ? 'none' : 'block';
+      specialToggle.textContent = isOpen ? 'Special characters ▾' : 'Special characters ▴';
+    });
+
+    function toggleVoiceRecording() {
+      if (!SpeechRecognition) return;
+      if (!recognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        recognition.onresult = (event) => {
+          const transcript = Array.from(event.results).map(res => res[0].transcript).join(' ');
+          chatInput.value = transcript;
+        };
+        recognition.onend = () => {
+          isRecording = false;
+          document.getElementById('voiceButton').classList.remove('recording');
+          document.getElementById('voiceButton').textContent = '🎤 Voice';
+          if (chatInput.value.trim()) {
+            sendChatFromInput();
+          }
+        };
+        recognition.onerror = () => {
+          isRecording = false;
+          document.getElementById('voiceButton').classList.remove('recording');
+          document.getElementById('voiceButton').textContent = '🎤 Voice';
+        };
+      }
+      if (isRecording) {
+        recognition.stop();
+        return;
+      }
+      isRecording = true;
+      document.getElementById('voiceButton').classList.add('recording');
+      document.getElementById('voiceButton').textContent = 'Stop';
+      recognition.start();
+    }
+
+    function toggleMute() {
+      voiceMuted = !voiceMuted;
+      document.getElementById('muteButton').textContent = voiceMuted ? 'Muted' : 'Mute';
+    }
+
+    function initVoiceSupport() {
+      const notice = document.getElementById('voiceSupportNotice');
+      const voiceButton = document.getElementById('voiceButton');
+      if (!SpeechRecognition) {
+        voiceButton.disabled = true;
+        notice.textContent = 'Voice input not supported in this browser.';
+      }
+    }
+
+    async function loadStorage() {
+      try {
+        const res = await fetch('/api/storage/list');
+        const data = await res.json();
+        renderStorageTable(data.files || []);
+      } catch (e) {
+        storageStatus.textContent = 'Storage listing failed';
+      }
+    }
+
+    function renderStorageTable(files) {
+      storageTable.innerHTML = '<tr><th>Name</th><th>Size</th><th>Modified</th><th>Action</th></tr>';
+      if (!files.length) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="4" class="small-note">No files yet.</td>';
+        storageTable.appendChild(row);
+        return;
+      }
+      files.forEach(file => {
+        const row = document.createElement('tr');
+        const link = document.createElement('a');
+        link.href = file.url;
+        link.target = '_blank';
+        link.textContent = file.name;
+        const nameCell = document.createElement('td');
+        nameCell.appendChild(link);
+        row.appendChild(nameCell);
+        const sizeCell = document.createElement('td');
+        sizeCell.textContent = `${(file.size/1024).toFixed(2)} KB`;
+        const modCell = document.createElement('td');
+        modCell.textContent = file.modified;
+        const actionCell = document.createElement('td');
+        const del = document.createElement('button');
+        del.className = 'btn secondary';
+        del.textContent = 'Delete';
+        del.addEventListener('click', () => deleteStorage(file.name));
+        actionCell.appendChild(del);
+        row.appendChild(sizeCell);
+        row.appendChild(modCell);
+        row.appendChild(actionCell);
+        storageTable.appendChild(row);
+      });
+    }
+
+    async function uploadStorageFile() {
+      const input = document.getElementById('storageFile');
+      if (!input.files || !input.files.length) return;
+      const formData = new FormData();
+      formData.append('file', input.files[0]);
+      storageStatus.textContent = 'Uploading…';
+      try {
+        const res = await fetch('/api/storage/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status !== 'ok') throw new Error('upload failed');
+        storageStatus.textContent = `Uploaded ${data.file.name}`;
+        input.value = '';
+        loadStorage();
+      } catch (e) {
+        storageStatus.textContent = 'Upload failed';
+      }
+    }
+
+    async function deleteStorage(name) {
+      await fetch('/api/storage/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      loadStorage();
+    }
+
+    function initSpecialPanel() {
+      initSpecialCharacters();
+      specialPanel.style.display = 'none';
+    }
+
+    function initVoiceUI() {
+      initVoiceSupport();
+    }
+
+    function initMediaLinksScroll() {
+      mediaPanel.addEventListener('wheel', () => { hasNewMedia = false; updateMediaBadge(); });
+    }
+
+    function loadInitial() {
       checkHealth();
       fetchFlattening();
       fetchTelemetry();
@@ -842,6 +1237,9 @@
       loadMedia();
       loadLogs();
       loadServerSettings();
+      initSpecialPanel();
+      initVoiceUI();
+      initMediaLinksScroll();
       addMessage('Aurelia', 'Omega lattice online. How can I help?');
     }
 
