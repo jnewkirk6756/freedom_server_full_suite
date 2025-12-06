@@ -88,7 +88,7 @@
     .panel { background: linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 18px; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3); backdrop-filter: blur(6px); }
     .panel h2 { margin: 0 0 12px; font-size: 18px; letter-spacing: 0.4px; }
     .muted { color: var(--muted); font-size: 14px; }
-    .chat-log { height: 52vh; overflow-y: auto; display: grid; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.15); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); }
+    .chat-log { max-height: 55vh; min-height: 32vh; overflow-y: auto; display: grid; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.15); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); padding-right: 14px; }
     .message { padding: 10px 12px; border-radius: 10px; position: relative; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); }
     .message.you { border-left: 3px solid var(--accent); }
     .message.aurelia { border-left: 3px solid var(--success); }
@@ -100,7 +100,7 @@
     .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
     .btn:active { transform: translateY(0); }
     .controls-grid { display: grid; grid-template-rows: 240px auto auto; gap: 14px; }
-    #latticeCanvas { width: 100%; height: 100%; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
+    #omega-lattice-canvas { width: 100%; height: 100%; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; box-shadow: 0 0 24px rgba(95, 230, 160, 0.12); }
     .settings-block { display: grid; gap: 12px; }
     .slider-row { display: grid; gap: 6px; }
     input[type="range"] { accent-color: var(--accent); }
@@ -120,6 +120,15 @@
     .tooltip { position: absolute; background: #111824; border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 8px; font-size: 12px; color: var(--text); max-width: 240px; z-index: 999; box-shadow: 0 10px 25px rgba(0,0,0,0.35); display: none; }
     .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .small-note { font-size: 12px; color: var(--muted); }
+
+    /* Storage */
+    #storageControls { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+    #storageList { max-height: 55vh; overflow: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.1); }
+    .storage-row { display: grid; grid-template-columns: 1fr 120px 120px 80px; gap: 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .storage-row:hover { background: rgba(95, 230, 160, 0.08); }
+    .storage-path { color: var(--muted); margin: 6px 0; font-size: 13px; }
+    .storage-actions button { margin-left: 6px; }
+    .storage-breadcrumb { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
     @media (max-width: 960px) {
       main { grid-template-columns: 1fr; }
@@ -143,6 +152,7 @@
   <nav class="nav-tabs">
     <button class="tab-button active" data-target="consoleTab">Console</button>
     <button class="tab-button" data-target="systemTab">System</button>
+    <button class="tab-button" data-target="storageTab">Storage</button>
     <button class="tab-button" data-target="logsTab">Logs</button>
     <button class="tab-button" data-target="serverTab">Server Settings</button>
     <button class="tab-button" data-target="webToolsTab">Web Tools</button>
@@ -191,16 +201,16 @@
       <section class="panel controls-grid">
         <div>
           <h2>Omega Lattice</h2>
-          <canvas id="latticeCanvas" width="600" height="240"></canvas>
+          <canvas id="omega-lattice-canvas" width="600" height="240"></canvas>
         </div>
 
         <div class="settings-block">
           <h2>Aurelia Settings</h2>
           <div class="info-card">
             <div class="slider-row">
-              <label for="flatteningSlider">Flattening Scale (0–100)</label>
-              <input type="range" id="flatteningSlider" min="0" max="100" value="50" data-tooltip="Adjust how neutral vs expressive Aurelia's replies should be." />
-              <div class="muted" id="flatteningValue">50 · Balanced</div>
+              <label for="flattening-slider">Flattening Scale (0–100)</label>
+              <input type="range" id="flattening-slider" min="0" max="100" value="50" data-tooltip="Adjust how neutral vs expressive Aurelia's replies should be." />
+              <div class="muted" id="flattening-label">Flattening: 50 (Balanced)</div>
               <div class="flex" style="gap:8px; flex-wrap:wrap;">
                 <button class="btn" type="button" data-preset="20" data-tooltip="Creative preset for expressive replies.">Creative</button>
                 <button class="btn" type="button" data-preset="50" data-tooltip="Balanced preset for mixed tone.">Balanced</button>
@@ -259,6 +269,25 @@
       <section class="panel section">
         <h2>Device Management</h2>
         <table class="table" id="systemDevices"></table>
+      </section>
+    </div>
+  </div>
+
+  <div id="storageTab" class="tab-panel">
+    <div style="padding: 18px 24px 30px; display: grid; gap: 14px;">
+      <section class="panel section">
+        <h2>Storage</h2>
+        <div id="storagePath" class="storage-path">Path: <span class="storage-breadcrumb" id="storageBreadcrumb">./</span></div>
+        <div id="storageControls">
+          <input type="text" id="storageNewFolder" class="input" placeholder="New folder name" style="max-width:200px;" />
+          <button class="btn" id="storageMkdir">Create Folder</button>
+          <input type="file" id="storageUploadFile" />
+          <button class="btn" id="storageUpload">Upload</button>
+          <button class="btn" id="storageRefresh">Refresh</button>
+        </div>
+        <div id="storageList">
+          <div class="muted">Loading storage…</div>
+        </div>
       </section>
     </div>
   </div>
@@ -327,8 +356,8 @@
     const chatLog = document.getElementById('chatLog');
     const chatForm = document.getElementById('chatForm');
     const chatInput = document.getElementById('chatInput');
-    const flatteningSlider = document.getElementById('flatteningSlider');
-    const flatteningValue = document.getElementById('flatteningValue');
+    const flatteningSlider = document.getElementById('flattening-slider');
+    const flatteningLabel = document.getElementById('flattening-label');
     const healthStatus = document.getElementById('healthStatus');
     const telemetryLatency = document.getElementById('telemetryLatency');
     const telemetryTokens = document.getElementById('telemetryTokens');
@@ -348,9 +377,25 @@
     const mediaChevron = document.getElementById('mediaChevron');
     const frameworksPanel = document.getElementById('frameworksPanel');
     const frameworkChevron = document.getElementById('frameworkChevron');
+    const storageList = document.getElementById('storageList');
+    const storageBreadcrumb = document.getElementById('storageBreadcrumb');
+    const storageUploadFile = document.getElementById('storageUploadFile');
+    const storageNewFolder = document.getElementById('storageNewFolder');
+    const storagePathLabel = document.getElementById('storagePath');
+
+    const latticeCanvas = document.getElementById('omega-lattice-canvas');
+    const latticeCtx = latticeCanvas.getContext('2d');
+
+    let latticeState = {
+      baseRotationSpeed: 0.0004,
+      excitationLevel: 0.25,
+      nodeDensity: 60,
+      band: 'medium',
+      nodes: [],
+    };
 
     let tooltipTimer = null;
-    let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
+    let currentStoragePath = '.';
 
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
@@ -364,6 +409,8 @@
       if (targetId === 'logsTab') loadLogs();
       if (targetId === 'systemTab') fetchSystemStatus();
       if (targetId === 'serverTab') loadServerSettings();
+      if (targetId === 'storageTab') fetchStorageList(currentStoragePath);
+      if (targetId === 'consoleTab') resizeLatticeCanvas();
     }
 
     function addMessage(author, text) {
@@ -403,7 +450,8 @@
         addMessage('Aurelia', data.reply || 'No response');
         if (data.telemetry) {
           updateTelemetry(data.telemetry);
-          updateLattice(data.telemetry);
+          updateLatticeFromTelemetry(data.telemetry);
+          updateFlatteningUI(data.telemetry.flattening);
         }
       } catch (e) {
         addMessage('Aurelia', 'Connection failed.');
@@ -420,7 +468,7 @@
 
     flatteningSlider.addEventListener('input', async (e) => {
       const value = Number(e.target.value);
-      setFlatteningLabel(value);
+      updateFlatteningUI(value);
       try {
         await fetch('/api/settings/flattening', {
           method: 'POST',
@@ -465,6 +513,10 @@
     document.getElementById('webFetch').addEventListener('click', runWebFetch);
     document.getElementById('logLevel').addEventListener('change', loadLogs);
 
+    document.getElementById('storageMkdir').addEventListener('click', createStorageFolder);
+    document.getElementById('storageUpload').addEventListener('click', uploadStorageFile);
+    document.getElementById('storageRefresh').addEventListener('click', () => fetchStorageList(currentStoragePath));
+
     safeModeToggle.addEventListener('change', updateServerSettings);
     verboseToggle.addEventListener('change', updateServerSettings);
 
@@ -494,17 +546,20 @@
       tooltip.style.display = 'none';
     }
 
-    function setFlatteningLabel(value) {
-      const band = value <= 30 ? 'Creative' : value <= 70 ? 'Balanced' : 'Neutral';
-      flatteningValue.textContent = `${value} · ${band}`;
+    function updateFlatteningUI(value) {
+      const clamped = Math.max(0, Math.min(100, Number(value)));
+      if (flatteningSlider) flatteningSlider.value = clamped;
+      let bandLabel = 'Balanced';
+      if (clamped <= 30) bandLabel = 'Creative';
+      else if (clamped >= 71) bandLabel = 'Neutral';
+      if (flatteningLabel) flatteningLabel.textContent = `Flattening: ${clamped} (${bandLabel})`;
     }
 
     async function fetchFlattening() {
       try {
         const res = await fetch('/api/settings/flattening');
         const data = await res.json();
-        flatteningSlider.value = data.value;
-        setFlatteningLabel(data.value);
+        updateFlatteningUI(data.value);
       } catch (e) { console.warn('Failed to load flattening'); }
     }
 
@@ -517,11 +572,12 @@
           token_estimate: data.last_token_count,
           flattening: data.flattening
         });
-        updateLattice({
+        updateLatticeFromTelemetry({
           latency_ms: data.last_latency_ms ?? 100,
           token_estimate: data.last_token_count ?? 10,
           flattening: data.flattening ?? 50
         });
+        updateFlatteningUI(data.flattening);
       } catch (e) {
         telemetryLatency.textContent = 'Latency: —';
       }
@@ -753,6 +809,117 @@
       }
     }
 
+    function renderStorageBreadcrumb(path) {
+      const parts = path === '.' ? [] : path.split('/');
+      storageBreadcrumb.innerHTML = '';
+      const rootLink = document.createElement('span');
+      rootLink.textContent = 'root';
+      rootLink.className = 'btn';
+      rootLink.style.padding = '4px 8px';
+      rootLink.addEventListener('click', () => fetchStorageList('.'));
+      storageBreadcrumb.appendChild(rootLink);
+
+      let accum = '';
+      parts.forEach((part) => {
+        accum = accum ? `${accum}/${part}` : part;
+        const divider = document.createElement('span');
+        divider.textContent = '›';
+        storageBreadcrumb.appendChild(divider);
+        const link = document.createElement('span');
+        link.textContent = part;
+        link.className = 'btn';
+        link.style.padding = '4px 8px';
+        link.addEventListener('click', () => fetchStorageList(accum));
+        storageBreadcrumb.appendChild(link);
+      });
+    }
+
+    function renderStorageList(items) {
+      storageList.innerHTML = '';
+      if (!items || !items.length) {
+        storageList.innerHTML = '<div class="muted">Directory is empty.</div>';
+        return;
+      }
+
+      const sorted = [...items].sort((a, b) => {
+        if (a.type === b.type) return a.name.localeCompare(b.name);
+        return a.type === 'directory' ? -1 : 1;
+      });
+
+      sorted.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'storage-row';
+        const joinedPath = currentStoragePath === '.' ? item.name : `${currentStoragePath}/${item.name}`;
+        const nameCell = document.createElement('div');
+        nameCell.innerHTML = item.type === 'directory' ? `📁 ${item.name}` : `📄 ${item.name}`;
+        nameCell.style.cursor = 'pointer';
+        nameCell.addEventListener('click', () => {
+          if (item.type === 'directory') {
+            fetchStorageList(joinedPath);
+          } else {
+            window.open(`/api/storage/download?path=${encodeURIComponent(joinedPath)}`);
+          }
+        });
+
+        const sizeCell = document.createElement('div');
+        sizeCell.textContent = item.type === 'file' ? `${item.size} bytes` : '—';
+        const modCell = document.createElement('div');
+        modCell.textContent = new Date(item.modified_at).toLocaleString();
+        const actions = document.createElement('div');
+        actions.className = 'storage-actions';
+        const del = document.createElement('button');
+        del.className = 'btn';
+        del.textContent = 'Delete';
+        del.style.padding = '6px 10px';
+        del.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm(`Delete ${item.name}?`)) return;
+          await fetch('/api/storage/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: joinedPath }) });
+          fetchStorageList(currentStoragePath);
+        });
+        actions.appendChild(del);
+
+        row.appendChild(nameCell);
+        row.appendChild(sizeCell);
+        row.appendChild(modCell);
+        row.appendChild(actions);
+        storageList.appendChild(row);
+      });
+    }
+
+    async function fetchStorageList(path = '.') {
+      try {
+        const res = await fetch(`/api/storage/list?path=${encodeURIComponent(path)}`);
+        const data = await res.json();
+        currentStoragePath = data.path || '.';
+        renderStorageList(data.items || []);
+        renderStorageBreadcrumb(currentStoragePath);
+        storagePathLabel.querySelector('span')?.classList.add('storage-breadcrumb');
+      } catch (err) {
+        storageList.innerHTML = '<div class="muted">Failed to load storage.</div>';
+      }
+    }
+
+    async function createStorageFolder() {
+      const name = storageNewFolder.value.trim();
+      if (!name) return;
+      const target = currentStoragePath === '.' ? name : `${currentStoragePath}/${name}`;
+      await fetch('/api/storage/mkdir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: target }) });
+      storageNewFolder.value = '';
+      fetchStorageList(currentStoragePath);
+    }
+
+    async function uploadStorageFile() {
+      const file = storageUploadFile.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('path', currentStoragePath);
+      formData.append('file', file, file.name);
+      await fetch('/api/storage/upload', { method: 'POST', body: formData });
+      storageUploadFile.value = '';
+      fetchStorageList(currentStoragePath);
+    }
+
     function formatSeconds(seconds) {
       const mins = Math.floor(seconds / 60);
       const hrs = Math.floor(mins / 60);
@@ -761,78 +928,113 @@
     }
 
     // Lattice animation (reacts to telemetry)
-    const canvas = document.getElementById('latticeCanvas');
-    const ctx = canvas.getContext('2d');
-    const nodes = Array.from({ length: latticeState.nodes }, (_, i) => ({ angle: (Math.PI * 2 * i) / latticeState.nodes, radius: 80 + Math.random() * 30 }));
-
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * devicePixelRatio;
-      canvas.height = rect.height * devicePixelRatio;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(devicePixelRatio, devicePixelRatio);
+    function resizeLatticeCanvas() {
+      const rect = latticeCanvas.parentElement.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      latticeCanvas.width = rect.width * devicePixelRatio;
+      latticeCanvas.height = rect.height * devicePixelRatio;
+      latticeCtx.setTransform(1, 0, 0, 1, 0, 0);
+      latticeCtx.scale(devicePixelRatio, devicePixelRatio);
     }
 
-    function drawLattice(t) {
-      const rect = canvas.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width, rect.height);
+    function rebuildLatticeNodes() {
+      latticeState.nodes = Array.from({ length: latticeState.nodeDensity }, (_, i) => ({
+        baseAngle: (Math.PI * 2 * i) / latticeState.nodeDensity,
+        baseRadius: 80 + Math.random() * 60,
+        wobble: Math.random() * 8,
+      }));
+    }
+
+    function updateLatticeFromTelemetry(telemetry) {
+      const latency = telemetry?.latency_ms ?? 120;
+      const tokens = telemetry?.token_estimate ?? 60;
+      const flatten = telemetry?.flattening ?? 50;
+
+      latticeState.band = flatten <= 30 ? 'low' : flatten <= 70 ? 'medium' : 'high';
+      latticeState.excitationLevel = Math.min(1, (tokens / 400) + (latency / 2000));
+      latticeState.nodeDensity = Math.min(100, 60 + Math.floor(Math.min(tokens, 400) / 4));
+      latticeState.baseRotationSpeed = 0.00025 + Math.min(latency, 2000) / 1200000 + latticeState.excitationLevel * 0.00025;
+
+      if (latticeState.nodes.length !== latticeState.nodeDensity) {
+        rebuildLatticeNodes();
+      }
+    }
+
+    function drawLatticeFrame(timestamp) {
+      const rect = latticeCanvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) {
+        requestAnimationFrame(drawLatticeFrame);
+        return;
+      }
+
+      latticeCtx.clearRect(0, 0, rect.width, rect.height);
       const cx = rect.width / 2;
       const cy = rect.height / 2;
 
-      ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
-      ctx.lineWidth = 1.2;
+      // background glow
+      const gradient = latticeCtx.createRadialGradient(cx, cy, 40, cx, cy, Math.max(cx, cy));
+      gradient.addColorStop(0, 'rgba(95, 230, 160, 0.06)');
+      gradient.addColorStop(1, 'rgba(11, 15, 20, 0.6)');
+      latticeCtx.fillStyle = gradient;
+      latticeCtx.fillRect(0, 0, rect.width, rect.height);
 
-      nodes.forEach((node, idx) => {
-        const speed = latticeState.speed + idx * 0.00003;
-        const angle = node.angle + t * speed;
-        const wobble = Math.sin(t * 0.001 + idx) * latticeState.jitter;
-        const r = node.radius + wobble;
-        const x = cx + Math.cos(angle) * r;
-        const y = cy + Math.sin(angle) * r;
+      const rotation = timestamp * latticeState.baseRotationSpeed;
+      const stiffness = latticeState.band === 'low' ? 12 : latticeState.band === 'medium' ? 8 : 4;
+      const linkDistance = latticeState.band === 'high' ? 180 : 220;
+
+      latticeState.nodes.forEach((node, idx) => {
+        const wobble = Math.sin(timestamp * 0.002 + idx) * (stiffness + node.wobble * latticeState.excitationLevel);
+        const radius = node.baseRadius + wobble;
+        const angle = node.baseAngle + rotation * (1 + latticeState.excitationLevel * 0.5);
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
         node.pos = { x, y };
       });
 
-      nodes.forEach((node, idx) => {
-        for (let j = idx + 1; j < nodes.length; j++) {
-          const other = nodes[j];
+      latticeCtx.strokeStyle = 'rgba(95, 230, 160, 0.35)';
+      latticeCtx.lineWidth = 1;
+      latticeState.nodes.forEach((node, idx) => {
+        for (let j = idx + 1; j < latticeState.nodes.length; j++) {
+          const other = latticeState.nodes[j];
           const dx = node.pos.x - other.pos.x;
           const dy = node.pos.y - other.pos.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 200) {
-            ctx.globalAlpha = 1 - dist / 200;
-            ctx.beginPath();
-            ctx.moveTo(node.pos.x, node.pos.y);
-            ctx.lineTo(other.pos.x, other.pos.y);
-            ctx.stroke();
+          if (dist < linkDistance) {
+            latticeCtx.globalAlpha = 1 - dist / linkDistance;
+            latticeCtx.beginPath();
+            latticeCtx.moveTo(node.pos.x, node.pos.y);
+            latticeCtx.lineTo(other.pos.x, other.pos.y);
+            latticeCtx.stroke();
           }
         }
       });
 
-      ctx.globalAlpha = 1;
-      nodes.forEach((node, idx) => {
-        const pulse = 4 + Math.sin(t * 0.003 + idx) * 2;
-        ctx.beginPath();
-        ctx.fillStyle = 'rgba(95, 230, 160, 0.9)';
-        ctx.arc(node.pos.x, node.pos.y, 4 + pulse * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(123, 212, 255, 0.7)';
-        ctx.stroke();
+      latticeCtx.globalAlpha = 1;
+      latticeState.nodes.forEach((node, idx) => {
+        const pulse = 3 + Math.sin(timestamp * 0.004 + idx) * (2 + latticeState.excitationLevel * 3);
+        latticeCtx.beginPath();
+        latticeCtx.fillStyle = 'rgba(95, 230, 160, 0.95)';
+        latticeCtx.arc(node.pos.x, node.pos.y, 2.5 + pulse * 0.35, 0, Math.PI * 2);
+        latticeCtx.fill();
+        latticeCtx.strokeStyle = 'rgba(123, 212, 255, 0.7)';
+        latticeCtx.stroke();
       });
 
-      requestAnimationFrame(drawLattice);
+      // Core
+      latticeCtx.beginPath();
+      latticeCtx.fillStyle = 'rgba(95, 230, 160, 0.3)';
+      latticeCtx.arc(cx, cy, 16 + latticeState.excitationLevel * 10, 0, Math.PI * 2);
+      latticeCtx.fill();
+      latticeCtx.strokeStyle = 'rgba(123, 212, 255, 0.5)';
+      latticeCtx.stroke();
+
+      requestAnimationFrame(drawLatticeFrame);
     }
 
-    function updateLattice(telemetry) {
-      const latency = telemetry.latency_ms || 100;
-      const tokens = telemetry.token_estimate || 10;
-      const flatten = telemetry.flattening || 50;
-      latticeState.speed = 0.0002 + Math.min(latency, 2000) / 1000000 + (tokens / 20000);
-      latticeState.jitter = flatten <= 30 ? 12 : flatten <= 70 ? 8 : 4;
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-    requestAnimationFrame(drawLattice);
+    window.addEventListener('resize', resizeLatticeCanvas);
+    resizeLatticeCanvas();
+    rebuildLatticeNodes();
+    requestAnimationFrame(drawLatticeFrame);
 
     async function loadInitial() {
       checkHealth();
