@@ -3,180 +3,498 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Freedom Server · Aurelia Home</title>
-
+  <title>Freedom Server · Aurelia Omega</title>
   <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121820;
+      --accent: #7bd4ff;
+      --muted: #96a4b8;
+      --text: #e7f1ff;
+      --danger: #ff6b6b;
+      --success: #5fe6a0;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      padding: 0;
-      background-color: #0d0d0d;
-      color: #e6e6e6;
-      font-family: Arial, sans-serif;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 15% 20%, rgba(123, 212, 255, 0.08), transparent 25%),
+                  radial-gradient(circle at 80% 10%, rgba(95, 230, 160, 0.08), transparent 20%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
     }
 
     header {
-      padding: 20px;
+      padding: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
     }
 
-    h1 {
-      font-size: 40px;
-      font-weight: 700;
+    .title {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .title h1 {
       margin: 0;
+      font-size: 28px;
+      letter-spacing: 0.5px;
     }
 
-    #omegaLogo {
-      font-size: 50px;
-      text-align: center;
-      margin-top: 20px;
-      animation: pulse 2.4s infinite ease-in-out;
-      color: #4da6ff;
+    .title span {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .omega {
+      font-size: 36px;
+      color: var(--accent);
+      text-shadow: 0 0 12px rgba(123, 212, 255, 0.55);
+      animation: pulse 2.6s infinite ease-in-out;
     }
 
     @keyframes pulse {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 0.4; }
+      0% { opacity: 0.5; transform: scale(0.98); }
+      50% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0.5; transform: scale(0.98); }
     }
 
-    #lattice {
-      margin-top: 10px;
-      font-size: 14px;
-      opacity: 0.8;
+    main {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr;
+      gap: 18px;
+      padding: 18px 24px 30px;
     }
 
-    .section {
-      padding: 20px;
-      border-top: 1px solid #333;
+    .panel {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(6px);
     }
 
-    textarea {
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: 0.3px;
+    }
+
+    .chat-log {
+      height: 55vh;
+      overflow-y: auto;
+      padding: 12px;
+      border-radius: 10px;
+      background: #0f141b;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message {
+      padding: 10px 12px;
+      border-radius: 10px;
+      position: relative;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .message.you { border-left: 3px solid var(--accent); }
+    .message.aurelia { border-left: 3px solid var(--success); }
+
+    .message .meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .message .body { font-size: 14px; line-height: 1.4; }
+
+    .chat-input {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 110px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .chat-input input {
       width: 100%;
-      height: 80px;
-      background: #111;
-      color: #eee;
-      border: 1px solid #444;
-      padding: 10px;
-      resize: none;
-    }
-
-    button {
-      padding: 10px 20px;
-      margin-top: 10px;
-      background-color: #1a1a1a;
-      border: 1px solid #555;
-      color: #eee;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #333;
-    }
-
-    label {
-      display: block;
-      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #0f141b;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: var(--text);
       font-size: 15px;
-      color: #ccc;
+    }
+
+    .btn {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(145deg, #15202d, #111924);
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+    .btn:active { transform: translateY(0); }
+
+    .controls-grid {
+      display: grid;
+      grid-template-rows: 220px auto auto;
+      gap: 14px;
+    }
+
+    #latticeCanvas {
+      width: 100%;
+      height: 100%;
+      background: #0f141b;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+    }
+
+    .settings-block {
+      display: grid;
+      gap: 12px;
+    }
+
+    .slider-row {
+      display: grid;
+      gap: 6px;
     }
 
     input[type="range"] {
-      width: 100%;
+      accent-color: var(--accent);
     }
 
-    .log-entry {
-      font-size: 13px;
-      padding: 3px 0;
-      border-bottom: 1px solid #222;
+    .info-card {
+      background: #0f141b;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 12px;
     }
 
+    .info-card h3 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      color: var(--muted);
+      letter-spacing: 0.4px;
+    }
+
+    .device-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .device {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .online { background: rgba(95, 230, 160, 0.16); color: var(--success); }
+    .offline { background: rgba(255, 107, 107, 0.16); color: var(--danger); }
+
+    .muted { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+      .controls-grid { grid-template-rows: 240px auto auto; }
+      .chat-log { height: 45vh; }
+    }
   </style>
 </head>
-
 <body>
   <header>
-    <h1>Freedom Server · Aurelia Home</h1>
-    <div id="omegaLogo">Ω</div>
-    <div id="lattice">Lattice: IDLE / LISTENING</div>
+    <div class="title">
+      <div class="omega">Ω</div>
+      <div>
+        <h1>Freedom Server</h1>
+        <span>Omega lattice / Aurelia console</span>
+      </div>
+    </div>
+    <div class="muted" id="healthStatus">Checking health…</div>
   </header>
 
-  <!-- Chat Section -->
-  <div class="section">
-    <h2>Console</h2>
-    <textarea id="msgBox" placeholder="Type a message..."></textarea>
-    <button onclick="sendMessage()">Send</button>
-  </div>
+  <main>
+    <section class="panel">
+      <h2>Console · Chat</h2>
+      <div id="chatLog" class="chat-log"></div>
+      <form id="chatForm" class="chat-input">
+        <input id="chatInput" type="text" placeholder="Send a message to Aurelia" autocomplete="off" required />
+        <button class="btn" type="submit">Send</button>
+      </form>
+    </section>
 
-  <!-- Connected Devices -->
-  <div class="section">
-    <h2>Connected Devices</h2>
-    <div id="deviceList">• None detected</div>
-  </div>
+    <section class="panel controls-grid">
+      <div>
+        <h2>Omega Lattice</h2>
+        <canvas id="latticeCanvas" width="600" height="240"></canvas>
+      </div>
 
-  <!-- Aurelia Settings -->
-  <div class="section">
-    <h2>Aurelia Settings</h2>
+      <div class="settings-block">
+        <h2>Aurelia Settings</h2>
+        <div class="info-card">
+          <div class="slider-row">
+            <label for="flatteningSlider">Flattening Scale (0–100)</label>
+            <input type="range" id="flatteningSlider" min="0" max="100" value="50" />
+            <div class="muted" id="flatteningValue">50</div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div>
+              <h3>Telemetry</h3>
+              <div class="muted" id="telemetryDescription">—</div>
+              <div class="muted" id="telemetrySignal"></div>
+              <div class="muted" id="telemetryLoad"></div>
+            </div>
+            <button class="btn" id="refreshTelemetry" type="button">Refresh Telemetry</button>
+          </div>
+        </div>
+      </div>
 
-    <label>Flattening Scale
-      <input id="flatteningSlider" type="range" min="0" max="10" value="5" />
-    </label>
-    
-    <label>Telemetry <span id="telemetryValue">70%</span>
-      <input id="telemetrySlider" type="range" min="0" max="100" value="70" />
-    </label>
-
-    <label>Frameworks:</label>
-    <div>
-      <input type="checkbox" checked /> FreedomServer
-      <input type="checkbox" checked /> MeridianOS
-      <input type="checkbox" /> SexOS
-      <input type="checkbox" checked /> OnwardOS
-    </div>
-  </div>
-
-  <!-- Server Tools -->
-  <div class="section">
-    <h2>Server Tools</h2>
-    <button onclick="stopServer()">Stop</button>
-
-    <label>Version
-      <select id="versionSelector">
-        <option>Dev</option>
-        <option>Stable</option>
-      </select>
-    </label>
-    <button onclick="revertVersion()">Revert</button>
-
-    <label>Admin Password
-      <input id="adminPass" type="text" placeholder="New password" />
-    </label>
-    <button onclick="updatePassword()">Update</button>
-
-    <h3>Logs</h3>
-    <div id="logArea"></div>
-  </div>
+      <div class="settings-block">
+        <h2>Connected Devices / VR</h2>
+        <div class="info-card">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn" id="scanDevices" type="button">Scan Devices</button>
+            <button class="btn" id="connectVr" type="button">Connect VR / Meta Quest</button>
+          </div>
+          <div class="device-list" id="deviceList" style="margin-top:10px;">
+            <div class="muted">No devices scanned.</div>
+          </div>
+          <div class="muted" id="vrStatus" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <script>
-    function addLog(level, msg) {
-      const logArea = document.getElementById("logArea");
-      const div = document.createElement("div");
-      div.className = "log-entry";
-      div.textContent = `[${level}] ${msg}`;
-      logArea.appendChild(div);
+    const chatLog = document.getElementById('chatLog');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const flatteningSlider = document.getElementById('flatteningSlider');
+    const flatteningValue = document.getElementById('flatteningValue');
+    const healthStatus = document.getElementById('healthStatus');
+    const telemetryDescription = document.getElementById('telemetryDescription');
+    const telemetrySignal = document.getElementById('telemetrySignal');
+    const telemetryLoad = document.getElementById('telemetryLoad');
+    const deviceList = document.getElementById('deviceList');
+    const vrStatus = document.getElementById('vrStatus');
+
+    function addMessage(author, text) {
+      const now = new Date();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const container = document.createElement('div');
+      container.className = `message ${author.toLowerCase()}`;
+      container.innerHTML = `
+        <div class="meta">${author} · ${time}</div>
+        <div class="body">${text}</div>
+      `;
+      chatLog.appendChild(container);
+      chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    function sendMessage() {
-      const msg = document.getElementById("msgBox").value;
-      if (!msg.trim()) return;
-      addLog("USER", msg);
-      document.getElementById("msgBox").value = "";
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        healthStatus.textContent = data.status === 'ok' ? 'Backend online' : 'Backend reachable';
+        healthStatus.style.color = data.status === 'ok' ? 'var(--success)' : 'var(--muted)';
+      } catch (e) {
+        healthStatus.textContent = 'Backend offline';
+        healthStatus.style.color = 'var(--danger)';
+      }
     }
 
-    document.getElementById("telemetrySlider").addEventListener("input", (e) => {
-      document.getElementById("telemetryValue").textContent = e.target.value + "%";
+    async function sendChat(message) {
+      addMessage('You', message);
+      try {
+        const res = await fetch('/api/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await res.json();
+        addMessage('Aurelia', data.reply || 'No response');
+      } catch (e) {
+        addMessage('Aurelia', 'Connection failed.');
+      }
+    }
+
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const message = chatInput.value.trim();
+      if (!message) return;
+      chatInput.value = '';
+      sendChat(message);
     });
 
-    addLog("INFO", "UI loaded.");
+    flatteningSlider.addEventListener('input', async (e) => {
+      const value = Number(e.target.value);
+      flatteningValue.textContent = value;
+      try {
+        await fetch('/api/settings/flattening', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value })
+        });
+      } catch (err) {
+        console.error('Flattening update failed', err);
+      }
+    });
+
+    document.getElementById('refreshTelemetry').addEventListener('click', async () => {
+      telemetryDescription.textContent = 'Loading…';
+      try {
+        const res = await fetch('/api/telemetry');
+        const data = await res.json();
+        telemetryDescription.textContent = data.description || 'No description';
+        telemetrySignal.textContent = `Signal: ${data.signal_db ?? '—'} dB`;
+        telemetryLoad.textContent = `Load: ${data.load_percent ?? '—'}%`;
+      } catch (err) {
+        telemetryDescription.textContent = 'Failed to load telemetry';
+        telemetrySignal.textContent = '';
+        telemetryLoad.textContent = '';
+      }
+    });
+
+    document.getElementById('scanDevices').addEventListener('click', async () => {
+      deviceList.innerHTML = '<div class="muted">Scanning…</div>';
+      try {
+        const res = await fetch('/api/devices');
+        const data = await res.json();
+        if (!data.devices || data.devices.length === 0) {
+          deviceList.innerHTML = '<div class="muted">No devices found.</div>';
+          return;
+        }
+        deviceList.innerHTML = '';
+        data.devices.forEach((device) => {
+          const div = document.createElement('div');
+          div.className = 'device';
+          const stateClass = device.online ? 'online' : 'offline';
+          const label = device.online ? 'Online' : 'Offline';
+          div.innerHTML = `
+            <span>${device.name}</span>
+            <span class="badge ${stateClass}">${label}</span>
+          `;
+          deviceList.appendChild(div);
+        });
+      } catch (err) {
+        deviceList.innerHTML = '<div class="muted">Scan failed.</div>';
+      }
+    });
+
+    document.getElementById('connectVr').addEventListener('click', async () => {
+      vrStatus.textContent = 'Linking…';
+      try {
+        const res = await fetch('/api/vr/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device: 'meta_quest' })
+        });
+        const data = await res.json();
+        vrStatus.textContent = data.status || 'Linked';
+      } catch (err) {
+        vrStatus.textContent = 'Connection failed.';
+      }
+    });
+
+    // Lattice animation
+    const canvas = document.getElementById('latticeCanvas');
+    const ctx = canvas.getContext('2d');
+    const nodes = Array.from({ length: 16 }, (_, i) => ({
+      angle: (Math.PI * 2 * i) / 16,
+      radius: 80 + Math.random() * 30,
+    }));
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * devicePixelRatio;
+      canvas.height = rect.height * devicePixelRatio;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+    }
+
+    function drawLattice(t) {
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+
+      ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
+      ctx.lineWidth = 1.2;
+
+      nodes.forEach((node, idx) => {
+        const speed = 0.0004 + idx * 0.00003;
+        const angle = node.angle + t * speed;
+        const wobble = Math.sin(t * 0.001 + idx) * 8;
+        const r = node.radius + wobble;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        node.pos = { x, y };
+      });
+
+      nodes.forEach((node, idx) => {
+        for (let j = idx + 1; j < nodes.length; j++) {
+          const other = nodes[j];
+          const dx = node.pos.x - other.pos.x;
+          const dy = node.pos.y - other.pos.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 200) {
+            ctx.globalAlpha = 1 - dist / 200;
+            ctx.beginPath();
+            ctx.moveTo(node.pos.x, node.pos.y);
+            ctx.lineTo(other.pos.x, other.pos.y);
+            ctx.stroke();
+          }
+        }
+      });
+
+      ctx.globalAlpha = 1;
+      nodes.forEach((node, idx) => {
+        const pulse = 4 + Math.sin(t * 0.003 + idx) * 2;
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(95, 230, 160, 0.9)';
+        ctx.arc(node.pos.x, node.pos.y, 4 + pulse * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(123, 212, 255, 0.7)';
+        ctx.stroke();
+      });
+
+      requestAnimationFrame(drawLattice);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    requestAnimationFrame(drawLattice);
+
+    // Initial actions
+    checkHealth();
+    addMessage('Aurelia', 'Omega lattice online. How can I help?');
   </script>
 </body>
 </html>
-
