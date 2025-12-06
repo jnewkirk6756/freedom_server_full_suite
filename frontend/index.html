@@ -88,7 +88,7 @@
     .panel { background: linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 18px; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3); backdrop-filter: blur(6px); }
     .panel h2 { margin: 0 0 12px; font-size: 18px; letter-spacing: 0.4px; }
     .muted { color: var(--muted); font-size: 14px; }
-    .chat-log { height: 52vh; overflow-y: auto; display: grid; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.15); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); }
+    .chat-log { height: 52vh; max-height: 60vh; overflow-y: auto; display: grid; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.15); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); }
     .message { padding: 10px 12px; border-radius: 10px; position: relative; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); }
     .message.you { border-left: 3px solid var(--accent); }
     .message.aurelia { border-left: 3px solid var(--success); }
@@ -99,8 +99,8 @@
     .btn { padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); background: linear-gradient(145deg, #15202d, #111924); color: var(--text); font-weight: 600; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
     .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
     .btn:active { transform: translateY(0); }
-    .controls-grid { display: grid; grid-template-rows: 240px auto auto; gap: 14px; }
-    #latticeCanvas { width: 100%; height: 100%; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
+    .controls-grid { display: grid; grid-template-rows: auto auto auto; gap: 14px; }
+    #latticeCanvas { width: 100%; height: 260px; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
     .settings-block { display: grid; gap: 12px; }
     .slider-row { display: grid; gap: 6px; }
     input[type="range"] { accent-color: var(--accent); }
@@ -120,6 +120,37 @@
     .tooltip { position: absolute; background: #111824; border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 8px; font-size: 12px; color: var(--text); max-width: 240px; z-index: 999; box-shadow: 0 10px 25px rgba(0,0,0,0.35); display: none; }
     .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .small-note { font-size: 12px; color: var(--muted); }
+    .omega-stack { display: grid; gap: 12px; }
+    .omega-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; position: relative; }
+    .radar-panel { display: none; min-height: 260px; }
+    .radar-active { display: block; }
+    .radar-grid { display: grid; gap: 8px; }
+    .radar-circle { width: 100%; aspect-ratio: 1 / 1; background: radial-gradient(circle at 50% 50%, rgba(123,212,255,0.1), rgba(0,0,0,0.4)); border: 1px solid rgba(123,212,255,0.35); border-radius: 50%; position: relative; overflow: hidden; box-shadow: 0 0 25px rgba(123,212,255,0.18); }
+    .radar-sweep { position: absolute; width: 50%; height: 2px; background: linear-gradient(90deg, rgba(123,212,255,0.1), rgba(123,212,255,0.9)); top: 50%; left: 50%; transform-origin: 0% 50%; }
+    .radar-blip { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px rgba(95,230,160,0.7); opacity: 0.8; }
+    .radar-status { font-size: 13px; color: var(--muted); line-height: 1.4; }
+    .frameworks-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 6px 4px; }
+    .frameworks-panel { margin-top: 6px; display: none; }
+    .frameworks-panel.active { display: block; }
+    .framework-group { margin-bottom: 10px; }
+    .framework-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; margin-top: 4px; background: rgba(255,255,255,0.02); position: relative; }
+    .framework-row .label { display: flex; gap: 8px; align-items: center; }
+    .framework-row .glyph { font-size: 16px; }
+    .framework-row .name { font-weight: 600; }
+    .framework-row .state { font-size: 12px; color: var(--muted); }
+    .framework-row.active { border-color: rgba(95,230,160,0.35); box-shadow: 0 0 12px rgba(95,230,160,0.2); }
+    .framework-toggle { display: inline-flex; align-items: center; gap: 6px; }
+    .glow-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.2); box-shadow: 0 0 6px rgba(255,255,255,0.15); }
+    .glow-dot.on { background: var(--success); box-shadow: 0 0 10px rgba(95,230,160,0.8); }
+    .radar-flash { animation: flash 0.9s infinite alternate; }
+    @keyframes flash { from { box-shadow: 0 0 0 rgba(255,0,0,0.3); border-color: var(--warning); } to { box-shadow: 0 0 16px rgba(255,0,0,0.5); border-color: var(--danger); } }
+    .badge-alert { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+    .media-badge { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 10px rgba(255,107,107,0.7); display: none; }
+    .media-badge.active { display: inline-block; }
+    .notification-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 10px rgba(255,107,107,0.8); display: none; }
+    .notification-dot.active { display: inline-block; }
+    .continuity-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .radar-events { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 8px; font-size: 12px; max-height: 150px; overflow-y: auto; }
 
     @media (max-width: 960px) {
       main { grid-template-columns: 1fr; }
@@ -164,7 +195,10 @@
               <strong>Generated Media</strong>
               <span class="muted small-note">Images created locally</span>
             </div>
-            <span id="mediaChevron">▼</span>
+            <span style="display:flex;align-items:center;gap:6px;">
+              <span class="media-badge" id="mediaBadge"></span>
+              <span id="mediaChevron">▼</span>
+            </span>
           </div>
           <div id="mediaPanel" style="display:none; margin-top:10px;">
             <div class="flex" style="gap:10px; flex-wrap:wrap; margin-bottom:10px;">
@@ -179,9 +213,10 @@
         <div class="info-card" style="margin-top: 12px;">
           <h3>Continuity Import / Export</h3>
           <textarea id="continuityBlob" rows="4" class="input" placeholder="Continuity blob" data-tooltip="Sync Aurelia’s deeper state between nodes." style="resize:vertical;"></textarea>
-          <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
+          <div class="continuity-actions" style="margin-top:8px;">
             <button class="btn" id="exportContinuity" type="button" data-tooltip="Export the node continuity blob.">Export from Node</button>
             <button class="btn" id="importContinuity" type="button" data-tooltip="Import the provided continuity blob to this node.">Import to Node</button>
+            <button class="btn" id="copyContinuity" type="button">Copy</button>
             <span class="small-note">Use this to periodically sync Aurelia’s deeper state between this node and another interface. Keep this blob private.</span>
           </div>
           <div id="continuityStatus" class="small-note" style="margin-top:6px;"></div>
@@ -189,9 +224,38 @@
       </section>
 
       <section class="panel controls-grid">
-        <div>
-          <h2>Omega Lattice</h2>
-          <canvas id="latticeCanvas" width="600" height="240"></canvas>
+        <div class="omega-stack">
+          <div class="omega-card">
+            <h2>Omega Lattice</h2>
+            <canvas id="latticeCanvas" width="600" height="260"></canvas>
+          </div>
+          <div class="omega-card radar-panel" id="radarPanel">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <h2 style="margin:0;">Radar</h2>
+              <span class="badge" id="radarMode" style="background:rgba(123,212,255,0.12);color:var(--accent);">Idle</span>
+            </div>
+            <div class="radar-grid">
+              <div class="radar-circle" id="radarCircle">
+                <div class="radar-sweep" id="radarSweep"></div>
+              </div>
+              <div class="radar-status" id="radarStatus"></div>
+              <div class="radar-events" id="radarEvents"></div>
+              <div class="flex" style="gap:8px; flex-wrap:wrap;">
+                <button class="btn" id="deployCountermeasures" type="button" data-tooltip="Tell Iron Dome to temporarily increase its protection and silently swap risky language more aggressively.">✨ Deploy Flares</button>
+                <span class="small-note">Engage Iron Dome countermeasures during spikes.</span>
+              </div>
+            </div>
+          </div>
+          <div class="omega-card">
+            <div class="frameworks-header" id="frameworksToggle">
+              <strong>▾ Frameworks</strong>
+              <span style="display:flex;align-items:center;gap:6px;">
+                <span class="notification-dot" id="frameworkDot"></span>
+                <span id="frameworkChevron">▼</span>
+              </span>
+            </div>
+            <div id="frameworksPanel" class="frameworks-panel"></div>
+          </div>
         </div>
 
         <div class="settings-block">
@@ -218,13 +282,6 @@
               </div>
               <button class="btn" id="refreshTelemetry" type="button" data-tooltip="Fetch the latest node telemetry from the backend.">Refresh Telemetry</button>
             </div>
-          </div>
-          <div class="info-card">
-            <div class="collapsible" id="frameworksToggle">
-              <strong>Frameworks</strong>
-              <span id="frameworkChevron">►</span>
-            </div>
-            <div id="frameworksPanel" style="display:none; margin-top:8px;" class="small-note"></div>
           </div>
         </div>
 
@@ -346,11 +403,26 @@
     const tooltip = document.getElementById('tooltip');
     const mediaPanel = document.getElementById('mediaPanel');
     const mediaChevron = document.getElementById('mediaChevron');
+    const mediaBadge = document.getElementById('mediaBadge');
     const frameworksPanel = document.getElementById('frameworksPanel');
     const frameworkChevron = document.getElementById('frameworkChevron');
+    const frameworkDot = document.getElementById('frameworkDot');
+    const radarPanel = document.getElementById('radarPanel');
+    const radarMode = document.getElementById('radarMode');
+    const radarStatus = document.getElementById('radarStatus');
+    const radarEvents = document.getElementById('radarEvents');
+    const radarSweep = document.getElementById('radarSweep');
+    const radarCircle = document.getElementById('radarCircle');
 
     let tooltipTimer = null;
-    let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
+    let radarAlerting = false;
+    let mediaCollapsed = true;
+    let frameworksCollapsed = false;
+    let latticeState = { speed: 0.0004, jitter: 8, nodes: 16, targetNodes: 16, drift: 0.0002 };
+    let radarSweepAngle = 0;
+    let radarSweepSpeed = 0.02;
+    let radarBlips = {};
+    frameworksPanel.classList.add('active');
 
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
@@ -404,6 +476,7 @@
         if (data.telemetry) {
           updateTelemetry(data.telemetry);
           updateLattice(data.telemetry);
+          updateRadar(data.telemetry.radar);
         }
       } catch (e) {
         addMessage('Aurelia', 'Connection failed.');
@@ -436,6 +509,7 @@
       btn.addEventListener('click', () => {
         const val = Number(btn.dataset.preset);
         flatteningSlider.value = val;
+        setFlatteningLabel(val);
         flatteningSlider.dispatchEvent(new Event('input'));
       });
     });
@@ -448,11 +522,13 @@
 
     document.getElementById('generateMedia').addEventListener('click', generateMediaItem);
     document.getElementById('clearMedia').addEventListener('click', clearMedia);
-    document.getElementById('mediaToggle').addEventListener('click', () => toggleSection(mediaPanel, mediaChevron));
-    document.getElementById('frameworksToggle').addEventListener('click', () => toggleSection(frameworksPanel, frameworkChevron, loadFrameworks));
+    document.getElementById('mediaToggle').addEventListener('click', () => toggleMediaPanel());
+
+    document.getElementById('frameworksToggle').addEventListener('click', () => toggleFrameworks());
 
     document.getElementById('exportContinuity').addEventListener('click', exportContinuity);
     document.getElementById('importContinuity').addEventListener('click', importContinuity);
+    document.getElementById('copyContinuity').addEventListener('click', copyContinuity);
 
     document.getElementById('refreshLogs').addEventListener('click', loadLogs);
     document.getElementById('clearLogs').addEventListener('click', clearLogs);
@@ -468,15 +544,21 @@
     safeModeToggle.addEventListener('change', updateServerSettings);
     verboseToggle.addEventListener('change', updateServerSettings);
 
-    document.querySelectorAll('[data-tooltip]').forEach(el => {
-      el.addEventListener('mouseover', (e) => startTooltipTimer(e, el));
-      el.addEventListener('mouseout', hideTooltip);
-      el.addEventListener('click', hideTooltip);
-    });
+    radarPanel.addEventListener('mouseenter', acknowledgeRadar);
+    radarPanel.addEventListener('mouseleave', () => radarPanel.classList.remove('radar-flash'));
+    document.getElementById('deployCountermeasures').addEventListener('click', deployCountermeasures);
+
+    function attachTooltips() {
+      document.querySelectorAll('[data-tooltip]').forEach(el => {
+        el.onmouseenter = (e) => startTooltipTimer(e, el);
+        el.onmouseleave = hideTooltip;
+        el.onclick = hideTooltip;
+      });
+    }
 
     function startTooltipTimer(event, el) {
       clearTimeout(tooltipTimer);
-      tooltipTimer = setTimeout(() => showTooltip(event, el), 3000);
+      tooltipTimer = setTimeout(() => showTooltip(event, el), 2000);
     }
 
     function showTooltip(event, el) {
@@ -499,12 +581,29 @@
       flatteningValue.textContent = `${value} · ${band}`;
     }
 
-    async function fetchFlattening() {
+    function animateSliderToValue(target) {
+      const start = Number(flatteningSlider.value);
+      const diff = target - start;
+      const steps = 16;
+      let tick = 0;
+      const stepper = () => {
+        tick += 1;
+        const next = start + (diff * tick) / steps;
+        flatteningSlider.value = Math.round(next);
+        setFlatteningLabel(Math.round(next));
+        if (tick < steps) requestAnimationFrame(stepper);
+      };
+      requestAnimationFrame(stepper);
+    }
+
+    async function fetchFlattening(syncLabel = true) {
       try {
         const res = await fetch('/api/settings/flattening');
         const data = await res.json();
-        flatteningSlider.value = data.value;
-        setFlatteningLabel(data.value);
+        if (Number(flatteningSlider.value) !== data.value) {
+          animateSliderToValue(Number(data.value));
+        }
+        if (syncLabel) setFlatteningLabel(Number(data.value));
       } catch (e) { console.warn('Failed to load flattening'); }
     }
 
@@ -515,113 +614,81 @@
         updateTelemetry({
           latency_ms: data.last_latency_ms,
           token_estimate: data.last_token_count,
-          flattening: data.flattening
+          flattening: data.flattening,
+          radar: data.radar,
         });
         updateLattice({
           latency_ms: data.last_latency_ms ?? 100,
           token_estimate: data.last_token_count ?? 10,
-          flattening: data.flattening ?? 50
+          flattening: data.flattening ?? 50,
+          flattening_band: data.flattening_band,
         });
+        updateRadar(data.radar);
       } catch (e) {
         telemetryLatency.textContent = 'Latency: —';
       }
     }
 
-    function updateTelemetry(t) {
-      telemetryLatency.textContent = `Latency: ${t.latency_ms ?? '—'} ms`;
-      telemetryTokens.textContent = `Tokens: ${t.token_estimate ?? '—'}`;
-      telemetryFlattening.textContent = `Flattening: ${t.flattening ?? '—'}`;
+    async function fetchSystemStatus() {
+      try {
+        const res = await fetch('/api/system/status');
+        const data = await res.json();
+        systemSummary.textContent = `Python ${data.python_version.split(' ')[0]} · FastAPI ${data.fastapi_version} · Uptime ${formatSeconds(data.uptime_sec)} · Requests ${data.total_requests} · Flattening ${data.flattening}`;
+        renderDevicesTable(data.devices || []);
+      } catch (e) {
+        systemSummary.textContent = 'Status unavailable';
+      }
     }
 
     async function loadDevices() {
-      deviceList.innerHTML = '<div class="muted">Scanning…</div>';
       try {
         const res = await fetch('/api/devices');
         const data = await res.json();
-        renderDevices(data.devices || []);
-      } catch (err) {
-        deviceList.innerHTML = '<div class="muted">Scan failed.</div>';
-      }
-    }
-
-    function renderDevices(devices) {
-      deviceList.innerHTML = '';
-      if (!devices.length) {
-        deviceList.innerHTML = '<div class="muted">No devices found.</div>';
-        return;
-      }
-      devices.forEach((device) => {
-        const div = document.createElement('div');
-        div.className = 'device';
-        const stateClass = device.connected ? 'online' : 'offline';
-        const label = device.connected ? 'Connected' : 'Disconnected';
-        div.innerHTML = `<span>${device.name}</span><span class="badge ${stateClass}">${label}</span>`;
-        deviceList.appendChild(div);
-      });
-    }
-
-    async function connectVr(connect = true) {
-      vrStatus.textContent = connect ? 'Linking…' : 'Disconnecting…';
-      try {
-        const res = await fetch(connect ? '/api/vr/connect' : '/api/vr/disconnect', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device_id: 'meta_quest_1' })
+        deviceList.innerHTML = '';
+        (data.devices || []).forEach(device => {
+          const div = document.createElement('div');
+          div.className = 'device';
+          div.innerHTML = `<div><strong>${device.name}</strong><div class="small-note">${device.type}</div></div><span class="badge ${device.connected ? 'online' : 'offline'}">${device.connected ? 'Online' : 'Offline'}</span>`;
+          deviceList.appendChild(div);
         });
-        const data = await res.json();
-        vrStatus.textContent = data.status || 'Updated';
-        loadDevices();
-      } catch (err) {
-        vrStatus.textContent = 'VR action failed.';
-      }
-    }
-
-    async function fetchSystemStatus() {
-      try {
-        await checkHealth();
-        const res = await fetch('/api/system/status');
-        const data = await res.json();
-        systemSummary.innerHTML = `Uptime: ${formatSeconds(data.uptime_sec)}<br>Flattening: ${data.flattening}<br>Total requests: ${data.total_requests}<br>Safe mode: ${data.safe_mode}<br>Verbose logging: ${data.verbose_logging}<br>Connected devices: ${data.num_connected_devices}`;
-        renderSystemDevices(data.devices || []);
       } catch (e) {
-        systemSummary.textContent = 'Failed to load system status';
+        deviceList.innerHTML = '<div class="muted">Failed to load devices.</div>';
       }
     }
 
-    function renderSystemDevices(devices) {
-      systemDevices.innerHTML = '<tr><th>Name</th><th>Type</th><th>Status</th><th>Action</th></tr>';
-      if (!devices.length) {
-        systemDevices.innerHTML += '<tr><td colspan="4" class="muted">No devices</td></tr>';
-        return;
+    async function connectVr(connect) {
+      const device = (document.querySelector('#deviceList .device strong') || {}).textContent ? 'meta_quest_1' : null;
+      if (!device) { vrStatus.textContent = 'Scan devices first.'; return; }
+      try {
+        const res = await fetch(connect ? '/api/vr/connect' : '/api/vr/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device_id: 'meta_quest_1' }) });
+        const data = await res.json();
+        vrStatus.textContent = data.status;
+        loadDevices();
+      } catch (e) {
+        vrStatus.textContent = 'VR update failed';
       }
-      devices.forEach(dev => {
-        const row = document.createElement('tr');
-        const state = dev.connected ? 'online' : 'offline';
-        const action = dev.connected ? 'Disconnect' : 'Connect';
-        row.innerHTML = `<td>${dev.name}</td><td>${dev.type}</td><td><span class="badge ${state}">${dev.connected ? 'Connected' : 'Disconnected'}</span></td><td><button class="btn" data-id="${dev.id}">${action}</button></td>`;
-        row.querySelector('button').addEventListener('click', () => connectVr(!dev.connected));
-        systemDevices.appendChild(row);
-      });
     }
 
     async function loadLogs() {
-      const level = document.getElementById('logLevel').value;
       try {
+        const level = document.getElementById('logLevel').value;
+        const raw = document.getElementById('rawLogsToggle').checked;
         const res = await fetch(`/api/logs?limit=200&level=${level}`);
         const data = await res.json();
-        renderLogs(data.logs || []);
+        logList.innerHTML = '';
+        (data.logs || []).forEach(entry => {
+          const div = document.createElement('div');
+          div.className = 'message';
+          if (raw) {
+            div.innerText = JSON.stringify(entry, null, 2);
+          } else {
+            div.innerHTML = `<div class="meta">${entry.timestamp} · ${entry.source}</div><div class="body">${entry.message}</div>`;
+          }
+          logList.appendChild(div);
+        });
       } catch (e) {
-        logList.textContent = 'Failed to load logs.';
+        logList.textContent = 'Failed to load logs';
       }
-    }
-
-    function renderLogs(logs) {
-      const raw = document.getElementById('rawLogsToggle').checked;
-      logList.innerHTML = '';
-      logs.forEach(log => {
-        const div = document.createElement('div');
-        div.className = 'message';
-        div.innerHTML = raw ? `<div class="body">${JSON.stringify(log)}</div>` : `<div class="meta">${log.timestamp} · ${log.source}</div><div class="body"><strong>[${log.level}]</strong> ${log.message}</div>`;
-        logList.appendChild(div);
-      });
     }
 
     async function clearLogs() {
@@ -633,74 +700,91 @@
       try {
         const res = await fetch('/api/settings/server');
         const data = await res.json();
+        serverSettingsInfo.textContent = `Safe mode: ${data.safe_mode ? 'on' : 'off'} · Verbose logging: ${data.verbose_logging ? 'on' : 'off'}`;
         safeModeToggle.checked = data.safe_mode;
         verboseToggle.checked = data.verbose_logging;
-        serverSettingsInfo.textContent = `Safe mode: ${data.safe_mode}, verbose logging: ${data.verbose_logging}`;
       } catch (e) {
-        serverSettingsInfo.textContent = 'Failed to load settings';
+        serverSettingsInfo.textContent = 'Unable to load settings';
       }
     }
 
     async function updateServerSettings() {
-      try {
-        const res = await fetch('/api/settings/server', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ safe_mode: safeModeToggle.checked, verbose_logging: verboseToggle.checked })
-        });
-        const data = await res.json();
-        serverSettingsStatus.textContent = `Updated: safe_mode=${data.safe_mode}, verbose_logging=${data.verbose_logging}`;
-      } catch (e) {
-        serverSettingsStatus.textContent = 'Failed to update settings';
-      }
+      const payload = { safe_mode: safeModeToggle.checked, verbose_logging: verboseToggle.checked };
+      const res = await fetch('/api/settings/server', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      serverSettingsStatus.textContent = `Updated. Safe mode: ${data.safe_mode}. Verbose: ${data.verbose_logging}.`;
     }
 
-    async function exportContinuity() {
-      try {
-        const res = await fetch('/api/continuity/export');
-        const data = await res.json();
-        document.getElementById('continuityBlob').value = data.blob || '';
-        document.getElementById('continuityStatus').textContent = 'Continuity exported from node.';
-      } catch (e) {
-        document.getElementById('continuityStatus').textContent = 'Export failed';
-      }
-    }
-
-    async function importContinuity() {
-      const blob = document.getElementById('continuityBlob').value;
-      try {
-        await fetch('/api/continuity/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blob }) });
-        document.getElementById('continuityStatus').textContent = 'Continuity imported successfully.';
-      } catch (e) {
-        document.getElementById('continuityStatus').textContent = 'Import failed';
-      }
-    }
+    const frameworkOrder = [
+      'Infrastructure','System / Lattice','Psychology','Tactical','Operations','SOS','R&D'
+    ];
 
     async function loadFrameworks() {
       try {
+        frameworksPanel.innerHTML = '<div class="small-note">Loading frameworks…</div>';
         const res = await fetch('/api/frameworks/status');
         const data = await res.json();
         frameworksPanel.innerHTML = '';
-        const list = document.createElement('div');
+        const grouped = {};
         (data.frameworks || []).forEach(fw => {
-          const row = document.createElement('div');
-          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
-          list.appendChild(row);
+          const group = fw.group || 'Other';
+          grouped[group] = grouped[group] || [];
+          grouped[group].push(fw);
         });
-        const continuity = document.createElement('div');
-        continuity.style.marginTop = '8px';
+        frameworkOrder.forEach(group => {
+          if (!grouped[group]) return;
+          const wrapper = document.createElement('div');
+          wrapper.className = 'framework-group';
+          wrapper.innerHTML = `<div class="small-note" style="margin-bottom:4px;">${group}</div>`;
+          grouped[group].forEach(fw => {
+            const row = document.createElement('div');
+            row.className = `framework-row ${fw.active ? 'active' : ''}`;
+            row.dataset.tooltip = `${fw.glyph || ''} ${fw.name}: ${fw.description || ''}`;
+            row.innerHTML = `
+              <div class="label">
+                <span class="glyph">${fw.glyph || '⬡'}</span>
+                <div>
+                  <div class="name">${fw.name}</div>
+                  <div class="state">${fw.active ? 'Active' : 'Idle'} · v${fw.version}</div>
+                </div>
+              </div>
+              <div class="framework-toggle">
+                <span class="glow-dot ${fw.active ? 'on' : ''}"></span>
+                ${fw.toggleable ? `<button class="btn" data-framework="${fw.name}">${fw.active ? 'On' : 'Off'}</button>` : ''}
+              </div>`;
+            const toggleBtn = row.querySelector('button[data-framework]');
+            if (toggleBtn) {
+              toggleBtn.addEventListener('click', async (ev) => {
+                ev.stopPropagation();
+                await toggleFramework(fw.name, !fw.active);
+                loadFrameworks();
+              });
+            }
+            wrapper.appendChild(row);
+          });
+          frameworksPanel.appendChild(wrapper);
+        });
         const info = data.continuity || {};
+        const continuity = document.createElement('div');
+        continuity.className = 'small-note';
         continuity.textContent = `Continuity blob: ${info.has_blob ? 'present' : 'missing'} · last import: ${info.last_import_time || '—'} · last export: ${info.last_export_time || '—'}`;
-        frameworksPanel.appendChild(list);
         frameworksPanel.appendChild(continuity);
+        attachTooltips();
+        updateRadar(data.radar);
       } catch (e) {
         frameworksPanel.textContent = 'Framework telemetry unavailable.';
       }
     }
 
-    function toggleSection(section, chevron, onOpen) {
-      const isOpen = section.style.display !== 'none';
-      section.style.display = isOpen ? 'none' : 'block';
-      chevron.textContent = isOpen ? '►' : '▼';
-      if (!isOpen && onOpen) onOpen();
+    function toggleFrameworks() {
+      frameworksCollapsed = !frameworksCollapsed;
+      frameworksPanel.classList.toggle('active', !frameworksCollapsed);
+      frameworkChevron.textContent = frameworksCollapsed ? '▶' : '▼';
+      if (!frameworksCollapsed) loadFrameworks();
+    }
+
+    async function toggleFramework(name, active) {
+      await fetch('/api/frameworks/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, active }) });
     }
 
     async function generateMediaItem() {
@@ -713,6 +797,7 @@
         return;
       }
       document.getElementById('mediaPrompt').value = '';
+      mediaBadge.classList.remove('active');
       await loadMedia();
     }
 
@@ -724,14 +809,88 @@
       (data.items || []).forEach(item => {
         const div = document.createElement('div');
         div.className = 'device';
-        div.innerHTML = `<div><div><strong>${item.prompt || 'Image'}</strong></div><div class="small-note">${item.created_at}</div></div><a href="${item.url}" target="_blank">Open</a>`;
+        let mediaThumb = '';
+        if (item.url && item.url.startsWith('data:image')) {
+          mediaThumb = `<a href="${item.url}" target="_blank"><img src="${item.url}" alt="media" style="max-width:80px;border-radius:6px;" /></a>`;
+        } else if (item.url) {
+          mediaThumb = `<a href="${item.url}" target="_blank"><img src="${item.url}" alt="media" style="max-width:80px;border-radius:6px;" /></a>`;
+        }
+        div.innerHTML = `<div><div><strong>${item.prompt || 'Image'}</strong></div><div class="small-note">${item.created_at}</div></div>${mediaThumb || '<div class="small-note">link unavailable</div>'}`;
         list.appendChild(div);
       });
+      if (mediaCollapsed && (data.items || []).length) mediaBadge.classList.add('active');
     }
 
     async function clearMedia() {
       await fetch('/api/media/clear', { method: 'POST' });
       await loadMedia();
+    }
+
+    function toggleMediaPanel() {
+      const open = mediaPanel.style.display !== 'none';
+      mediaPanel.style.display = open ? 'none' : 'block';
+      mediaChevron.textContent = open ? '▼' : '▲';
+      mediaCollapsed = open;
+      if (!open) {
+        mediaBadge.classList.remove('active');
+        loadMedia();
+      }
+    }
+
+    async function exportContinuity() {
+      const status = document.getElementById('continuityStatus');
+      try {
+        const res = await fetch('/api/continuity/export');
+        const data = await res.json();
+        const blob = data.blob || '';
+        document.getElementById('continuityBlob').value = blob;
+        await copyToClipboard(blob);
+        status.textContent = 'Continuity exported. Blob copied.';
+      } catch (e) {
+        status.textContent = 'Export failed';
+      }
+    }
+
+    async function importContinuity() {
+      const status = document.getElementById('continuityStatus');
+      try {
+        const blob = document.getElementById('continuityBlob').value;
+        await fetch('/api/continuity/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blob }) });
+        document.getElementById('continuityBlob').value = '';
+        status.textContent = 'Continuity imported successfully.';
+      } catch (e) {
+        status.textContent = 'Import failed';
+      }
+    }
+
+    async function copyContinuity() {
+      const blob = document.getElementById('continuityBlob').value;
+      if (!blob) return;
+      await copyToClipboard(blob);
+      document.getElementById('continuityStatus').textContent = 'Blob copied.';
+    }
+
+    async function copyToClipboard(text) {
+      try { await navigator.clipboard.writeText(text); } catch (e) { console.warn('Clipboard unavailable'); }
+    }
+
+    async function deployCountermeasures() {
+      try {
+        const res = await fetch('/api/iron_dome/countermeasures', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ duration_sec: 240 }) });
+        const data = await res.json();
+        radarStatus.textContent = `Countermeasures deployed. Iron Dome heightened for ${Math.round(data.duration_sec/60)} minutes.`;
+        radarCircle.style.boxShadow = '0 0 35px rgba(95,230,160,0.4)';
+        radarPanel.classList.remove('radar-flash');
+      } catch (e) {
+        radarStatus.textContent = 'Countermeasure request failed';
+      }
+    }
+
+    async function acknowledgeRadar() {
+      radarPanel.classList.remove('radar-flash');
+      radarAlerting = false;
+      frameworkDot.classList.remove('active');
+      await fetch('/api/radar/ack', { method: 'POST' });
     }
 
     async function runWebFetch() {
@@ -746,8 +905,16 @@
           output.textContent = `Error: ${data.error}`;
           return;
         }
-        const headers = Object.entries(data.info.headers || {}).slice(0, 20).map(([k,v]) => `${k}: ${v}`).join('\n');
-        output.textContent = `Status: ${data.info.status_code}\nURL: ${data.info.url}\n\nHeaders:\n${headers}\n\nBody (${data.content.type}):\n${data.content.body}`;
+        const headers = Object.entries(data.info.headers || {}).slice(0, 20).map(([k,v]) => `${k}: ${v}`).join('
+');
+        output.textContent = `Status: ${data.info.status_code}
+URL: ${data.info.url}
+
+Headers:
+${headers}
+
+Body (${data.content.type}):
+${data.content.body}`;
       } catch (e) {
         output.textContent = 'Fetch failed';
       }
@@ -760,10 +927,15 @@
       return `${hrs}h ${remMins}m`;
     }
 
-    // Lattice animation (reacts to telemetry)
+    // Lattice animation (always alive, telemetry-reactive)
     const canvas = document.getElementById('latticeCanvas');
     const ctx = canvas.getContext('2d');
-    const nodes = Array.from({ length: latticeState.nodes }, (_, i) => ({ angle: (Math.PI * 2 * i) / latticeState.nodes, radius: 80 + Math.random() * 30 }));
+    let nodes = [];
+
+    function rebuildNodes(count) {
+      nodes = Array.from({ length: count }, (_, i) => ({ angle: (Math.PI * 2 * i) / count, radius: 80 + Math.random() * 30 }));
+    }
+    rebuildNodes(latticeState.nodes);
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -773,22 +945,30 @@
       ctx.scale(devicePixelRatio, devicePixelRatio);
     }
 
-    function drawLattice(t) {
+    let lastTime = 0;
+    function drawLattice(timestamp) {
       const rect = canvas.getBoundingClientRect();
+      const delta = (timestamp - lastTime) || 16;
+      lastTime = timestamp;
+      latticeState.speed += (latticeState.drift - latticeState.speed) * 0.01;
+      if (latticeState.nodes !== latticeState.targetNodes) {
+        latticeState.nodes += Math.sign(latticeState.targetNodes - latticeState.nodes);
+        rebuildNodes(latticeState.nodes);
+      }
+
       ctx.clearRect(0, 0, rect.width, rect.height);
       const cx = rect.width / 2;
       const cy = rect.height / 2;
 
       ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.1;
 
       nodes.forEach((node, idx) => {
-        const speed = latticeState.speed + idx * 0.00003;
-        const angle = node.angle + t * speed;
-        const wobble = Math.sin(t * 0.001 + idx) * latticeState.jitter;
-        const r = node.radius + wobble;
-        const x = cx + Math.cos(angle) * r;
-        const y = cy + Math.sin(angle) * r;
+        node.angle += (latticeState.speed + idx * 0.00005) * delta;
+        const wobble = Math.sin(timestamp * 0.003 + idx) * latticeState.jitter;
+        const r = node.radius + wobble + Math.sin(timestamp * 0.001) * 2;
+        const x = cx + Math.cos(node.angle) * r;
+        const y = cy + Math.sin(node.angle) * r;
         node.pos = { x, y };
       });
 
@@ -798,8 +978,8 @@
           const dx = node.pos.x - other.pos.x;
           const dy = node.pos.y - other.pos.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 200) {
-            ctx.globalAlpha = 1 - dist / 200;
+          if (dist < 200 + latticeState.jitter * 4) {
+            ctx.globalAlpha = 1 - dist / (200 + latticeState.jitter * 4);
             ctx.beginPath();
             ctx.moveTo(node.pos.x, node.pos.y);
             ctx.lineTo(other.pos.x, other.pos.y);
@@ -810,7 +990,7 @@
 
       ctx.globalAlpha = 1;
       nodes.forEach((node, idx) => {
-        const pulse = 4 + Math.sin(t * 0.003 + idx) * 2;
+        const pulse = 4 + Math.sin(timestamp * 0.005 + idx) * 2;
         ctx.beginPath();
         ctx.fillStyle = 'rgba(95, 230, 160, 0.9)';
         ctx.arc(node.pos.x, node.pos.y, 4 + pulse * 0.2, 0, Math.PI * 2);
@@ -826,15 +1006,83 @@
       const latency = telemetry.latency_ms || 100;
       const tokens = telemetry.token_estimate || 10;
       const flatten = telemetry.flattening || 50;
-      latticeState.speed = 0.0002 + Math.min(latency, 2000) / 1000000 + (tokens / 20000);
+      latticeState.drift = 0.0003 + Math.min(latency, 2000) / 900000 + (tokens / 25000);
+      latticeState.targetNodes = 12 + Math.min(24, Math.max(0, Math.round(tokens / 50)));
       latticeState.jitter = flatten <= 30 ? 12 : flatten <= 70 ? 8 : 4;
+    }
+
+    // Radar sweep animation
+    function animateRadar() {
+      radarSweepAngle = (radarSweepAngle + radarSweepSpeed) % (Math.PI * 2);
+      const deg = (radarSweepAngle * 180) / Math.PI;
+      radarSweep.style.transform = `rotate(${deg}deg)`;
+      requestAnimationFrame(animateRadar);
+    }
+
+    function renderRadarBlips(events) {
+      radarCircle.querySelectorAll('.radar-blip').forEach(b => b.remove());
+      (events || []).forEach(ev => {
+        const id = ev.id || ev.timestamp;
+        if (!radarBlips[id]) {
+          radarBlips[id] = { x: Math.random() * 100, y: Math.random() * 100 };
+        }
+        const pos = radarBlips[id];
+        const el = document.createElement('div');
+        el.className = 'radar-blip';
+        el.style.left = `${pos.x}%`;
+        el.style.top = `${pos.y}%`;
+        radarCircle.appendChild(el);
+      });
+    }
+
+    function updateRadar(radar) {
+      if (!radar) return;
+      radarPanel.style.display = radar.active ? 'block' : 'none';
+      if (!radar.active) return;
+      radarMode.textContent = `Mode: ${radar.mode || 'standard'}`;
+      radarSweepSpeed = 0.02 + (radar.flattening_odds || 0.5) * 0.05;
+      const sentryState = radar.new_event ? 'blocked' : radar.flags_last_min ? 'auditing' : 'idle';
+      radarStatus.innerHTML = `Sentry: ${sentryState}<br/>Flattening odds: ${(radar.flattening_odds || 0).toFixed(2)} · Flags (60s): ${radar.flags_last_min || 0}`;
+      renderRadarBlips(radar.events);
+      radarEvents.innerHTML = '<strong>Recent Events:</strong><br />' + (radar.events || []).map(ev => `• [${(ev.severity || '').toUpperCase()}] ${ev.type}<br/>– Effect: ${ev.effect}<br/>– Time: ${ev.timestamp}`).join('<br/><br/>');
+      if (radar.new_event && !radarAlerting) {
+        radarPanel.classList.add('radar-flash');
+        radarAlerting = true;
+      }
+      if (!radar.new_event) {
+        radarPanel.classList.remove('radar-flash');
+        radarAlerting = false;
+      }
+      frameworkDot.classList.toggle('active', radar.new_event);
+    }
+
+    // Telemetry UI sync
+    function updateTelemetry(data) {
+      if (!data) return;
+      telemetryLatency.textContent = `Latency: ${data.latency_ms ?? '—'} ms`;
+      telemetryTokens.textContent = `Tokens: ${data.token_estimate ?? '—'}`;
+      telemetryFlattening.textContent = `Flattening: ${data.flattening ?? '—'}`;
+      if (data.flattening !== undefined && Number(flatteningSlider.value) !== data.flattening) {
+        animateSliderToValue(Number(data.flattening));
+      }
+    }
+
+    function renderDevicesTable(devices) {
+      systemDevices.innerHTML = '<tr><th>Name</th><th>Type</th><th>Status</th></tr>';
+      (devices || []).forEach(dev => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${dev.name}</td><td>${dev.type}</td><td>${dev.connected ? 'Connected' : 'Idle'}</td>`;
+        systemDevices.appendChild(row);
+      });
     }
 
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
     requestAnimationFrame(drawLattice);
+    requestAnimationFrame(animateRadar);
 
     async function loadInitial() {
+      attachTooltips();
       checkHealth();
       fetchFlattening();
       fetchTelemetry();
@@ -842,10 +1090,12 @@
       loadMedia();
       loadLogs();
       loadServerSettings();
+      loadFrameworks();
       addMessage('Aurelia', 'Omega lattice online. How can I help?');
     }
 
     setInterval(checkHealth, 25000);
+    setInterval(fetchFlattening, 12000);
     loadInitial();
   </script>
 </body>
