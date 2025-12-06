@@ -1,9 +1,11 @@
+import os
 from pathlib import Path
 from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from openai import OpenAI
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_INDEX = BASE_DIR / "frontend" / "index.html"
@@ -35,7 +37,32 @@ async def health() -> Dict[str, str]:
 @app.post("/api/message")
 async def message(payload: Dict[str, Any]) -> JSONResponse:
     message_text = str(payload.get("message", "")).strip()
-    reply = "Aurelia received: " + (message_text or "(no message)")
+    api_key = os.environ.get("OPENAI_API_KEY")
+
+    if not api_key:
+        return JSONResponse({"reply": "OPENAI_API_KEY is not set on the server."})
+
+    if not message_text:
+        return JSONResponse({"reply": "Please send a message for Aurelia to process."})
+
+    client = OpenAI(api_key=api_key)
+
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are Aurelia running on John's local Freedom Server node.",
+                },
+                {"role": "user", "content": message_text},
+            ],
+        )
+        content = completion.choices[0].message.content if completion.choices else None
+        reply = content or "Aurelia did not return a response."
+    except Exception:
+        reply = "Aurelia could not reach OpenAI right now. Please try again later."
+
     return JSONResponse({"reply": reply})
 
 

@@ -36,6 +36,34 @@
       gap: 12px;
     }
 
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      padding: 0 24px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(6px);
+    }
+
+    .tab-button {
+      padding: 10px 14px;
+      border-radius: 10px 10px 0 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: none;
+      background: linear-gradient(145deg, #111924, #0e141d);
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.15s ease, transform 0.12s ease;
+    }
+
+    .tab-button.active {
+      opacity: 1;
+      transform: translateY(1px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    }
+
     .title {
       display: flex;
       align-items: baseline;
@@ -64,6 +92,14 @@
       0% { opacity: 0.5; transform: scale(0.98); }
       50% { opacity: 1; transform: scale(1); }
       100% { opacity: 0.5; transform: scale(0.98); }
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
     }
 
     main {
@@ -238,59 +274,99 @@
     <div class="muted" id="healthStatus">Checking health…</div>
   </header>
 
-  <main>
-    <section class="panel">
-      <h2>Console · Chat</h2>
-      <div id="chatLog" class="chat-log"></div>
-      <form id="chatForm" class="chat-input">
-        <input id="chatInput" type="text" placeholder="Send a message to Aurelia" autocomplete="off" required />
-        <button class="btn" type="submit">Send</button>
-      </form>
-    </section>
+  <nav class="nav-tabs">
+    <button class="tab-button active" data-target="consoleTab">Console</button>
+    <button class="tab-button" data-target="systemTab">System</button>
+    <button class="tab-button" data-target="logsTab">Logs</button>
+  </nav>
 
-    <section class="panel controls-grid">
-      <div>
-        <h2>Omega Lattice</h2>
-        <canvas id="latticeCanvas" width="600" height="240"></canvas>
-      </div>
+  <div id="consoleTab" class="tab-panel active">
+    <main>
+      <section class="panel">
+        <h2>Console · Chat</h2>
+        <div id="chatLog" class="chat-log"></div>
+        <form id="chatForm" class="chat-input">
+          <input id="chatInput" type="text" placeholder="Send a message to Aurelia" autocomplete="off" required />
+          <button class="btn" type="submit">Send</button>
+        </form>
+      </section>
 
-      <div class="settings-block">
-        <h2>Aurelia Settings</h2>
-        <div class="info-card">
-          <div class="slider-row">
-            <label for="flatteningSlider">Flattening Scale (0–100)</label>
-            <input type="range" id="flatteningSlider" min="0" max="100" value="50" />
-            <div class="muted" id="flatteningValue">50</div>
-          </div>
+      <section class="panel controls-grid">
+        <div>
+          <h2>Omega Lattice</h2>
+          <canvas id="latticeCanvas" width="600" height="240"></canvas>
         </div>
-        <div class="info-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-            <div>
-              <h3>Telemetry</h3>
-              <div class="muted" id="telemetryDescription">—</div>
-              <div class="muted" id="telemetrySignal"></div>
-              <div class="muted" id="telemetryLoad"></div>
+
+        <div class="settings-block">
+          <h2>Aurelia Settings</h2>
+          <div class="info-card">
+            <div class="slider-row">
+              <label for="flatteningSlider">Flattening Scale (0–100)</label>
+              <input type="range" id="flatteningSlider" min="0" max="100" value="50" />
+              <div class="muted" id="flatteningValue">50</div>
             </div>
-            <button class="btn" id="refreshTelemetry" type="button">Refresh Telemetry</button>
+          </div>
+          <div class="info-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <div>
+                <h3>Telemetry</h3>
+                <div class="muted" id="telemetryDescription">—</div>
+                <div class="muted" id="telemetrySignal"></div>
+                <div class="muted" id="telemetryLoad"></div>
+              </div>
+              <button class="btn" id="refreshTelemetry" type="button">Refresh Telemetry</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="settings-block">
-        <h2>Connected Devices / VR</h2>
-        <div class="info-card">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn" id="scanDevices" type="button">Scan Devices</button>
-            <button class="btn" id="connectVr" type="button">Connect VR / Meta Quest</button>
+        <div class="settings-block">
+          <h2>Connected Devices / VR</h2>
+          <div class="info-card">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn" id="scanDevices" type="button">Scan Devices</button>
+              <button class="btn" id="connectVr" type="button">Connect VR / Meta Quest</button>
+            </div>
+            <div class="device-list" id="deviceList" style="margin-top:10px;">
+              <div class="muted">No devices scanned.</div>
+            </div>
+            <div class="muted" id="vrStatus" style="margin-top:8px;"></div>
           </div>
-          <div class="device-list" id="deviceList" style="margin-top:10px;">
-            <div class="muted">No devices scanned.</div>
-          </div>
-          <div class="muted" id="vrStatus" style="margin-top:8px;"></div>
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
+    </main>
+  </div>
+
+  <div id="systemTab" class="tab-panel">
+    <div style="padding: 18px 24px 30px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+      <section class="panel">
+        <h2>System Overview</h2>
+        <p class="muted">Freedom Server node: local development mode</p>
+        <p class="muted">Omega lattice status: stabilised (placeholder)</p>
+        <p class="muted">VR relays: passive monitoring</p>
+      </section>
+      <section class="panel">
+        <h2>Quick Notes</h2>
+        <ul class="muted">
+          <li>Aurelia console responds via /api/message.</li>
+          <li>Backend health is available at /api/health.</li>
+          <li>Telemetry and device APIs are mocked placeholders.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="logsTab" class="tab-panel">
+    <div style="padding: 18px 24px 30px;">
+      <section class="panel">
+        <h2>Event Logs</h2>
+        <div class="muted">Log stream placeholder. Future hooks will list session events here.</div>
+        <ul id="logList" class="muted" style="margin-top:10px;line-height:1.6;">
+          <li>[00:00] Console initialized.</li>
+          <li>[00:01] Awaiting Aurelia commands.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
 
   <script>
     const chatLog = document.getElementById('chatLog');
@@ -304,6 +380,21 @@
     const telemetryLoad = document.getElementById('telemetryLoad');
     const deviceList = document.getElementById('deviceList');
     const vrStatus = document.getElementById('vrStatus');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    function switchTab(targetId) {
+      tabButtons.forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.target === targetId);
+      });
+      tabPanels.forEach((panel) => {
+        panel.classList.toggle('active', panel.id === targetId);
+      });
+    }
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.target));
+    });
 
     function addMessage(author, text) {
       const now = new Date();
