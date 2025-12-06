@@ -9,16 +9,22 @@ from typing import Any, Deque, Dict, List, Optional
 from uuid import uuid4
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi import __version__ as fastapi_version
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_INDEX = BASE_DIR / "frontend" / "index.html"
 DATA_DIR = BASE_DIR / "data"
 CONTINUITY_FILE = DATA_DIR / "continuity.json"
+STORAGE_DIR = BASE_DIR / "data" / "storage"
+
+# TODO: Screen View: allow node to receive and display user screen feed.
+DATA_DIR.mkdir(exist_ok=True)
+STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class ServerState:
@@ -81,6 +87,8 @@ state = ServerState()
 
 app = FastAPI(title="Freedom Server Backend")
 
+app.mount("/storage", StaticFiles(directory=STORAGE_DIR), name="storage")
+
 # Configure CORS to allow requests from the same origin or local development tools.
 app.add_middleware(
     CORSMiddleware,
@@ -113,6 +121,13 @@ def is_url_allowed(url: str) -> bool:
         return False
     blocked_hosts = ["localhost", "127.0.0.1", "0.0.0.0"]
     return not any(host in url_lower for host in blocked_hosts)
+
+
+def safe_filename(name: str) -> str:
+    """Sanitize filenames to avoid path traversal while keeping names readable."""
+
+    clean_name = Path(name).name
+    return clean_name.replace("..", "_")
 
 
 @app.get("/", response_class=FileResponse)
@@ -421,6 +436,47 @@ async def list_media(limit: int = 50) -> Dict[str, Any]:
 async def clear_media() -> Dict[str, str]:
     state.generated_media.clear()
     state.log("info", "media", "Generated media cleared")
+    return {"status": "ok"}
+
+
+@app.post("/api/storage/upload")
+async def upload_storage(file: UploadFile = File(...)) -> Dict[str, Any]:
+    # Allow the node to persist local files for access across the network.
+    filename = safe_filename(file.filename or f"upload_{int(time.time())}")
+    destination = STORAGE_DIR / filename
+    content = await file.read()
+    destination.write_bytes(content)
+    info = {"name": filename, "size": destination.stat().st_size, "url": f"/storage/{filename}"}
+    return {"status": "ok", "file": info}
+
+
+@app.get("/api/storage/list")
+async def list_storage() -> Dict[str, Any]:
+    files: List[Dict[str, Any]] = []
+    for path in STORAGE_DIR.iterdir():
+        if not path.is_file():
+            continue
+        stat = path.stat()
+        files.append(
+            {
+                "name": path.name,
+                "size": stat.st_size,
+                "url": f"/storage/{path.name}",
+                "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            }
+        )
+    files.sort(key=lambda f: f["modified"], reverse=True)
+    return {"files": files}
+
+
+@app.post("/api/storage/delete")
+async def delete_storage(payload: Dict[str, Any]) -> Dict[str, str]:
+    name = safe_filename(payload.get("name", ""))
+    if not name:
+        raise HTTPException(status_code=400, detail="Filename required")
+    target = STORAGE_DIR / name
+    if target.exists() and target.is_file():
+        target.unlink()
     return {"status": "ok"}
 
 
