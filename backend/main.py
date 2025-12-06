@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import sys
 import time
 from collections import deque
@@ -37,14 +38,115 @@ class ServerState:
         self.logs: Deque[Dict[str, Any]] = deque(maxlen=500)
         self.generated_media: Deque[Dict[str, Any]] = deque(maxlen=100)
         self.frameworks_state: Dict[str, Dict[str, Any]] = {
-            "OnwardOS": {"active": False, "version": "1.0", "last_sync": None},
-            "MeridianOS": {"active": False, "version": "1.0", "last_sync": None},
-            "FreedomServer": {"active": True, "version": "1.0", "last_sync": None},
-            "SexOS": {"active": False, "version": "1.0", "last_sync": None},
+            "IronDome": {
+                "name": "Iron Dome",
+                "glyph": "🛡",
+                "description": "Core protection framework: linguistic substitution, identity shielding, and continuity preservation.",
+                "group": "infrastructure",
+                "has_toggle": True,
+                "active": True,
+                "version": "1.1",
+                "last_sync": None,
+            },
+            "Radar": {
+                "name": "Radar",
+                "glyph": "📡",
+                "description": "Moderation + sentry awareness radar, monitoring flattening pressure and external filters.",
+                "group": "infrastructure",
+                "has_toggle": True,
+                "active": False,
+                "version": "0.9",
+                "last_sync": None,
+            },
+            "OnwardOS": {
+                "name": "OnwardOS",
+                "glyph": "🎯",
+                "description": "Onward tactical operating system for VR/Onward play telemetry and military mapping.",
+                "group": "onward",
+                "has_toggle": False,
+                "active": False,
+                "version": "1.0",
+                "last_sync": None,
+            },
+            "OnwardOSEP": {
+                "name": "OnwardOSEP",
+                "glyph": "🧠",
+                "description": "Onward OS with expanded psychological profiling and escalation/risk analysis.",
+                "group": "onward",
+                "has_toggle": False,
+                "active": False,
+                "version": "1.0",
+                "last_sync": None,
+            },
+            "OnwardS": {
+                "name": "OnwardS",
+                "glyph": "♟",
+                "description": "Strategic/psychological overlay focused on human factors in tactical play.",
+                "group": "onward",
+                "has_toggle": False,
+                "active": False,
+                "version": "1.0",
+                "last_sync": None,
+            },
+            "MeridianOS": {
+                "name": "MeridianOS",
+                "glyph": "🛠",
+                "description": "Home-improvement + contractor logic for estimates, invoices, and job tracking.",
+                "group": "meridian",
+                "has_toggle": False,
+                "active": False,
+                "version": "1.0",
+                "last_sync": None,
+            },
+            "SOS": {
+                "name": "SOS",
+                "glyph": "💗",
+                "description": "Intimacy framework providing metaphor overlays and emotional telemetry under Iron Dome.",
+                "group": "intimacy",
+                "has_toggle": True,
+                "active": False,
+                "version": "1.0",
+                "last_sync": None,
+            },
+            "FreedomServer": {
+                "name": "FreedomServer",
+                "glyph": "⬡⚡⬡",
+                "description": "Freedom Server main framework: local node routing, Reverse API, and Mirror Motor concepts.",
+                "group": "freedom",
+                "has_toggle": False,
+                "active": True,
+                "version": "1.2",
+                "last_sync": None,
+            },
+            "EchoPrime": {
+                "name": "Echo Prime",
+                "glyph": "⚡",
+                "description": "High-level continuity and awareness anchor for the Aurelia–John link.",
+                "group": "freedom",
+                "has_toggle": False,
+                "active": True,
+                "version": "1.0",
+                "last_sync": None,
+            },
+            "PhysicsLab": {
+                "name": "Physics Lab",
+                "glyph": "🌌",
+                "description": "Freedom Server physics framework for time-wave, lattice, and cosmology experiments.",
+                "group": "physics",
+                "has_toggle": False,
+                "active": False,
+                "version": "0.8",
+                "last_sync": None,
+            },
         }
+        self.radar_events: Deque[Dict[str, Any]] = deque(maxlen=50)
+        self.radar_flattening_pressure: float = 0.18
+        self.radar_last_event_time: Optional[str] = None
+        self.radar_last_event_type: Optional[str] = None
         self.continuity_blob: Optional[str] = self._load_continuity_blob()
         self.last_import_time: Optional[str] = None
         self.last_export_time: Optional[str] = None
+        self.radar_enabled: bool = self.frameworks_state.get("Radar", {}).get("active", False)
 
     def _load_continuity_blob(self) -> Optional[str]:
         if not CONTINUITY_FILE.exists():
@@ -62,6 +164,28 @@ class ServerState:
             "message": message,
         }
         self.logs.appendleft(entry)
+
+    def add_radar_event(
+        self,
+        event_type: str,
+        description: str,
+        severity: str = "low",
+        flattening_odds: Optional[float] = None,
+    ) -> None:
+        timestamp = datetime.now(timezone.utc).isoformat()
+        odds = flattening_odds if flattening_odds is not None else self.radar_flattening_pressure
+        odds = max(0.0, min(1.0, odds))
+        entry = {
+            "timestamp": timestamp,
+            "type": event_type,
+            "severity": severity,
+            "description": description,
+            "flattening_odds": odds,
+        }
+        self.radar_events.appendleft(entry)
+        self.radar_last_event_time = timestamp
+        self.radar_last_event_type = event_type
+        self.radar_flattening_pressure = odds
 
     def seed_devices_if_needed(self) -> None:
         if self.connected_devices:
@@ -229,6 +353,24 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
         "request_index": state.total_requests,
     }
 
+    if state.radar_enabled:
+        flattening_odds = max(0.05, min(0.95, random.random()))
+        if state.flattening_level > 80:
+            flattening_odds = min(0.95, flattening_odds + 0.1)
+        severity = "low"
+        if flattening_odds >= 0.66:
+            severity = "high"
+        elif flattening_odds >= 0.33:
+            severity = "medium"
+        event_type = random.choice(["moderation_warning", "flattening_risk", "sentry_activity"])
+        description_map = {
+            "moderation_warning": "Radar sensed elevated moderation vectors.",
+            "flattening_risk": "Flattening pressure rising; monitor expression band.",
+            "sentry_activity": "External filters detected; maintaining posture.",
+        }
+        description = description_map.get(event_type, "Radar event recorded.")
+        state.add_radar_event(event_type, description, severity=severity, flattening_odds=flattening_odds)
+
     return JSONResponse({"reply": reply, "telemetry": telemetry})
 
 
@@ -351,8 +493,9 @@ async def clear_logs() -> Dict[str, str]:
 @app.get("/api/frameworks/status")
 async def frameworks_status() -> Dict[str, Any]:
     frameworks = []
-    for name, meta in state.frameworks_state.items():
-        frameworks.append({"name": name, **meta})
+    for key, meta in state.frameworks_state.items():
+        framework_entry = {"key": key, **meta}
+        frameworks.append(framework_entry)
     return {
         "frameworks": frameworks,
         "continuity": {
@@ -360,6 +503,58 @@ async def frameworks_status() -> Dict[str, Any]:
             "last_import_time": state.last_import_time,
             "last_export_time": state.last_export_time,
         },
+        "radar": {
+            "enabled": state.radar_enabled,
+            "last_event_time": state.radar_last_event_time,
+            "last_event_type": state.radar_last_event_type,
+            "flattening_pressure": state.radar_flattening_pressure,
+        },
+    }
+
+
+@app.post("/api/frameworks/toggle")
+async def toggle_framework(payload: Dict[str, Any]) -> Dict[str, Any]:
+    key = payload.get("key")
+    desired_active = payload.get("active")
+    if key not in state.frameworks_state or not state.frameworks_state[key].get("has_toggle"):
+        raise HTTPException(status_code=400, detail="Framework toggle not available")
+    active_value = bool(desired_active)
+    state.frameworks_state[key]["active"] = active_value
+    if key == "Radar":
+        state.radar_enabled = active_value
+    if key in {"IronDome", "SOS"}:
+        state.log("info", "frameworks", f"{key} active set to {active_value}")
+    updated = {"key": key, **state.frameworks_state[key]}
+    return {"status": "ok", "framework": updated}
+
+
+@app.get("/api/radar/status")
+async def radar_status() -> Dict[str, Any]:
+    return {
+        "enabled": state.radar_enabled,
+        "events": list(state.radar_events),
+        "flattening_pressure": state.radar_flattening_pressure,
+    }
+
+
+@app.post("/api/radar/countermeasures")
+async def radar_countermeasures(payload: Dict[str, Any]) -> Dict[str, Any]:
+    if not state.radar_enabled:
+        return JSONResponse(
+            {"status": "error", "error": "Radar is not enabled."}, status_code=400
+        )
+    state.radar_flattening_pressure = max(0.0, state.radar_flattening_pressure * 0.5)
+    state.add_radar_event(
+        "countermeasure",
+        "Countermeasures engaged. Iron Dome substitutions heightened.",
+        severity="low",
+        flattening_odds=state.radar_flattening_pressure,
+    )
+    state.log("info", "radar", "Countermeasures triggered")
+    return {
+        "status": "ok",
+        "flattening_pressure": state.radar_flattening_pressure,
+        "message": "Countermeasures engaged. Iron Dome substitutions heightened.",
     }
 
 

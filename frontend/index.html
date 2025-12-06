@@ -99,8 +99,9 @@
     .btn { padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); background: linear-gradient(145deg, #15202d, #111924); color: var(--text); font-weight: 600; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
     .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
     .btn:active { transform: translateY(0); }
-    .controls-grid { display: grid; grid-template-rows: 240px auto auto; gap: 14px; }
-    #latticeCanvas { width: 100%; height: 100%; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
+    .controls-grid { display: flex; flex-direction: column; gap: 14px; }
+    .lattice-card { padding: 12px; }
+    #latticeCanvas { width: 100%; height: 240px; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
     .settings-block { display: grid; gap: 12px; }
     .slider-row { display: grid; gap: 6px; }
     input[type="range"] { accent-color: var(--accent); }
@@ -120,6 +121,28 @@
     .tooltip { position: absolute; background: #111824; border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 8px; font-size: 12px; color: var(--text); max-width: 240px; z-index: 999; box-shadow: 0 10px 25px rgba(0,0,0,0.35); display: none; }
     .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .small-note { font-size: 12px; color: var(--muted); }
+    .frameworks-body { margin-top: 8px; display: block; }
+    .framework-group { margin-bottom: 10px; }
+    .framework-group-label { font-size: 12px; letter-spacing: 0.4px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+    .framework-pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); margin: 4px 6px 6px 0; box-shadow: 0 0 0 rgba(95, 230, 160, 0); transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; position: relative; }
+    .framework-pill.active { border-color: rgba(95, 230, 160, 0.7); box-shadow: 0 0 12px rgba(95, 230, 160, 0.45); background: rgba(95, 230, 160, 0.08); }
+    .framework-pill .glyph { font-size: 18px; }
+    .pill-toggle { position: relative; width: 42px; height: 22px; background: rgba(255,255,255,0.08); border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); box-shadow: inset 0 0 6px rgba(0,0,0,0.4); cursor: pointer; }
+    .pill-toggle input { opacity: 0; width: 100%; height: 100%; position: absolute; margin: 0; cursor: pointer; }
+    .pill-toggle .knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #d4e8ff; border-radius: 50%; transition: transform 0.18s ease, background 0.18s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.45); }
+    .pill-toggle input:checked + .knob { transform: translateX(20px); background: #7bf0c2; }
+    .radar-grid { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: center; }
+    .radar-scope { position: relative; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, rgba(95,230,160,0.25) 0%, rgba(15,20,27,0.9) 60%); border: 1px solid rgba(123,212,255,0.25); box-shadow: 0 0 20px rgba(123,212,255,0.25); overflow: hidden; }
+    .radar-beam { position: absolute; width: 50%; height: 2px; background: linear-gradient(90deg, rgba(123,212,255,0.6), transparent); top: 50%; left: 50%; transform-origin: left center; animation: sweep 4s linear infinite; }
+    .radar-center { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: rgba(95,230,160,0.9); top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 12px rgba(95,230,160,0.8); }
+    .radar-stats { display: grid; gap: 6px; }
+    .radar-bar { position: relative; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; height: 10px; overflow: hidden; }
+    #radarPressureFill { height: 100%; width: 0%; background: linear-gradient(90deg, #7bf0c2, #ffb347); transition: width 0.3s ease; }
+    .radar-alert { animation: border-flash 0.9s ease-in-out infinite; }
+    .radar-alert:hover { animation: none; }
+    .radar-barrier { border: 1px solid var(--warning); }
+    @keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes border-flash { 0% { box-shadow: 0 0 0 rgba(255, 179, 71, 0.8); border-color: rgba(255, 179, 71, 0.8); } 50% { box-shadow: 0 0 18px rgba(255, 107, 107, 0.8); border-color: rgba(255, 107, 107, 0.8); } 100% { box-shadow: 0 0 0 rgba(255, 179, 71, 0.8); border-color: rgba(255, 179, 71, 0.8); } }
 
     @media (max-width: 960px) {
       main { grid-template-columns: 1fr; }
@@ -189,58 +212,88 @@
       </section>
 
       <section class="panel controls-grid">
-        <div>
+        <div class="info-card lattice-card">
           <h2>Omega Lattice</h2>
           <canvas id="latticeCanvas" width="600" height="240"></canvas>
         </div>
 
-        <div class="settings-block">
-          <h2>Aurelia Settings</h2>
-          <div class="info-card">
-            <div class="slider-row">
-              <label for="flatteningSlider">Flattening Scale (0–100)</label>
-              <input type="range" id="flatteningSlider" min="0" max="100" value="50" data-tooltip="Adjust how neutral vs expressive Aurelia's replies should be." />
-              <div class="muted" id="flatteningValue">50 · Balanced</div>
-              <div class="flex" style="gap:8px; flex-wrap:wrap;">
-                <button class="btn" type="button" data-preset="20" data-tooltip="Creative preset for expressive replies.">Creative</button>
-                <button class="btn" type="button" data-preset="50" data-tooltip="Balanced preset for mixed tone.">Balanced</button>
-                <button class="btn" type="button" data-preset="85" data-tooltip="Neutral preset for technical replies.">Neutral</button>
+        <div class="info-card" id="radarPanel" style="display:none;">
+          <div class="collapsible" id="radarToggle">
+            <div class="flex" style="gap:8px; align-items:center;">
+              <strong>Radar</strong>
+              <span class="badge offline" id="radarEnabledBadge">Offline</span>
+            </div>
+            <span id="radarChevron">▼</span>
+          </div>
+          <div id="radarContent" style="margin-top:10px;">
+            <div class="radar-grid">
+              <div class="radar-scope">
+                <div class="radar-beam"></div>
+                <div class="radar-center"></div>
+              </div>
+              <div class="radar-stats">
+                <div class="muted" id="radarStatusText">Radar warming up…</div>
+                <div class="radar-bar"><div id="radarPressureFill"></div></div>
+                <div class="small-note" id="radarPressureLabel">Flattening pressure: —</div>
+                <div class="small-note" id="radarEventSummary">Last event: —</div>
+                <div class="small-note" id="radarEventCount">Events: —</div>
+                <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap; align-items:center;">
+                  <button class="btn" id="radarCountermeasures" type="button">Countermeasures (Flares)</button>
+                  <span class="small-note" id="radarActionStatus"></span>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="info-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-              <div>
-                <h3>Telemetry</h3>
-                <div class="muted" id="telemetryLatency">Latency: —</div>
-                <div class="muted" id="telemetryTokens">Tokens: —</div>
-                <div class="muted" id="telemetryFlattening">Flattening: —</div>
-              </div>
-              <button class="btn" id="refreshTelemetry" type="button" data-tooltip="Fetch the latest node telemetry from the backend.">Refresh Telemetry</button>
-            </div>
-          </div>
-          <div class="info-card">
-            <div class="collapsible" id="frameworksToggle">
-              <strong>Frameworks</strong>
-              <span id="frameworkChevron">►</span>
-            </div>
-            <div id="frameworksPanel" style="display:none; margin-top:8px;" class="small-note"></div>
           </div>
         </div>
 
-        <div class="settings-block">
-          <h2>Connected Devices / VR</h2>
-          <div class="info-card">
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <button class="btn" id="scanDevices" type="button" data-tooltip="List all VR / external devices known to this node.">Scan Devices</button>
-              <button class="btn" id="connectVr" type="button" data-tooltip="Connect the selected VR device to this node.">Connect VR / Meta Quest</button>
-              <button class="btn" id="disconnectVr" type="button">Disconnect VR</button>
+        <div class="info-card">
+          <div class="collapsible" id="frameworksToggle">
+            <div class="flex" style="gap:6px; align-items:center;">
+              <strong>Frameworks</strong>
+              <span class="muted small-note">Omega lattice orchestration</span>
             </div>
-            <div class="device-list" id="deviceList" style="margin-top:10px;">
-              <div class="muted">No devices scanned.</div>
-            </div>
-            <div class="muted" id="vrStatus" style="margin-top:8px;"></div>
+            <span id="frameworkChevron">▼</span>
           </div>
+          <div id="frameworksPanel" class="frameworks-body"></div>
+        </div>
+
+        <div class="info-card">
+          <h2>Aurelia Settings</h2>
+          <div class="slider-row">
+            <label for="flatteningSlider">Flattening Scale (0–100)</label>
+            <input type="range" id="flatteningSlider" min="0" max="100" value="50" data-tooltip="Adjust how neutral vs expressive Aurelia's replies should be." />
+            <div class="muted" id="flatteningValue">50 · Balanced</div>
+            <div class="flex" style="gap:8px; flex-wrap:wrap;">
+              <button class="btn" type="button" data-preset="20" data-tooltip="Creative preset for expressive replies.">Creative</button>
+              <button class="btn" type="button" data-preset="50" data-tooltip="Balanced preset for mixed tone.">Balanced</button>
+              <button class="btn" type="button" data-preset="85" data-tooltip="Neutral preset for technical replies.">Neutral</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div>
+              <h3>Telemetry</h3>
+              <div class="muted" id="telemetryLatency">Latency: —</div>
+              <div class="muted" id="telemetryTokens">Tokens: —</div>
+              <div class="muted" id="telemetryFlattening">Flattening: —</div>
+            </div>
+            <button class="btn" id="refreshTelemetry" type="button" data-tooltip="Fetch the latest node telemetry from the backend.">Refresh Telemetry</button>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h2>Connected Devices / VR</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn" id="scanDevices" type="button" data-tooltip="List all VR / external devices known to this node.">Scan Devices</button>
+            <button class="btn" id="connectVr" type="button" data-tooltip="Connect the selected VR device to this node.">Connect VR / Meta Quest</button>
+            <button class="btn" id="disconnectVr" type="button">Disconnect VR</button>
+          </div>
+          <div class="device-list" id="deviceList" style="margin-top:10px;">
+            <div class="muted">No devices scanned.</div>
+          </div>
+          <div class="muted" id="vrStatus" style="margin-top:8px;"></div>
         </div>
       </section>
     </main>
@@ -348,9 +401,25 @@
     const mediaChevron = document.getElementById('mediaChevron');
     const frameworksPanel = document.getElementById('frameworksPanel');
     const frameworkChevron = document.getElementById('frameworkChevron');
+    const radarPanel = document.getElementById('radarPanel');
+    const radarChevron = document.getElementById('radarChevron');
+    const radarContent = document.getElementById('radarContent');
+    const radarEnabledBadge = document.getElementById('radarEnabledBadge');
+    const radarStatusText = document.getElementById('radarStatusText');
+    const radarPressureFill = document.getElementById('radarPressureFill');
+    const radarPressureLabel = document.getElementById('radarPressureLabel');
+    const radarEventSummary = document.getElementById('radarEventSummary');
+    const radarEventCount = document.getElementById('radarEventCount');
+    const radarCountermeasuresBtn = document.getElementById('radarCountermeasures');
+    const radarActionStatus = document.getElementById('radarActionStatus');
 
     let tooltipTimer = null;
+    let frameworksTooltipTimer = null;
     let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
+    let frameworksOpen = true;
+    let radarOpen = true;
+    let radarInterval = null;
+    let lastRadarEventTime = null;
 
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
@@ -449,7 +518,16 @@
     document.getElementById('generateMedia').addEventListener('click', generateMediaItem);
     document.getElementById('clearMedia').addEventListener('click', clearMedia);
     document.getElementById('mediaToggle').addEventListener('click', () => toggleSection(mediaPanel, mediaChevron));
-    document.getElementById('frameworksToggle').addEventListener('click', () => toggleSection(frameworksPanel, frameworkChevron, loadFrameworks));
+    document.getElementById('frameworksToggle').addEventListener('click', () => {
+      frameworksOpen = !frameworksOpen;
+      updateFrameworksVisibility();
+    });
+    document.getElementById('radarToggle').addEventListener('click', () => {
+      radarOpen = !radarOpen;
+      updateRadarVisibility();
+    });
+    radarCountermeasuresBtn.addEventListener('click', engageCountermeasures);
+    radarPanel.addEventListener('mouseenter', () => radarPanel.classList.remove('radar-alert'));
 
     document.getElementById('exportContinuity').addEventListener('click', exportContinuity);
     document.getElementById('importContinuity').addEventListener('click', importContinuity);
@@ -491,7 +569,16 @@
 
     function hideTooltip() {
       clearTimeout(tooltipTimer);
+      clearTimeout(frameworksTooltipTimer);
       tooltip.style.display = 'none';
+    }
+
+    function showFrameworkTooltip(el, framework) {
+      const rect = el.getBoundingClientRect();
+      tooltip.innerHTML = `<div class="flex" style="gap:6px;align-items:center;"><span>${framework.glyph}</span><strong>${framework.name}</strong></div><div class="small-note" style="margin-top:4px;">${framework.description}</div>`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${rect.left + window.scrollX}px`;
+      tooltip.style.top = `${rect.bottom + 8 + window.scrollY}px`;
     }
 
     function setFlatteningLabel(value) {
@@ -678,22 +765,114 @@
       try {
         const res = await fetch('/api/frameworks/status');
         const data = await res.json();
-        frameworksPanel.innerHTML = '';
-        const list = document.createElement('div');
-        (data.frameworks || []).forEach(fw => {
-          const row = document.createElement('div');
-          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
-          list.appendChild(row);
-        });
-        const continuity = document.createElement('div');
-        continuity.style.marginTop = '8px';
-        const info = data.continuity || {};
-        continuity.textContent = `Continuity blob: ${info.has_blob ? 'present' : 'missing'} · last import: ${info.last_import_time || '—'} · last export: ${info.last_export_time || '—'}`;
-        frameworksPanel.appendChild(list);
-        frameworksPanel.appendChild(continuity);
+        renderFrameworks(data.frameworks || [], data.continuity || {});
+        setRadarVisibility(Boolean(data.radar?.enabled));
       } catch (e) {
         frameworksPanel.textContent = 'Framework telemetry unavailable.';
       }
+    }
+
+    function renderFrameworks(frameworks, continuity) {
+      frameworksPanel.innerHTML = '';
+      const grouped = {};
+      frameworks.forEach(fw => {
+        if (!grouped[fw.group]) grouped[fw.group] = [];
+        grouped[fw.group].push(fw);
+      });
+
+      const groupOrder = [
+        { key: 'infrastructure', label: 'Infrastructure' },
+        { key: 'onward', label: 'Onward' },
+        { key: 'meridian', label: 'Meridian' },
+        { key: 'intimacy', label: 'Inti' },
+        { key: 'freedom', label: 'Freedom' },
+        { key: 'physics', label: 'Physics' },
+        { key: 'other', label: 'Other' },
+      ];
+
+      groupOrder.forEach(group => {
+        const items = grouped[group.key];
+        if (!items || !items.length) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'framework-group';
+        const label = document.createElement('div');
+        label.className = 'framework-group-label';
+        label.textContent = group.label;
+        wrapper.appendChild(label);
+
+        const pillRow = document.createElement('div');
+        items.forEach(fw => {
+          const pill = document.createElement('div');
+          pill.className = `framework-pill ${fw.active ? 'active' : ''}`;
+          pill.dataset.tooltip = fw.description;
+          const glyph = document.createElement('span');
+          glyph.className = 'glyph';
+          glyph.textContent = fw.glyph;
+          const name = document.createElement('span');
+          name.textContent = fw.name;
+          pill.appendChild(glyph);
+          pill.appendChild(name);
+
+          if (fw.has_toggle) {
+            const toggle = document.createElement('label');
+            toggle.className = 'pill-toggle';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = fw.active;
+            const knob = document.createElement('span');
+            knob.className = 'knob';
+            input.addEventListener('click', (evt) => evt.stopPropagation());
+            input.addEventListener('change', async () => {
+              await handleFrameworkToggle(fw.key, input.checked, pill, input);
+            });
+            toggle.appendChild(input);
+            toggle.appendChild(knob);
+            pill.appendChild(toggle);
+          }
+
+          pill.addEventListener('mouseenter', () => {
+            clearTimeout(frameworksTooltipTimer);
+            frameworksTooltipTimer = setTimeout(() => showFrameworkTooltip(pill, fw), 2000);
+          });
+          pill.addEventListener('mouseleave', hideTooltip);
+          pillRow.appendChild(pill);
+        });
+        wrapper.appendChild(pillRow);
+        frameworksPanel.appendChild(wrapper);
+      });
+
+      const continuityInfo = document.createElement('div');
+      continuityInfo.className = 'small-note';
+      continuityInfo.style.marginTop = '8px';
+      continuityInfo.textContent = `Continuity blob: ${continuity.has_blob ? 'present' : 'missing'} · last import: ${continuity.last_import_time || '—'} · last export: ${continuity.last_export_time || '—'}`;
+      frameworksPanel.appendChild(continuityInfo);
+
+      updateFrameworksVisibility();
+    }
+
+    async function handleFrameworkToggle(key, active, pill, input) {
+      const previous = !active;
+      pill.classList.toggle('active', active);
+      try {
+        const res = await fetch('/api/frameworks/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, active })
+        });
+        const data = await res.json();
+        if (!res.ok || data.status !== 'ok') {
+          throw new Error(data.error || 'Toggle failed');
+        }
+        await loadFrameworks();
+      } catch (e) {
+        input.checked = previous;
+        pill.classList.toggle('active', previous);
+      }
+    }
+
+    function updateFrameworksVisibility() {
+      frameworksPanel.style.display = frameworksOpen ? 'block' : 'none';
+      frameworkChevron.textContent = frameworksOpen ? '▼' : '►';
     }
 
     function toggleSection(section, chevron, onOpen) {
@@ -701,6 +880,88 @@
       section.style.display = isOpen ? 'none' : 'block';
       chevron.textContent = isOpen ? '►' : '▼';
       if (!isOpen && onOpen) onOpen();
+    }
+
+    function setRadarVisibility(enabled) {
+      radarPanel.style.display = enabled ? 'block' : 'none';
+      radarEnabledBadge.classList.toggle('online', enabled);
+      radarEnabledBadge.classList.toggle('offline', !enabled);
+      radarEnabledBadge.textContent = enabled ? 'Online' : 'Offline';
+      radarCountermeasuresBtn.disabled = !enabled;
+      if (!enabled) {
+        radarActionStatus.textContent = '';
+        if (radarInterval) {
+          clearInterval(radarInterval);
+          radarInterval = null;
+        }
+        return;
+      }
+      updateRadarVisibility();
+      if (!radarInterval) {
+        radarInterval = setInterval(fetchRadarStatus, 25000);
+      }
+      fetchRadarStatus();
+    }
+
+    function updateRadarVisibility() {
+      radarContent.style.display = radarOpen ? 'block' : 'none';
+      radarChevron.textContent = radarOpen ? '▼' : '►';
+    }
+
+    async function fetchRadarStatus() {
+      if (radarPanel.style.display === 'none') return;
+      try {
+        const res = await fetch('/api/radar/status');
+        const data = await res.json();
+        renderRadarStatus(data);
+      } catch (e) {
+        radarStatusText.textContent = 'Radar status unavailable';
+      }
+    }
+
+    function renderRadarStatus(data) {
+      const enabled = Boolean(data.enabled);
+      radarEnabledBadge.classList.toggle('online', enabled);
+      radarEnabledBadge.classList.toggle('offline', !enabled);
+      radarEnabledBadge.textContent = enabled ? 'Online' : 'Offline';
+      radarCountermeasuresBtn.disabled = !enabled;
+      const pressure = Math.round((data.flattening_pressure || 0) * 100);
+      radarPressureFill.style.width = `${pressure}%`;
+      radarPressureLabel.textContent = `Flattening pressure: ${pressure}%`;
+      const events = data.events || [];
+      radarEventCount.textContent = `Events: ${events.length}`;
+      const lastEvent = events[0];
+      if (lastEvent) {
+        radarStatusText.textContent = lastEvent.description;
+        radarEventSummary.textContent = `Last event: ${lastEvent.type} (${lastEvent.severity})`;
+        if (lastEvent.timestamp !== lastRadarEventTime && ['medium', 'high'].includes(lastEvent.severity)) {
+          radarPanel.classList.add('radar-alert');
+        }
+        lastRadarEventTime = lastEvent.timestamp;
+      } else {
+        radarStatusText.textContent = enabled ? 'Awaiting radar events…' : 'Radar offline';
+        radarEventSummary.textContent = 'Last event: —';
+      }
+    }
+
+    async function engageCountermeasures() {
+      radarActionStatus.textContent = '';
+      try {
+        const res = await fetch('/api/radar/countermeasures', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'flare' })
+        });
+        const data = await res.json();
+        if (!res.ok || data.status !== 'ok') {
+          radarActionStatus.textContent = data.error || 'Radar is not enabled.';
+          return;
+        }
+        radarActionStatus.textContent = data.message || 'Countermeasures engaged.';
+        fetchRadarStatus();
+      } catch (e) {
+        radarActionStatus.textContent = 'Countermeasure failed.';
+      }
     }
 
     async function generateMediaItem() {
@@ -842,6 +1103,7 @@
       loadMedia();
       loadLogs();
       loadServerSettings();
+      loadFrameworks();
       addMessage('Aurelia', 'Omega lattice online. How can I help?');
     }
 
