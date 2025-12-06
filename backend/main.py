@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 import time
 from collections import deque
@@ -9,7 +10,7 @@ from typing import Any, Deque, Dict, List, Optional
 from uuid import uuid4
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi import __version__ as fastapi_version
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -79,6 +80,9 @@ class ServerState:
 
 state = ServerState()
 
+STORAGE_ROOT = Path.home() / "FreedomServerStorage"
+STORAGE_ROOT.mkdir(parents=True, exist_ok=True)
+
 app = FastAPI(title="Freedom Server Backend")
 
 # Configure CORS to allow requests from the same origin or local development tools.
@@ -101,6 +105,20 @@ def compute_flattening_band(level: int) -> str:
     if level <= 70:
         return "medium"
     return "high"
+
+
+def resolve_storage_path(rel_path: str) -> Path:
+    safe_rel = rel_path.strip().lstrip("/") or "."
+    full_path = (STORAGE_ROOT / safe_rel).resolve()
+    if not str(full_path).startswith(str(STORAGE_ROOT.resolve())):
+        raise ValueError("Invalid path")
+    return full_path
+
+
+def adjust_flattening_level(current_value: int) -> int:
+    # Placeholder for future adaptive heuristics. Keeps the value clamped and ready for
+    # more advanced behaviors based on reply content or telemetry patterns.
+    return clamp(current_value)
 
 
 def estimate_tokens(text: str) -> int:
@@ -221,6 +239,8 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
             f"latency={latency_ms}ms, tokens≈{token_estimate}, flattening={state.flattening_level}",
         )
 
+    state.flattening_level = adjust_flattening_level(state.flattening_level)
+
     telemetry = {
         "latency_ms": latency_ms,
         "token_estimate": token_estimate,
@@ -246,6 +266,95 @@ async def telemetry() -> Dict[str, Any]:
         "num_connected_devices": len(state.connected_devices),
         "devices": state.connected_devices,
     }
+
+
+@app.get("/api/storage/list")
+async def storage_list(path: str = ".") -> Dict[str, Any]:
+    try:
+        full_path = resolve_storage_path(path)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    if not full_path.is_dir():
+        raise HTTPException(status_code=400, detail="Path is not a directory")
+
+    items = []
+    for entry in sorted(full_path.iterdir(), key=lambda p: (p.is_file(), p.name.lower())):
+        stat = entry.stat()
+        items.append(
+            {
+                "name": entry.name,
+                "type": "directory" if entry.is_dir() else "file",
+                "size": stat.st_size if entry.is_file() else None,
+                "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            }
+        )
+
+    normalized = str(full_path.relative_to(STORAGE_ROOT)) if full_path != STORAGE_ROOT else "."
+    return {"path": normalized, "items": items}
+
+
+@app.get("/api/storage/download")
+async def storage_download(path: str) -> FileResponse:
+    try:
+        full_path = resolve_storage_path(path)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    if not full_path.is_file():
+        raise HTTPException(status_code=400, detail="File not found")
+
+    return FileResponse(full_path)
+
+
+@app.post("/api/storage/upload")
+async def storage_upload(path: str = Form("."), file: UploadFile | None = None) -> Dict[str, Any]:
+    if file is None:
+        raise HTTPException(status_code=400, detail="File is required")
+
+    try:
+        target_dir = resolve_storage_path(path)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_file = target_dir / file.filename
+    with target_file.open("wb") as f:
+        content = await file.read()
+        f.write(content)
+
+    return {"status": "ok", "filename": file.filename}
+
+
+@app.post("/api/storage/mkdir")
+async def storage_mkdir(payload: Dict[str, Any]) -> Dict[str, Any]:
+    path = payload.get("path", ".")
+    try:
+        full_path = resolve_storage_path(path)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    full_path.mkdir(parents=True, exist_ok=True)
+    return {"status": "ok"}
+
+
+@app.post("/api/storage/delete")
+async def storage_delete(payload: Dict[str, Any]) -> Dict[str, Any]:
+    path = payload.get("path", "")
+    try:
+        full_path = resolve_storage_path(path)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    if not full_path.exists():
+        raise HTTPException(status_code=404, detail="Not found")
+
+    if full_path.is_dir():
+        shutil.rmtree(full_path)
+    else:
+        full_path.unlink()
+
+    return {"status": "ok"}
 
 
 @app.get("/api/system/status")
