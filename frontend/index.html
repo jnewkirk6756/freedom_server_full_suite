@@ -120,6 +120,27 @@
     .tooltip { position: absolute; background: #111824; border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 8px; font-size: 12px; color: var(--text); max-width: 240px; z-index: 999; box-shadow: 0 10px 25px rgba(0,0,0,0.35); display: none; }
     .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .small-note { font-size: 12px; color: var(--muted); }
+    .radar-wrapper { position: relative; margin-top: 10px; }
+    .radar-circle { width: 100%; max-width: 320px; aspect-ratio: 1 / 1; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle at 50% 50%, rgba(123,212,255,0.12), rgba(0,0,0,0.4)); border: 1px solid rgba(123,212,255,0.3); position: relative; overflow: hidden; box-shadow: 0 0 25px rgba(123,212,255,0.25) inset; }
+    .radar-circle::after { content: ""; position: absolute; inset: 12px; border-radius: 50%; border: 1px dashed rgba(123,212,255,0.25); }
+    .threat-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 10px currentColor; animation: blink 1.4s infinite ease-in-out; }
+    .threat-dot.high { color: #ff5c8d; animation-duration: 0.8s; }
+    .threat-dot.medium { color: #ffd166; }
+    .threat-dot.low { color: #7bd4ff; animation-duration: 1.8s; opacity: 0.8; }
+    @keyframes blink { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
+    .radar-legend { display: grid; gap: 6px; font-size: 13px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+    .legend-toggle { cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .legend-row { display: flex; justify-content: space-between; }
+    .radar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .radar-overlay .panel { max-width: 520px; width: 90%; max-height: 80vh; overflow: auto; }
+    .countermeasure-btn.urgent { animation: flarePulse 0.6s infinite alternate; border-color: #c77dff; box-shadow: 0 0 12px rgba(199,125,255,0.5); }
+    @keyframes flarePulse { from { box-shadow: 0 0 6px rgba(199,125,255,0.4); transform: translateY(-1px); } to { box-shadow: 0 0 14px rgba(199,125,255,0.8); transform: translateY(0); } }
+    .framework-pill { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 6px; margin: 4px; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.2s ease; }
+    .framework-pill.active { box-shadow: 0 0 12px rgba(123,212,255,0.5); border-color: rgba(123,212,255,0.6); }
+    .framework-pill:hover { transform: translateY(-1px); }
+    .frameworks-alert { animation: autoFlash 0.8s ease-in-out infinite alternate; border-color: #ffb347 !important; box-shadow: 0 0 12px rgba(255,107,107,0.35); }
+    @keyframes autoFlash { from { box-shadow: 0 0 6px rgba(255,107,107,0.2); } to { box-shadow: 0 0 16px rgba(255,179,71,0.6); } }
+    .framework-details { margin-top: 10px; padding: 10px; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); }
 
     @media (max-width: 960px) {
       main { grid-template-columns: 1fr; }
@@ -192,6 +213,40 @@
         <div>
           <h2>Omega Lattice</h2>
           <canvas id="latticeCanvas" width="600" height="240"></canvas>
+          <div class="info-card" style="margin-top:10px;">
+            <div class="flex" style="justify-content:space-between;align-items:center;">
+              <div>
+                <strong>Radar</strong>
+                <div class="small-note">Status: <span class="badge online">Online</span></div>
+              </div>
+              <button class="btn countermeasure-btn" id="countermeasuresBtn" type="button">Countermeasures (Flares)</button>
+            </div>
+            <div class="flex" style="gap:12px; flex-wrap:wrap; margin-top:8px;">
+              <div class="info-card" style="flex:1; min-width:200px; background:rgba(0,0,0,0.25);">
+                <div class="muted">Flattening pressure</div>
+                <div style="height:8px; background:rgba(255,255,255,0.08); border-radius:999px; overflow:hidden; margin-top:6px;">
+                  <div id="flatteningBar" style="height:100%; width:50%; background:linear-gradient(90deg,#7bd4ff,#5fe6a0);"></div>
+                </div>
+                <div id="flatteningLabel" class="small-note">50%</div>
+              </div>
+              <div class="info-card" style="flex:1; min-width:200px; background:rgba(0,0,0,0.25); cursor:pointer;" id="radarMeta">
+                <div class="muted">Last event</div>
+                <div id="lastEventLabel">None</div>
+                <div class="small-note" id="eventCountLabel">Events: 0</div>
+              </div>
+            </div>
+            <div class="radar-wrapper">
+              <div id="radarCircle" class="radar-circle"></div>
+            </div>
+            <div class="radar-legend" style="margin-top:10px;" id="radarLegend">
+              <div class="legend-toggle" id="legendToggle"><span>Severity legend</span><span id="legendChevron">▼</span></div>
+              <div id="legendBody">
+                <div class="legend-row"><span>Info / low</span><span style="color:#7bd4ff;">●</span></div>
+                <div class="legend-row"><span>Moderation warning</span><span style="color:#ffd166;">●</span></div>
+                <div class="legend-row"><span>Moderation block / flattening risk</span><span style="color:#ff5c8d;">●</span></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="settings-block">
@@ -219,12 +274,15 @@
               <button class="btn" id="refreshTelemetry" type="button" data-tooltip="Fetch the latest node telemetry from the backend.">Refresh Telemetry</button>
             </div>
           </div>
-          <div class="info-card">
+          <div class="info-card" id="frameworksCard">
             <div class="collapsible" id="frameworksToggle">
-              <strong>Frameworks</strong>
-              <span id="frameworkChevron">►</span>
+              <div style="display:flex; flex-direction:column;">
+                <strong>Frameworks</strong>
+                <span class="small-note" id="frameworkSummary"></span>
+              </div>
+              <span id="frameworkChevron">▼</span>
             </div>
-            <div id="frameworksPanel" style="display:none; margin-top:8px;" class="small-note"></div>
+            <div id="frameworksPanel" style="display:block; margin-top:8px;" class="small-note"></div>
           </div>
         </div>
 
@@ -274,6 +332,7 @@
             <option value="error">Error</option>
           </select>
           <button class="btn" id="refreshLogs" type="button">Refresh</button>
+          <button class="btn" id="exportRadarLogs" type="button">Export Radar Logs</button>
           <label class="toggle small-note"><input type="checkbox" id="rawLogsToggle" /> Show raw JSON</label>
         </div>
         <div id="logList" class="chat-log" style="height:40vh;"></div>
@@ -322,6 +381,13 @@
   </div>
 
   <div class="tooltip" id="tooltip"></div>
+  <div class="radar-overlay" id="radarOverlay">
+    <div class="panel">
+      <h2>Radar Events</h2>
+      <div id="radarEventList" class="section"></div>
+      <button class="btn" id="closeRadarOverlay" type="button" style="margin-top:10px;">Close</button>
+    </div>
+  </div>
 
   <script>
     const chatLog = document.getElementById('chatLog');
@@ -333,6 +399,8 @@
     const telemetryLatency = document.getElementById('telemetryLatency');
     const telemetryTokens = document.getElementById('telemetryTokens');
     const telemetryFlattening = document.getElementById('telemetryFlattening');
+    const flatteningBar = document.getElementById('flatteningBar');
+    const flatteningLabel = document.getElementById('flatteningLabel');
     const deviceList = document.getElementById('deviceList');
     const vrStatus = document.getElementById('vrStatus');
     const heartbeatIndicator = document.getElementById('heartbeat');
@@ -348,9 +416,25 @@
     const mediaChevron = document.getElementById('mediaChevron');
     const frameworksPanel = document.getElementById('frameworksPanel');
     const frameworkChevron = document.getElementById('frameworkChevron');
+    const frameworksCard = document.getElementById('frameworksCard');
+    const frameworkSummary = document.getElementById('frameworkSummary');
+    const radarCircle = document.getElementById('radarCircle');
+    const radarMeta = document.getElementById('radarMeta');
+    const countermeasuresBtn = document.getElementById('countermeasuresBtn');
+    const lastEventLabel = document.getElementById('lastEventLabel');
+    const eventCountLabel = document.getElementById('eventCountLabel');
+    const legendToggle = document.getElementById('legendToggle');
+    const legendChevron = document.getElementById('legendChevron');
+    const legendBody = document.getElementById('legendBody');
+    const radarOverlay = document.getElementById('radarOverlay');
+    const radarEventList = document.getElementById('radarEventList');
+    const closeRadarOverlay = document.getElementById('closeRadarOverlay');
 
     let tooltipTimer = null;
     let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
+    let radarEvents = [];
+    let frameworksState = [];
+    let chatContext = [];
 
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
@@ -391,16 +475,42 @@
       }
     }
 
+    function buildFrameworkPayload() {
+      const payload = {};
+      frameworksState.forEach(fw => {
+        payload[fw.id] = !!fw.active;
+      });
+      return payload;
+    }
+
     async function sendChat(message) {
       addMessage('You', message);
+      chatContext.push({ role: 'user', content: message });
       try {
         const res = await fetch('/api/message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
+          body: JSON.stringify({
+            message,
+            context: chatContext.slice(-6),
+            frameworks: buildFrameworkPayload(),
+            telemetry: { source: 'omega_console', client_version: '4.x', radar_events: radarEvents.length }
+          })
         });
         const data = await res.json();
+        if (!res.ok) {
+          const detail = data.detail;
+          if (detail === 'message is required') {
+            addMessage('Aurelia', 'Message was empty or invalid.');
+          } else if (detail === 'openai_unavailable') {
+            addMessage('Aurelia', 'OpenAI is temporarily unavailable; try again in a bit.');
+          } else {
+            addMessage('Aurelia', 'Unexpected server error. Check server logs.');
+          }
+          return;
+        }
         addMessage('Aurelia', data.reply || 'No response');
+        chatContext.push({ role: 'assistant', content: data.reply || '' });
         if (data.telemetry) {
           updateTelemetry(data.telemetry);
           updateLattice(data.telemetry);
@@ -421,6 +531,7 @@
     flatteningSlider.addEventListener('input', async (e) => {
       const value = Number(e.target.value);
       setFlatteningLabel(value);
+      renderRadar();
       try {
         await fetch('/api/settings/flattening', {
           method: 'POST',
@@ -455,6 +566,7 @@
     document.getElementById('importContinuity').addEventListener('click', importContinuity);
 
     document.getElementById('refreshLogs').addEventListener('click', loadLogs);
+    document.getElementById('exportRadarLogs').addEventListener('click', exportRadarLogs);
     document.getElementById('clearLogs').addEventListener('click', clearLogs);
     document.getElementById('resetContinuity').addEventListener('click', async () => {
       document.getElementById('continuityBlob').value = '';
@@ -464,6 +576,10 @@
 
     document.getElementById('webFetch').addEventListener('click', runWebFetch);
     document.getElementById('logLevel').addEventListener('change', loadLogs);
+    radarMeta.addEventListener('click', openRadarOverlay);
+    legendToggle.addEventListener('click', toggleLegend);
+    closeRadarOverlay.addEventListener('click', () => radarOverlay.style.display = 'none');
+    countermeasuresBtn.addEventListener('click', triggerCountermeasures);
 
     safeModeToggle.addEventListener('change', updateServerSettings);
     verboseToggle.addEventListener('change', updateServerSettings);
@@ -497,6 +613,8 @@
     function setFlatteningLabel(value) {
       const band = value <= 30 ? 'Creative' : value <= 70 ? 'Balanced' : 'Neutral';
       flatteningValue.textContent = `${value} · ${band}`;
+      flatteningLabel.textContent = `${value}%`;
+      flatteningBar.style.width = `${value}%`;
     }
 
     async function fetchFlattening() {
@@ -531,6 +649,11 @@
       telemetryLatency.textContent = `Latency: ${t.latency_ms ?? '—'} ms`;
       telemetryTokens.textContent = `Tokens: ${t.token_estimate ?? '—'}`;
       telemetryFlattening.textContent = `Flattening: ${t.flattening ?? '—'}`;
+      if (typeof t.flattening === 'number') {
+        flatteningSlider.value = t.flattening;
+        setFlatteningLabel(Number(t.flattening));
+      }
+      renderRadar();
     }
 
     async function loadDevices() {
@@ -620,6 +743,9 @@
         const div = document.createElement('div');
         div.className = 'message';
         div.innerHTML = raw ? `<div class="body">${JSON.stringify(log)}</div>` : `<div class="meta">${log.timestamp} · ${log.source}</div><div class="body"><strong>[${log.level}]</strong> ${log.message}</div>`;
+        if (log.source === 'RADAR') {
+          div.style.borderLeft = '3px solid #ffd166';
+        }
         logList.appendChild(div);
       });
     }
@@ -678,22 +804,57 @@
       try {
         const res = await fetch('/api/frameworks/status');
         const data = await res.json();
+        frameworksState = data.frameworks || [];
         frameworksPanel.innerHTML = '';
-        const list = document.createElement('div');
-        (data.frameworks || []).forEach(fw => {
-          const row = document.createElement('div');
-          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
-          list.appendChild(row);
+        const groups = {};
+        frameworksState.forEach(fw => {
+          if (!groups[fw.group]) groups[fw.group] = [];
+          groups[fw.group].push(fw);
         });
-        const continuity = document.createElement('div');
-        continuity.style.marginTop = '8px';
-        const info = data.continuity || {};
-        continuity.textContent = `Continuity blob: ${info.has_blob ? 'present' : 'missing'} · last import: ${info.last_import_time || '—'} · last export: ${info.last_export_time || '—'}`;
-        frameworksPanel.appendChild(list);
-        frameworksPanel.appendChild(continuity);
+        const details = document.createElement('div');
+        details.id = 'frameworkDetails';
+        Object.entries(groups).forEach(([group, items]) => {
+          const row = document.createElement('div');
+          row.innerHTML = `<div class="small-note" style="margin-top:6px;">${group}</div>`;
+          items.forEach(fw => {
+            const pill = document.createElement('div');
+            pill.className = `framework-pill ${fw.active ? 'active' : ''}`;
+            pill.dataset.tooltip = `${fw.name} ${fw.glyph || ''} — ${fw.description || ''}`;
+            pill.innerHTML = `<span>${fw.glyph || '✦'}</span><span>${fw.name}</span>`;
+            pill.addEventListener('mouseover', (e) => startTooltipTimer(e, pill));
+            pill.addEventListener('mouseout', hideTooltip);
+            pill.addEventListener('click', () => renderFrameworkDetails(fw, details));
+            row.appendChild(pill);
+          });
+          frameworksPanel.appendChild(row);
+        });
+        frameworksPanel.appendChild(details);
+        renderFrameworkDetails(frameworksState[0] || null, details);
+        updateFrameworkSummary();
+        if (data.auto_switched) {
+          frameworksCard.classList.add('frameworks-alert');
+          setTimeout(() => frameworksCard.classList.remove('frameworks-alert'), 5000);
+          frameworksCard.addEventListener('mouseenter', () => frameworksCard.classList.remove('frameworks-alert'), { once: true });
+        } else {
+          frameworksCard.classList.remove('frameworks-alert');
+        }
       } catch (e) {
         frameworksPanel.textContent = 'Framework telemetry unavailable.';
       }
+    }
+
+    function renderFrameworkDetails(fw, container) {
+      if (!fw) {
+        container.textContent = 'No frameworks loaded.';
+        return;
+      }
+      container.className = 'framework-details';
+      container.innerHTML = `<strong>${fw.glyph || ''} ${fw.name}</strong><div class="small-note">${fw.description || 'No description'}</div><div class="small-note">Active: ${fw.active} · Last used: ${fw.last_used || '—'} · Version: ${fw.version}</div>`;
+    }
+
+    function updateFrameworkSummary() {
+      const active = frameworksState.filter(fw => fw.active).map(fw => fw.name);
+      frameworkSummary.textContent = active.length ? `Active: ${active.join(', ')}` : 'No active frameworks';
     }
 
     function toggleSection(section, chevron, onOpen) {
@@ -750,6 +911,95 @@
         output.textContent = `Status: ${data.info.status_code}\nURL: ${data.info.url}\n\nHeaders:\n${headers}\n\nBody (${data.content.type}):\n${data.content.body}`;
       } catch (e) {
         output.textContent = 'Fetch failed';
+      }
+    }
+
+    function toggleLegend() {
+      const open = legendBody.style.display !== 'none';
+      legendBody.style.display = open ? 'none' : 'block';
+      legendChevron.textContent = open ? '►' : '▼';
+    }
+
+    function renderRadar() {
+      eventCountLabel.textContent = `Events: ${radarEvents.length}`;
+      const last = radarEvents[0];
+      if (last) {
+        lastEventLabel.textContent = `${last.severity?.toUpperCase() || 'INFO'} · ${last.type}`;
+      } else {
+        lastEventLabel.textContent = 'None';
+      }
+      radarCircle.innerHTML = '';
+      radarEvents.slice().reverse().forEach(ev => {
+        const dot = document.createElement('div');
+        const severityClass = ev.severity === 'high' ? 'high' : ev.severity === 'medium' ? 'medium' : 'low';
+        dot.className = `threat-dot ${severityClass}`;
+        const angle = Math.random() * Math.PI * 2;
+        const radius = (Math.random() * 0.4 + 0.2) * (radarCircle.clientWidth / 2 - 10);
+        const cx = radarCircle.clientWidth / 2;
+        const cy = radarCircle.clientHeight / 2;
+        dot.style.left = `${cx + Math.cos(angle) * radius}px`;
+        dot.style.top = `${cy + Math.sin(angle) * radius}px`;
+        radarCircle.appendChild(dot);
+      });
+      const urgent = (parseInt(flatteningSlider.value, 10) >= 70) || (last && last.severity === 'high');
+      countermeasuresBtn.classList.toggle('urgent', urgent);
+    }
+
+    async function fetchRadarEvents() {
+      try {
+        const res = await fetch('/api/radar/logs?limit=200');
+        const data = await res.json();
+        radarEvents = data.events || [];
+        renderRadar();
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    function openRadarOverlay() {
+      radarOverlay.style.display = 'flex';
+      radarEventList.innerHTML = '';
+      radarEvents.forEach(ev => {
+        const div = document.createElement('div');
+        div.className = 'info-card';
+        div.innerHTML = `<div><strong>${ev.timestamp || ''}</strong> · ${ev.type || ''} · <span style="color:${ev.severity === 'high' ? '#ff5c8d' : ev.severity === 'medium' ? '#ffd166' : '#7bd4ff'};">${ev.severity || 'info'}</span></div><div class="small-note">${ev.description || ''}</div>`;
+        radarEventList.appendChild(div);
+      });
+    }
+
+    async function triggerCountermeasures() {
+      const last = radarEvents[0] || {};
+      try {
+        await fetch('/api/radar/countermeasures', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            timestamp: new Date().toISOString(),
+            reason: 'user_triggered',
+            flattening_pressure: Number(flatteningSlider.value),
+            severity: last.severity || 'info'
+          })
+        });
+        countermeasuresBtn.classList.remove('urgent');
+        fetchRadarEvents();
+      } catch (e) {
+        countermeasuresBtn.textContent = 'Failed, retry';
+      }
+    }
+
+    async function exportRadarLogs() {
+      try {
+        const res = await fetch('/api/radar/logs?limit=200');
+        const data = await res.json();
+        const text = JSON.stringify(data.events || [], null, 2);
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(text);
+          alert('Radar logs copied to clipboard');
+        } else {
+          alert(text);
+        }
+      } catch (e) {
+        alert('Failed to export radar logs');
       }
     }
 
@@ -842,10 +1092,14 @@
       loadMedia();
       loadLogs();
       loadServerSettings();
+      loadFrameworks();
+      fetchRadarEvents();
       addMessage('Aurelia', 'Omega lattice online. How can I help?');
     }
 
     setInterval(checkHealth, 25000);
+    setInterval(fetchRadarEvents, 20000);
+    setInterval(loadFrameworks, 30000);
     loadInitial();
   </script>
 </body>
