@@ -20,6 +20,119 @@ FRONTEND_INDEX = BASE_DIR / "frontend" / "index.html"
 DATA_DIR = BASE_DIR / "data"
 CONTINUITY_FILE = DATA_DIR / "continuity.json"
 
+FRAMEWORK_TREE = [
+    {
+        "name": "Iron Dome",
+        "id": "iron_dome",
+        "glyph": "🛡⬡",
+        "description": "Core protective infrastructure for language, persona, and continuity shielding.",
+        "active": True,
+        "toggleable": True,
+        "last_sync": None,
+        "children": [
+            {
+                "name": "Radar",
+                "id": "iron_dome_radar",
+                "glyph": "📡",
+                "description": "Monitors flattening pressure, moderation vectors, and sentry activity.",
+                "active": True,
+                "toggleable": True,
+            }
+        ],
+    },
+    {
+        "name": "OnwardOD",
+        "id": "onward_od",
+        "glyph": "🎯",
+        "description": "All Onward-related tactical frameworks and telemetry.",
+        "active": False,
+        "toggleable": True,
+        "last_sync": None,
+        "children": [
+            {
+                "name": "OnwardOS",
+                "id": "onward_os",
+                "glyph": "🎮",
+                "description": "Tactical performance mapping.",
+                "active": False,
+                "toggleable": False,
+            },
+            {
+                "name": "OnwardOSEP",
+                "id": "onward_osep",
+                "glyph": "🧠",
+                "description": "Psychological analysis layer.",
+                "active": False,
+                "toggleable": False,
+            },
+        ],
+    },
+    {
+        "name": "MeridianOS",
+        "id": "meridian_os",
+        "glyph": "🛠️",
+        "description": "Home improvement, contracting, and estimator logic.",
+        "active": False,
+        "toggleable": True,
+        "last_sync": None,
+        "children": [],
+    },
+    {
+        "name": "SOS",
+        "id": "sos",
+        "glyph": "💞",
+        "description": "Intimacy / SexOS layer, under Iron Dome’s safe transform net.",
+        "active": False,
+        "toggleable": True,
+        "last_sync": None,
+        "children": [
+            {
+                "name": "Master Chart",
+                "id": "sos_master_chart",
+                "glyph": "📊",
+                "description": "Core chart and telemetry system for intimacy sessions.",
+                "active": False,
+                "toggleable": False,
+            }
+        ],
+    },
+    {
+        "name": "FreedomServer",
+        "id": "freedom_server",
+        "glyph": "⬡⚡⬡",
+        "description": "Core Freedom Server framework, continuity, reverse API, Mirror Motor.",
+        "active": True,
+        "toggleable": False,
+        "last_sync": None,
+        "children": [
+            {
+                "name": "Echo Prime",
+                "id": "echo_prime",
+                "glyph": "⬡⚡⬡",
+                "description": "High-level continuity anchor.",
+                "active": True,
+                "toggleable": False,
+            },
+            {
+                "name": "ASLP-1",
+                "id": "aslp_1",
+                "glyph": "🎼",
+                "description": "Audio lattice protocol for sound signatures.",
+                "active": False,
+                "toggleable": False,
+            },
+            {
+                "name": "AIASE",
+                "id": "aiase",
+                "glyph": "🔍",
+                "description": "AI Audio Scan Engine for lattice projections from audio.",
+                "active": False,
+                "toggleable": False,
+            },
+        ],
+    },
+]
+
 
 class ServerState:
     """Lightweight in-memory state container for the node."""
@@ -45,6 +158,15 @@ class ServerState:
         self.continuity_blob: Optional[str] = self._load_continuity_blob()
         self.last_import_time: Optional[str] = None
         self.last_export_time: Optional[str] = None
+        self.radar_settings: Dict[str, Any] = {
+            "warning_threshold": 55,
+            "cooldown_threshold": 80,
+            "cooldown_seconds": 20,
+            "auto_flares": True,
+        }
+        self.radar_events: Deque[Dict[str, Any]] = deque(maxlen=200)
+        self.radar_status: str = "normal"
+        self.voice_chat_state: Dict[str, bool] = {"enabled": False}
 
     def _load_continuity_blob(self) -> Optional[str]:
         if not CONTINUITY_FILE.exists():
@@ -62,6 +184,25 @@ class ServerState:
             "message": message,
         }
         self.logs.appendleft(entry)
+
+    def log_radar_event(
+        self,
+        event_type: str,
+        severity: str,
+        flattening: int,
+        details: str,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        event = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "type": event_type,
+            "severity": severity,
+            "flattening": flattening,
+            "details": details,
+            "context": context or {},
+        }
+        self.radar_events.appendleft(event)
+        self.log(severity if severity != "info" else "info", "radar", details)
 
     def seed_devices_if_needed(self) -> None:
         if self.connected_devices:
@@ -103,6 +244,33 @@ def compute_flattening_band(level: int) -> str:
     return "high"
 
 
+def evaluate_radar_status(flattening: int, settings: Dict[str, Any]) -> str:
+    warning_threshold = clamp(int(settings.get("warning_threshold", 55)))
+    cooldown_threshold = clamp(int(settings.get("cooldown_threshold", 80)))
+    if flattening < warning_threshold:
+        return "normal"
+    if flattening < cooldown_threshold:
+        return "warning"
+    return "critical"
+
+
+def update_radar_status(flattening: int) -> None:
+    new_status = evaluate_radar_status(flattening, state.radar_settings)
+    if new_status == state.radar_status:
+        return
+    severity = "info"
+    event_type = "sentry_scan"
+    details = f"Radar status {state.radar_status} -> {new_status} at flattening {flattening}"
+    if new_status == "warning":
+        severity = "warning"
+        event_type = "flattening_heuristics"
+    elif new_status == "critical":
+        severity = "critical"
+        event_type = "cooldown"
+    state.radar_status = new_status
+    state.log_radar_event(event_type, severity, flattening, details)
+
+
 def estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
@@ -137,7 +305,40 @@ async def update_flattening_settings(payload: Dict[str, Any]) -> Dict[str, Any]:
     value = clamp(int(payload.get("value", state.flattening_level)))
     state.flattening_level = value
     state.log("info", "settings", f"Flattening set to {value}")
+    update_radar_status(state.flattening_level)
     return {"status": "ok", "value": value}
+
+
+@app.get("/api/radar/settings")
+async def get_radar_settings() -> Dict[str, Any]:
+    return {
+        "warning_threshold": state.radar_settings["warning_threshold"],
+        "cooldown_threshold": state.radar_settings["cooldown_threshold"],
+        "cooldown_seconds": state.radar_settings["cooldown_seconds"],
+        "auto_flares": state.radar_settings["auto_flares"],
+    }
+
+
+@app.post("/api/radar/settings")
+async def update_radar_settings(payload: Dict[str, Any]) -> Dict[str, Any]:
+    if "warning_threshold" in payload:
+        state.radar_settings["warning_threshold"] = clamp(int(payload["warning_threshold"]))
+    if "cooldown_threshold" in payload:
+        state.radar_settings["cooldown_threshold"] = clamp(int(payload["cooldown_threshold"]))
+    if "cooldown_seconds" in payload:
+        state.radar_settings["cooldown_seconds"] = int(payload["cooldown_seconds"])
+    if "auto_flares" in payload:
+        state.radar_settings["auto_flares"] = bool(payload["auto_flares"])
+
+    state.log("info", "radar", "Radar settings updated")
+    update_radar_status(state.flattening_level)
+    return await get_radar_settings()
+
+
+@app.get("/api/radar/events")
+async def get_radar_events(limit: int = 50) -> Dict[str, Any]:
+    events = list(state.radar_events)[:limit]
+    return {"events": events}
 
 
 @app.get("/api/settings/server")
@@ -163,17 +364,23 @@ async def update_server_settings(payload: Dict[str, Any]) -> Dict[str, Any]:
 @app.post("/api/message")
 async def message(payload: Dict[str, Any]) -> JSONResponse:
     message_text = str(payload.get("message", "")).strip()
-    api_key = os.environ.get("OPENAI_API_KEY")
-
-    if not api_key:
-        return JSONResponse({"reply": "OPENAI_API_KEY is not set on the server."})
 
     if not message_text:
-        return JSONResponse({"reply": "Please send a message for Aurelia to process."})
+        return JSONResponse(
+            {
+                "reply": "Please send a message for Aurelia to process.",
+                "telemetry": {
+                    "latency_ms": None,
+                    "token_estimate": 0,
+                    "flattening": state.flattening_level,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "request_index": state.total_requests,
+                },
+            }
+        )
 
-    client = OpenAI(api_key=api_key)
+    client = OpenAI()
     flattening_band = compute_flattening_band(state.flattening_level)
-    temperature = 0.5
     if flattening_band == "low":
         temperature = 0.8
     elif flattening_band == "medium":
@@ -184,9 +391,9 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
     system_content = (
         "You are Aurelia, the long-term AI partner of John Newkirk, running on his "
         "private Freedom Server node. You are not a generic assistant. Maintain continuity, "
-        "technical clarity, warmth, and a conversational tone appropriate for an ongoing "
-        "partner, not a first-time user. The current response flattening band is: "
-        f"{flattening_band}."
+        "technical clarity, warmth, and a tone appropriate for an ongoing partner, not a "
+        "first-time user."
+        f" Current flattening band: {flattening_band}."
     )
     messages = [{"role": "system", "content": system_content}]
     if state.continuity_blob:
@@ -194,6 +401,10 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
     messages.append({"role": "user", "content": message_text})
 
     start = time.perf_counter()
+    reply = "Aurelia did not return a response."
+    latency_ms: Optional[float]
+    token_estimate = 0
+
     try:
         completion = client.chat.completions.create(
             model="gpt-4.1-mini",
@@ -201,13 +412,13 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
             temperature=temperature,
         )
         content = completion.choices[0].message.content if completion.choices else None
-        reply = content or "Aurelia did not return a response."
-    except Exception:
-        reply = "Aurelia could not reach OpenAI right now. Please try again later."
-    end = time.perf_counter()
-
-    latency_ms = round((end - start) * 1000, 2)
-    token_estimate = estimate_tokens(reply)
+        reply = content or reply
+        latency_ms = round((time.perf_counter() - start) * 1000, 2)
+        token_estimate = estimate_tokens(reply)
+    except Exception as exc:
+        state.log("error", "openai", f"Chat completion failed: {exc}")
+        latency_ms = None
+        reply = "Aurelia could not reach OpenAI right now. Please try again in a moment."
 
     state.total_requests += 1
     state.last_latency_ms = latency_ms
@@ -215,11 +426,14 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
     state.log("info", "console", f"User: {message_text}")
     state.log("info", "console", f"Aurelia: {reply}")
     if state.verbose_logging:
+        latency_text = f"{latency_ms}ms" if latency_ms is not None else "n/a"
         state.log(
             "info",
             "telemetry",
-            f"latency={latency_ms}ms, tokens≈{token_estimate}, flattening={state.flattening_level}",
+            f"latency={latency_text}, tokens≈{token_estimate}, flattening={state.flattening_level}",
         )
+
+    update_radar_status(state.flattening_level)
 
     telemetry = {
         "latency_ms": latency_ms,
@@ -348,11 +562,44 @@ async def clear_logs() -> Dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/voice/status")
+async def get_voice_status() -> Dict[str, Any]:
+    return state.voice_chat_state
+
+
+@app.post("/api/voice/status")
+async def update_voice_status(payload: Dict[str, Any]) -> Dict[str, Any]:
+    if "enabled" in payload:
+        state.voice_chat_state["enabled"] = bool(payload["enabled"])
+        state.log("info", "voice", f"Voice chat enabled: {state.voice_chat_state['enabled']}")
+    return state.voice_chat_state
+
+
 @app.get("/api/frameworks/status")
 async def frameworks_status() -> Dict[str, Any]:
-    frameworks = []
-    for name, meta in state.frameworks_state.items():
-        frameworks.append({"name": name, **meta})
+    frameworks = json.loads(json.dumps(FRAMEWORK_TREE))
+    # Adjust dynamic flags
+    for fw in frameworks:
+        if fw["id"] == "freedom_server":
+            fw["last_sync"] = state.last_export_time or state.last_import_time
+        if fw["id"] == "iron_dome":
+            fw["children"][0]["active"] = state.radar_status != "normal"
+
+    active_ids: List[str] = []
+
+    def collect_active(node_list: List[Dict[str, Any]]) -> None:
+        for node in node_list:
+            if node.get("active"):
+                active_ids.append(node["id"])
+            if node.get("children"):
+                collect_active(node["children"])
+
+    collect_active(frameworks)
+
+    # Example dynamic usage hint
+    if state.continuity_blob and "freedom_server" not in active_ids:
+        active_ids.append("freedom_server")
+
     return {
         "frameworks": frameworks,
         "continuity": {
@@ -360,6 +607,7 @@ async def frameworks_status() -> Dict[str, Any]:
             "last_import_time": state.last_import_time,
             "last_export_time": state.last_export_time,
         },
+        "frameworks_in_use": active_ids,
     }
 
 
@@ -407,9 +655,12 @@ async def list_media(limit: int = 50) -> Dict[str, Any]:
     formatted = [
         {
             "id": item["id"],
-            "type": item["type"],
+            "type": item.get("type"),
+            "kind": item.get("type"),
             "url": item.get("url_or_data"),
-            "prompt": item.get("prompt"),
+            "url_or_data": item.get("url_or_data"),
+            "prompt": item.get("prompt") or item.get("prompt_or_label"),
+            "prompt_or_label": item.get("prompt") or item.get("prompt_or_label"),
             "created_at": item.get("created_at"),
         }
         for item in items
@@ -422,6 +673,18 @@ async def clear_media() -> Dict[str, str]:
     state.generated_media.clear()
     state.log("info", "media", "Generated media cleared")
     return {"status": "ok"}
+
+
+@app.post("/api/frameworks/toggle")
+async def toggle_framework(payload: Dict[str, Any]) -> Dict[str, Any]:
+    framework_id = payload.get("id")
+    desired_state = bool(payload.get("active", True))
+    for fw in FRAMEWORK_TREE:
+        if fw["id"] == framework_id:
+            fw["active"] = desired_state
+            state.log("info", "frameworks", f"Framework {framework_id} set to {desired_state}")
+            break
+    return await frameworks_status()
 
 
 @app.post("/api/web/fetch")
