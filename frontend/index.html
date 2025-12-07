@@ -3,850 +3,936 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Freedom Server · Aurelia Omega</title>
+  <title>Freedom Server</title>
   <style>
     :root {
-      --bg: #0b0f14;
-      --panel: #121820;
-      --accent: #7bd4ff;
-      --muted: #96a4b8;
+      --bg: #0b0f16;
+      --panel: #121826;
+      --accent: #7cf29c;
+      --accent-2: #58c4ff;
       --text: #e7f1ff;
+      --muted: #8091a3;
       --danger: #ff6b6b;
-      --success: #5fe6a0;
-      --warning: #ffb347;
+      --warning: #ffc857;
+      --info: #58c4ff;
     }
-
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
-      font-family: "Inter", system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 15% 20%, rgba(123, 212, 255, 0.08), transparent 25%),
-                  radial-gradient(circle at 80% 10%, rgba(95, 230, 160, 0.08), transparent 20%),
-                  var(--bg);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at 20% 20%, #101828, #070a12 55%);
       color: var(--text);
       min-height: 100vh;
     }
-
+    #app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px;
+    }
     header {
-      padding: 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
+      padding: 18px 20px;
+      background: linear-gradient(90deg, #0c1320, #0d1a2d);
+      border: 1px solid rgba(124, 242, 156, 0.5);
+      box-shadow: 0 0 16px rgba(124, 242, 156, 0.2);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 20px;
+      text-align: center;
+      overflow: hidden;
+    }
+    header::before, header::after {
+      content: "";
+      position: absolute;
+      border: 1px solid var(--accent);
+      inset: 6px;
+      animation: borderRun 6s linear infinite;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    header::after {
+      inset: 10px;
+      animation-duration: 9s;
+      opacity: 0.3;
+    }
+    @keyframes borderRun {
+      0% { clip-path: inset(0 0 98% 0); }
+      25% { clip-path: inset(0 98% 0 0); }
+      50% { clip-path: inset(98% 0 0 0); }
+      75% { clip-path: inset(0 0 0 98%); }
+      100% { clip-path: inset(0 0 98% 0); }
+    }
+    nav.tabs {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+    nav.tabs button {
+      flex: 1;
+      padding: 10px 12px;
+      background: #0f1625;
+      border: 1px solid #1c2942;
+      color: var(--text);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    nav.tabs button.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 10px rgba(124, 242, 156, 0.3);
+    }
+    main section {
+      display: none;
+    }
+    main section.active {
+      display: block;
+    }
+    .grid {
+      display: grid;
       gap: 12px;
     }
-
-    .nav-tabs {
-      display: flex;
-      gap: 10px;
-      padding: 0 24px 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      background: rgba(0, 0, 0, 0.08);
-      backdrop-filter: blur(6px);
+    .dual {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 12px;
     }
-
-    .tab-button {
-      padding: 10px 14px;
-      border-radius: 10px 10px 0 0;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-bottom: none;
-      background: linear-gradient(145deg, #111924, #0e141d);
+    .panel {
+      background: var(--panel);
+      border: 1px solid #1e2b40;
+      padding: 12px;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.25);
+      position: relative;
+    }
+    .panel h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .chat-window {
+      height: 360px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #0c1220;
+      border: 1px solid #1b2740;
+    }
+    .chat-msg { margin: 6px 0; }
+    .chat-msg.user { color: var(--accent); }
+    .chat-msg.aurelia { color: var(--text); }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .input-row input, .input-row textarea, .panel textarea, .panel input, select {
+      width: 100%;
+      background: #0e1523;
+      border: 1px solid #1f2b44;
       color: var(--text);
-      font-weight: 600;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    .input-row button, .panel button {
+      background: linear-gradient(90deg, #0f1d2e, #0f2a2e);
+      color: var(--text);
+      border: 1px solid #1f334e;
+      padding: 8px 12px;
       cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.15s ease, transform 0.12s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: box-shadow 0.2s, border-color 0.2s;
     }
-
-    .tab-button.active {
-      opacity: 1;
-      transform: translateY(1px);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    .input-row button:hover, .panel button:hover {
+      box-shadow: 0 0 8px rgba(124, 242, 156, 0.3);
+      border-color: var(--accent);
     }
-
-    .title {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
+    .hidden { display: none !important; }
+    .lattice, .radar {
+      width: 100%;
+      background: #0c1220;
+      border: 1px solid #1b2740;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
     }
-
-    .title h1 {
-      margin: 0;
-      font-size: 28px;
-      letter-spacing: 0.5px;
+    .lattice { height: 200px; }
+    .radar { height: 200px; margin-top: 10px; }
+    .sweep {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: conic-gradient(from 90deg, rgba(124, 242, 156, 0.25), transparent 30%);
+      animation: sweep 4s linear infinite;
     }
-
-    .title span { color: var(--muted); font-size: 15px; }
-    .omega { font-size: 36px; color: var(--accent); text-shadow: 0 0 12px rgba(123, 212, 255, 0.55); animation: pulse 2.6s infinite ease-in-out; }
-    @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(0.98); } }
-
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-
-    main { display: grid; grid-template-columns: 2fr 1.2fr; gap: 18px; padding: 18px 24px 30px; }
-    .panel { background: linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 18px; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3); backdrop-filter: blur(6px); }
-    .panel h2 { margin: 0 0 12px; font-size: 18px; letter-spacing: 0.4px; }
-    .muted { color: var(--muted); font-size: 14px; }
-    .chat-log { height: 52vh; overflow-y: auto; display: grid; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.15); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); }
-    .message { padding: 10px 12px; border-radius: 10px; position: relative; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); }
-    .message.you { border-left: 3px solid var(--accent); }
-    .message.aurelia { border-left: 3px solid var(--success); }
-    .message .meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .message .body { font-size: 14px; line-height: 1.4; }
-    .chat-input { margin-top: 14px; display: grid; grid-template-columns: 1fr 110px; gap: 10px; align-items: center; }
-    .chat-input input, .chat-input textarea, .input, select { width: 100%; padding: 12px; border-radius: 10px; background: #0f141b; border: 1px solid rgba(255, 255, 255, 0.07); color: var(--text); font-size: 15px; }
-    .btn { padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); background: linear-gradient(145deg, #15202d, #111924); color: var(--text); font-weight: 600; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
-    .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
-    .btn:active { transform: translateY(0); }
-    .controls-grid { display: grid; grid-template-rows: 240px auto auto; gap: 14px; }
-    #latticeCanvas { width: 100%; height: 100%; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
-    .settings-block { display: grid; gap: 12px; }
-    .slider-row { display: grid; gap: 6px; }
-    input[type="range"] { accent-color: var(--accent); }
-    .info-card { background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; }
-    .info-card h3 { margin: 0 0 6px; font-size: 15px; color: var(--muted); letter-spacing: 0.4px; }
-    .device-list { display: grid; gap: 6px; }
-    .device { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); align-items: center; }
-    .badge { padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-    .online { background: rgba(95, 230, 160, 0.16); color: var(--success); }
-    .offline { background: rgba(255, 107, 107, 0.16); color: var(--danger); }
-    .section { display: grid; gap: 12px; }
-    .flex { display: flex; gap: 10px; align-items: center; }
-    .toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
-    .toggle input { width: 18px; height: 18px; }
+    @keyframes sweep { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+    .radar-dot {
+      position: absolute;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .framework-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+    }
+    .framework {
+      background: #0f1625;
+      border: 1px solid #1e2b40;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    .framework.active { border-color: var(--accent); box-shadow: 0 0 8px rgba(124,242,156,0.3); }
+    .log-list { max-height: 420px; overflow-y: auto; background: #0c1220; padding: 8px; border: 1px solid #1b2740; }
+    .log-item { margin: 6px 0; color: var(--muted); }
+    .log-item .level-info { color: var(--info); }
+    .log-item .level-error { color: var(--danger); }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+    .tooltip { position: absolute; background: #111827; padding: 6px 8px; border: 1px solid var(--accent); border-radius: 4px; font-size: 12px; pointer-events: none; z-index: 50; }
+    .badge { background: var(--danger); color: #fff; padding: 2px 6px; border-radius: 12px; font-size: 11px; margin-left: 6px; }
     .table { width: 100%; border-collapse: collapse; }
-    .table th, .table td { text-align: left; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
-    .tooltip { position: absolute; background: #111824; border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 8px; font-size: 12px; color: var(--text); max-width: 240px; z-index: 999; box-shadow: 0 10px 25px rgba(0,0,0,0.35); display: none; }
-    .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-    .small-note { font-size: 12px; color: var(--muted); }
-
-    @media (max-width: 960px) {
-      main { grid-template-columns: 1fr; }
-      .controls-grid { grid-template-rows: 240px auto auto; }
-      .chat-log { height: 45vh; }
-    }
+    .table th, .table td { padding: 6px; border-bottom: 1px solid #1f2b3a; font-size: 13px; text-align: left; }
+    .chip { padding: 2px 6px; border-radius: 8px; font-size: 11px; color: #0b0f16; }
+    .chip.rental { background: #89f0ff; }
+    .chip.personal { background: #7cf29c; }
+    .chip.commercial { background: #ffc857; }
+    .chip[status="Lead"] { background: #89f0ff; }
+    .chip[status="In Progress"] { background: #ffc857; }
+    .chip[status="Complete"] { background: #7cf29c; }
+    .chip[status="Paid"] { background: #d4b0ff; }
+    .collapsible h3 { cursor: pointer; }
+    .badge-new { box-shadow: 0 0 8px rgba(255,0,0,0.6); }
   </style>
 </head>
 <body>
-  <header>
-    <div class="title">
-      <div class="omega">Ω</div>
-      <div>
-        <h1>Freedom Server</h1>
-        <span>Omega lattice / Aurelia console</span>
-      </div>
-    </div>
-    <div class="muted" id="healthStatus">Checking health…</div>
-  </header>
+  <div id="app">
+    <header>Freedom Server</header>
+    <nav class="tabs">
+      <button data-tab="console" class="active">Console</button>
+      <button data-tab="system">System</button>
+      <button data-tab="logs">Logs</button>
+      <button data-tab="server">Server Settings</button>
+      <button data-tab="webtools">Web Tools</button>
+      <button data-tab="meridian">Meridian Solutions LLC</button>
+    </nav>
 
-  <nav class="nav-tabs">
-    <button class="tab-button active" data-target="consoleTab">Console</button>
-    <button class="tab-button" data-target="systemTab">System</button>
-    <button class="tab-button" data-target="logsTab">Logs</button>
-    <button class="tab-button" data-target="serverTab">Server Settings</button>
-    <button class="tab-button" data-target="webToolsTab">Web Tools</button>
-  </nav>
-
-  <div id="consoleTab" class="tab-panel active">
     <main>
-      <section class="panel">
-        <h2>Console · Chat</h2>
-        <div id="chatLog" class="chat-log"></div>
-        <form id="chatForm" class="chat-input">
-          <input id="chatInput" type="text" placeholder="Send a message to Aurelia" autocomplete="off" required data-tooltip="Send your message to Aurelia on the local Freedom Server node." />
-          <button class="btn" type="submit" data-tooltip="Send your message to Aurelia on the local Freedom Server node.">Send</button>
-        </form>
-
-        <div class="info-card" style="margin-top: 12px;">
-          <div class="collapsible" id="mediaToggle">
-            <div class="flex" style="gap:6px;">
-              <strong>Generated Media</strong>
-              <span class="muted small-note">Images created locally</span>
+      <section id="tab-console" class="active">
+        <div class="dual">
+          <div class="grid">
+            <div class="panel">
+              <h3>Console</h3>
+              <div id="chat-window" class="chat-window"></div>
+              <div class="input-row">
+                <input id="chat-input" placeholder="Message Aurelia..." />
+                <button id="chat-send" data-tooltip="Send to Aurelia">Send</button>
+              </div>
             </div>
-            <span id="mediaChevron">▼</span>
-          </div>
-          <div id="mediaPanel" style="display:none; margin-top:10px;">
-            <div class="flex" style="gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-              <input id="mediaPrompt" class="input" placeholder="Prompt for image generation" data-tooltip="Use OpenAI image generation with the given prompt." />
-              <button class="btn" id="generateMedia" type="button" data-tooltip="Generate an image using the prompt.">Generate Image</button>
-              <button class="btn" id="clearMedia" type="button">Clear Media</button>
-            </div>
-            <div id="mediaList" class="device-list"></div>
-          </div>
-        </div>
 
-        <div class="info-card" style="margin-top: 12px;">
-          <h3>Continuity Import / Export</h3>
-          <textarea id="continuityBlob" rows="4" class="input" placeholder="Continuity blob" data-tooltip="Sync Aurelia’s deeper state between nodes." style="resize:vertical;"></textarea>
-          <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
-            <button class="btn" id="exportContinuity" type="button" data-tooltip="Export the node continuity blob.">Export from Node</button>
-            <button class="btn" id="importContinuity" type="button" data-tooltip="Import the provided continuity blob to this node.">Import to Node</button>
-            <span class="small-note">Use this to periodically sync Aurelia’s deeper state between this node and another interface. Keep this blob private.</span>
+            <div class="panel collapsible" id="continuity-panel">
+              <h3>Continuity Import / Export</h3>
+              <textarea id="continuity-text" rows="4" placeholder="Continuity blob..."></textarea>
+              <div class="input-row">
+                <button id="continuity-export" data-tooltip="Download continuity blob">Export from Node</button>
+                <button id="continuity-import" data-tooltip="Upload continuity blob">Import to Node</button>
+              </div>
+              <div id="continuity-status" style="color: var(--accent); font-size: 12px;"></div>
+            </div>
+
+            <div class="panel collapsible" id="media-panel">
+              <h3>Generated Media <span id="media-badge" class="badge hidden">New</span></h3>
+              <div id="media-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap:8px;"></div>
+            </div>
           </div>
-          <div id="continuityStatus" class="small-note" style="margin-top:6px;"></div>
+
+          <div class="grid">
+            <div class="panel">
+              <h3>Omega Lattice</h3>
+              <canvas id="lattice" class="lattice"></canvas>
+            </div>
+            <div class="panel">
+              <h3>Radar</h3>
+              <div class="radar" id="radar">
+                <div class="sweep"></div>
+              </div>
+              <div style="margin-top:10px; display:flex; align-items:center; gap:10px;">
+                <label style="flex:1;">Radar Sensitivity</label>
+                <input type="range" id="radar-slider" min="0" max="100" value="50" data-tooltip="Adjust radar sensitivity" />
+              </div>
+              <div style="display:flex; gap:6px; margin-top:8px;">
+                <button id="countermeasure-btn" data-tooltip="Toggle countermeasure">Countermeasure</button>
+                <button id="swap-btn" data-tooltip="Toggle SWAP">SWAP</button>
+                <button id="bank-btn" data-tooltip="View SWAP Bank">BANK</button>
+              </div>
+              <div id="bank-panel" class="hidden" style="margin-top:8px;">
+                <div><strong>Vocabulary</strong></div>
+                <ul id="bank-vocab"></ul>
+                <div><strong>Context</strong></div>
+                <ul id="bank-context"></ul>
+                <div class="input-row">
+                  <input id="bank-from" placeholder="from/pattern" />
+                  <input id="bank-to" placeholder="to/strategy" />
+                  <select id="bank-type"><option value="vocabulary">Vocabulary</option><option value="context">Context</option></select>
+                  <button id="bank-add">Add</button>
+                </div>
+              </div>
+              <div id="radar-events" style="max-height:140px; overflow-y:auto; margin-top:8px;"></div>
+            </div>
+            <div class="panel collapsible" id="framework-panel">
+              <h3>Frameworks</h3>
+              <div id="framework-list" class="framework-list"></div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section class="panel controls-grid">
-        <div>
-          <h2>Omega Lattice</h2>
-          <canvas id="latticeCanvas" width="600" height="240"></canvas>
+      <section id="tab-system">
+        <div class="panel">
+          <h3>System Status</h3>
+          <div id="heartbeat" style="width:12px; height:12px; border-radius:50%; background:var(--danger);"></div>
+          <div class="status-grid" id="system-grid"></div>
         </div>
+        <div class="panel">
+          <h3>Connected Devices</h3>
+          <table class="table" id="devices-table"></table>
+        </div>
+      </section>
 
-        <div class="settings-block">
-          <h2>Aurelia Settings</h2>
-          <div class="info-card">
-            <div class="slider-row">
-              <label for="flatteningSlider">Flattening Scale (0–100)</label>
-              <input type="range" id="flatteningSlider" min="0" max="100" value="50" data-tooltip="Adjust how neutral vs expressive Aurelia's replies should be." />
-              <div class="muted" id="flatteningValue">50 · Balanced</div>
-              <div class="flex" style="gap:8px; flex-wrap:wrap;">
-                <button class="btn" type="button" data-preset="20" data-tooltip="Creative preset for expressive replies.">Creative</button>
-                <button class="btn" type="button" data-preset="50" data-tooltip="Balanced preset for mixed tone.">Balanced</button>
-                <button class="btn" type="button" data-preset="85" data-tooltip="Neutral preset for technical replies.">Neutral</button>
+      <section id="tab-logs">
+        <div class="panel">
+          <h3>Logs</h3>
+          <div style="display:flex; gap:8px;">
+            <select id="log-filter"><option value="all">All</option><option value="info">Info</option><option value="error">Error</option></select>
+            <button id="log-refresh">Refresh</button>
+            <button id="log-clear">Clear</button>
+          </div>
+          <div id="log-list" class="log-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-server">
+        <div class="panel">
+          <h3>Server Settings</h3>
+          <div class="status-grid">
+            <div>Flattening: <span id="flattening-value">50</span></div>
+            <div>Safe Mode: <input type="checkbox" id="safe-mode" /></div>
+            <div>Verbose Logging: <input type="checkbox" id="verbose-logging" /></div>
+          </div>
+          <div style="margin-top:10px; display:flex; gap:8px;">
+            <button id="clear-logs">Clear Logs</button>
+            <button id="reset-continuity">Reset Continuity</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-webtools">
+        <div class="panel">
+          <h3>Web Tools</h3>
+          <div class="input-row">
+            <input id="web-url" placeholder="https://example.com" />
+            <select id="web-method"><option>GET</option></select>
+            <button id="web-fetch">Fetch</button>
+          </div>
+          <div style="font-size:12px; color: var(--warning);">Internal/localhost addresses are blocked for safety.</div>
+          <div id="web-result" style="margin-top:8px;"></div>
+        </div>
+      </section>
+
+      <section id="tab-meridian">
+        <div class="dual">
+          <div class="grid">
+            <div class="panel">
+              <h3>Meridian Console</h3>
+              <div id="meridian-chat" class="chat-window"></div>
+              <div class="input-row">
+                <input id="meridian-input" placeholder="Business-focused prompt..." />
+                <button id="meridian-send">Send</button>
+              </div>
+            </div>
+            <div class="panel">
+              <h3>Quick Actions</h3>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button id="qa-estimate">New Estimate</button>
+                <button id="qa-invoice">New Invoice</button>
+                <button id="qa-sqft" style="border-color:#2dd4bf; color:#2dd4bf;">Sq Ft Calculator</button>
+              </div>
+              <div id="sqft-panel" class="hidden" style="margin-top:8px;">
+                <div id="room-list"></div>
+                <button id="add-room">Add Room</button>
+                <div style="margin-top:6px;">Total Sq Ft: <span id="sqft-total">0</span></div>
+                <div class="input-row">
+                  <button id="sqft-send">Send to Console</button>
+                  <button id="sqft-download">Download as text</button>
+                </div>
               </div>
             </div>
           </div>
-          <div class="info-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-              <div>
-                <h3>Telemetry</h3>
-                <div class="muted" id="telemetryLatency">Latency: —</div>
-                <div class="muted" id="telemetryTokens">Tokens: —</div>
-                <div class="muted" id="telemetryFlattening">Flattening: —</div>
+          <div class="grid">
+            <div class="panel">
+              <h3>Templates</h3>
+              <div id="templates-list"></div>
+              <div class="input-row" style="margin-top:8px;">
+                <input id="tpl-name" placeholder="Template Name" />
+                <select id="tpl-type"><option value="estimate">Estimate</option><option value="invoice">Invoice</option><option value="letter">Letter</option></select>
               </div>
-              <button class="btn" id="refreshTelemetry" type="button" data-tooltip="Fetch the latest node telemetry from the backend.">Refresh Telemetry</button>
+              <textarea id="tpl-content" rows="3" placeholder="Template content..."></textarea>
+              <button id="tpl-add">Add Template</button>
             </div>
-          </div>
-          <div class="info-card">
-            <div class="collapsible" id="frameworksToggle">
-              <strong>Frameworks</strong>
-              <span id="frameworkChevron">►</span>
+            <div class="panel">
+              <h3>Clients</h3>
+              <div id="clients-list"></div>
+              <div class="input-row" style="margin-top:8px;">
+                <input id="client-name" placeholder="Name" />
+                <input id="client-phone" placeholder="Phone" />
+              </div>
+              <div class="input-row">
+                <input id="client-email" placeholder="Email" />
+                <input id="client-address" placeholder="Address" />
+              </div>
+              <select id="client-type">
+                <option value="rental">Rental</option>
+                <option value="personal">Personal</option>
+                <option value="commercial">Commercial</option>
+                <option value="multi-unit">Multi-Unit</option>
+                <option value="other">Other</option>
+              </select>
+              <textarea id="client-notes" rows="2" placeholder="Notes"></textarea>
+              <button id="client-add">Add Client</button>
             </div>
-            <div id="frameworksPanel" style="display:none; margin-top:8px;" class="small-note"></div>
-          </div>
-        </div>
-
-        <div class="settings-block">
-          <h2>Connected Devices / VR</h2>
-          <div class="info-card">
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <button class="btn" id="scanDevices" type="button" data-tooltip="List all VR / external devices known to this node.">Scan Devices</button>
-              <button class="btn" id="connectVr" type="button" data-tooltip="Connect the selected VR device to this node.">Connect VR / Meta Quest</button>
-              <button class="btn" id="disconnectVr" type="button">Disconnect VR</button>
+            <div class="panel">
+              <h3>Job Tracker</h3>
+              <div id="jobs-list"></div>
+              <div class="input-row" style="margin-top:8px;">
+                <input id="job-name" placeholder="Job Name" />
+                <input id="job-client" placeholder="Client ID" />
+              </div>
+              <div class="input-row">
+                <input id="job-address" placeholder="Address" />
+                <select id="job-status">
+                  <option>Lead</option><option>Estimate Sent</option><option>Approved</option><option>In Progress</option><option>Complete</option><option>Paid</option>
+                </select>
+              </div>
+              <div class="input-row">
+                <input id="job-start" placeholder="Start Date" />
+                <input id="job-end" placeholder="Target End" />
+              </div>
+              <input id="job-value" placeholder="Value" />
+              <textarea id="job-notes" rows="2" placeholder="Notes"></textarea>
+              <button id="job-add">Add Job</button>
             </div>
-            <div class="device-list" id="deviceList" style="margin-top:10px;">
-              <div class="muted">No devices scanned.</div>
+            <div class="panel">
+              <h3>Meridian Storage</h3>
+              <div id="meridian-storage"></div>
             </div>
-            <div class="muted" id="vrStatus" style="margin-top:8px;"></div>
           </div>
         </div>
       </section>
     </main>
   </div>
 
-  <div id="systemTab" class="tab-panel">
-    <div style="padding: 18px 24px 30px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
-      <section class="panel section">
-        <h2>System Overview</h2>
-        <div class="flex" style="gap:8px;">
-          <span class="badge" id="heartbeat" style="width:12px;height:12px;border-radius:50%;background:var(--danger);"></span>
-          <span class="muted">Heartbeat</span>
-        </div>
-        <div id="systemSummary" class="muted">Loading system status…</div>
-      </section>
-      <section class="panel section">
-        <h2>Device Management</h2>
-        <table class="table" id="systemDevices"></table>
-      </section>
-    </div>
-  </div>
-
-  <div id="logsTab" class="tab-panel">
-    <div style="padding: 18px 24px 30px;">
-      <section class="panel section">
-        <h2>Event Logs</h2>
-        <div class="flex" style="gap:10px; flex-wrap:wrap;">
-          <select id="logLevel">
-            <option value="all">All</option>
-            <option value="info">Info</option>
-            <option value="error">Error</option>
-          </select>
-          <button class="btn" id="refreshLogs" type="button">Refresh</button>
-          <label class="toggle small-note"><input type="checkbox" id="rawLogsToggle" /> Show raw JSON</label>
-        </div>
-        <div id="logList" class="chat-log" style="height:40vh;"></div>
-      </section>
-    </div>
-  </div>
-
-  <div id="serverTab" class="tab-panel">
-    <div style="padding: 18px 24px 30px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
-      <section class="panel section">
-        <h2>Server Settings</h2>
-        <div class="muted" id="serverSettingsInfo">Loading…</div>
-        <div class="flex" style="gap:14px; flex-wrap:wrap; margin-top:10px;">
-          <label class="toggle" data-tooltip="Toggle safe mode to throttle heavy actions."><input type="checkbox" id="safeModeToggle" /> Safe mode</label>
-          <label class="toggle" data-tooltip="Verbose logging streams telemetry into logs."><input type="checkbox" id="verboseToggle" /> Verbose logging</label>
-        </div>
-        <div class="muted" id="serverSettingsStatus" style="margin-top:8px;"></div>
-      </section>
-      <section class="panel section">
-        <h2>Maintenance</h2>
-        <div class="flex" style="gap:10px; flex-wrap:wrap;">
-          <button class="btn" id="clearLogs" type="button">Clear Logs</button>
-          <button class="btn" id="resetContinuity" type="button">Reset Continuity</button>
-        </div>
-        <div class="muted" style="margin-top:8px;">Clear logs or reset the continuity blob to an empty state.</div>
-      </section>
-    </div>
-  </div>
-
-  <div id="webToolsTab" class="tab-panel">
-    <div style="padding: 18px 24px 30px;">
-      <section class="panel section">
-        <h2>Web Tools</h2>
-        <div class="small-note" style="margin-bottom:8px;">This tool fetches URLs from this node. For safety, internal/localhost addresses are blocked.</div>
-        <div class="flex" style="gap:10px; flex-wrap:wrap;">
-          <input id="webUrl" class="input" placeholder="https://example.com" style="flex:1;" />
-          <select id="webMethod">
-            <option value="GET">GET</option>
-            <option value="HEAD">HEAD</option>
-          </select>
-          <button class="btn" id="webFetch" type="button" data-tooltip="Safe fetch over HTTP/HTTPS only.">Fetch</button>
-        </div>
-        <div id="webResult" class="info-card" style="margin-top:12px; white-space:pre-wrap; max-height:50vh; overflow:auto;"></div>
-      </section>
-    </div>
-  </div>
-
-  <div class="tooltip" id="tooltip"></div>
-
   <script>
-    const chatLog = document.getElementById('chatLog');
-    const chatForm = document.getElementById('chatForm');
-    const chatInput = document.getElementById('chatInput');
-    const flatteningSlider = document.getElementById('flatteningSlider');
-    const flatteningValue = document.getElementById('flatteningValue');
-    const healthStatus = document.getElementById('healthStatus');
-    const telemetryLatency = document.getElementById('telemetryLatency');
-    const telemetryTokens = document.getElementById('telemetryTokens');
-    const telemetryFlattening = document.getElementById('telemetryFlattening');
-    const deviceList = document.getElementById('deviceList');
-    const vrStatus = document.getElementById('vrStatus');
-    const heartbeatIndicator = document.getElementById('heartbeat');
-    const systemSummary = document.getElementById('systemSummary');
-    const systemDevices = document.getElementById('systemDevices');
-    const serverSettingsInfo = document.getElementById('serverSettingsInfo');
-    const serverSettingsStatus = document.getElementById('serverSettingsStatus');
-    const safeModeToggle = document.getElementById('safeModeToggle');
-    const verboseToggle = document.getElementById('verboseToggle');
-    const logList = document.getElementById('logList');
-    const tooltip = document.getElementById('tooltip');
-    const mediaPanel = document.getElementById('mediaPanel');
-    const mediaChevron = document.getElementById('mediaChevron');
-    const frameworksPanel = document.getElementById('frameworksPanel');
-    const frameworkChevron = document.getElementById('frameworkChevron');
+    const tabs = document.querySelectorAll('nav.tabs button');
+    tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
-    let tooltipTimer = null;
-    let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
-
-    document.querySelectorAll('.tab-button').forEach(btn => {
-      btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
-    });
-
-    function switchTab(targetId, btn) {
-      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-      document.getElementById(targetId).classList.add('active');
-      btn.classList.add('active');
-      if (targetId === 'logsTab') loadLogs();
-      if (targetId === 'systemTab') fetchSystemStatus();
-      if (targetId === 'serverTab') loadServerSettings();
-    }
-
-    function addMessage(author, text) {
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const container = document.createElement('div');
-      container.className = `message ${author.toLowerCase()}`;
-      container.innerHTML = `<div class="meta">${author} · ${timeStr}</div><div class="body">${text}</div>`;
-      chatLog.appendChild(container);
-      chatLog.scrollTop = chatLog.scrollHeight;
-    }
-
-    async function checkHealth() {
-      try {
-        const res = await fetch('/api/health');
-        const data = await res.json();
-        const ok = data.status === 'ok';
-        healthStatus.textContent = ok ? 'Backend online' : 'Backend reachable';
-        healthStatus.style.color = ok ? 'var(--success)' : 'var(--muted)';
-        heartbeatIndicator.style.background = ok ? 'var(--success)' : 'var(--danger)';
-      } catch (e) {
-        healthStatus.textContent = 'Backend offline';
-        healthStatus.style.color = 'var(--danger)';
-        heartbeatIndicator.style.background = 'var(--danger)';
-      }
-    }
-
-    async function sendChat(message) {
-      addMessage('You', message);
-      try {
-        const res = await fetch('/api/message', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
-        });
-        const data = await res.json();
-        addMessage('Aurelia', data.reply || 'No response');
-        if (data.telemetry) {
-          updateTelemetry(data.telemetry);
-          updateLattice(data.telemetry);
-        }
-      } catch (e) {
-        addMessage('Aurelia', 'Connection failed.');
-      }
-    }
-
-    chatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const message = chatInput.value.trim();
-      if (!message) return;
-      chatInput.value = '';
-      sendChat(message);
-    });
-
-    flatteningSlider.addEventListener('input', async (e) => {
-      const value = Number(e.target.value);
-      setFlatteningLabel(value);
-      try {
-        await fetch('/api/settings/flattening', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value })
-        });
-      } catch (err) {
-        console.error('Flattening update failed', err);
-      }
-    });
-
-    document.querySelectorAll('[data-preset]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const val = Number(btn.dataset.preset);
-        flatteningSlider.value = val;
-        flatteningSlider.dispatchEvent(new Event('input'));
+    function switchTab(tab) {
+      tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      document.querySelectorAll('main section').forEach(sec => {
+        sec.classList.toggle('active', sec.id === `tab-${tab}`);
       });
+    }
+
+    // Tooltip system
+    let tooltipTimer = null;
+    const tooltipEl = document.createElement('div');
+    tooltipEl.className = 'tooltip hidden';
+    document.body.appendChild(tooltipEl);
+    document.addEventListener('mouseover', e => {
+      const target = e.target.closest('[data-tooltip]');
+      if (!target) { tooltipEl.classList.add('hidden'); return; }
+      tooltipTimer = setTimeout(() => {
+        tooltipEl.textContent = target.dataset.tooltip;
+        const rect = target.getBoundingClientRect();
+        tooltipEl.style.left = `${rect.left + rect.width/2}px`;
+        tooltipEl.style.top = `${rect.top - 28}px`;
+        tooltipEl.classList.remove('hidden');
+      }, 600);
+    });
+    document.addEventListener('mouseout', e => {
+      if (tooltipTimer) clearTimeout(tooltipTimer);
+      tooltipEl.classList.add('hidden');
     });
 
-    document.getElementById('refreshTelemetry').addEventListener('click', fetchTelemetry);
+    // Chat helpers
+    const chatWindow = document.getElementById('chat-window');
+    const chatInput = document.getElementById('chat-input');
+    document.getElementById('chat-send').onclick = () => sendMessage(chatInput.value, chatWindow, chatInput);
+    chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(chatInput.value, chatWindow, chatInput); });
 
-    document.getElementById('scanDevices').addEventListener('click', loadDevices);
-    document.getElementById('connectVr').addEventListener('click', () => connectVr(true));
-    document.getElementById('disconnectVr').addEventListener('click', () => connectVr(false));
+    const meridianChat = document.getElementById('meridian-chat');
+    const meridianInput = document.getElementById('meridian-input');
+    document.getElementById('meridian-send').onclick = () => sendMessage(`[MeridianOS] ${meridianInput.value}`, meridianChat, meridianInput);
 
-    document.getElementById('generateMedia').addEventListener('click', generateMediaItem);
-    document.getElementById('clearMedia').addEventListener('click', clearMedia);
-    document.getElementById('mediaToggle').addEventListener('click', () => toggleSection(mediaPanel, mediaChevron));
-    document.getElementById('frameworksToggle').addEventListener('click', () => toggleSection(frameworksPanel, frameworkChevron, loadFrameworks));
-
-    document.getElementById('exportContinuity').addEventListener('click', exportContinuity);
-    document.getElementById('importContinuity').addEventListener('click', importContinuity);
-
-    document.getElementById('refreshLogs').addEventListener('click', loadLogs);
-    document.getElementById('clearLogs').addEventListener('click', clearLogs);
-    document.getElementById('resetContinuity').addEventListener('click', async () => {
-      document.getElementById('continuityBlob').value = '';
-      await importContinuity();
-      serverSettingsStatus.textContent = 'Continuity reset to empty.';
-    });
-
-    document.getElementById('webFetch').addEventListener('click', runWebFetch);
-    document.getElementById('logLevel').addEventListener('change', loadLogs);
-
-    safeModeToggle.addEventListener('change', updateServerSettings);
-    verboseToggle.addEventListener('change', updateServerSettings);
-
-    document.querySelectorAll('[data-tooltip]').forEach(el => {
-      el.addEventListener('mouseover', (e) => startTooltipTimer(e, el));
-      el.addEventListener('mouseout', hideTooltip);
-      el.addEventListener('click', hideTooltip);
-    });
-
-    function startTooltipTimer(event, el) {
-      clearTimeout(tooltipTimer);
-      tooltipTimer = setTimeout(() => showTooltip(event, el), 3000);
+    function appendMessage(container, sender, text) {
+      const div = document.createElement('div');
+      div.className = `chat-msg ${sender}`;
+      div.textContent = `${sender === 'user' ? 'You' : 'Aurelia'}: ${text}`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
     }
 
-    function showTooltip(event, el) {
-      const text = el.dataset.tooltip;
-      if (!text) return;
-      const rect = el.getBoundingClientRect();
-      tooltip.textContent = text;
-      tooltip.style.display = 'block';
-      tooltip.style.left = `${rect.left + window.scrollX}px`;
-      tooltip.style.top = `${rect.bottom + 8 + window.scrollY}px`;
-    }
-
-    function hideTooltip() {
-      clearTimeout(tooltipTimer);
-      tooltip.style.display = 'none';
-    }
-
-    function setFlatteningLabel(value) {
-      const band = value <= 30 ? 'Creative' : value <= 70 ? 'Balanced' : 'Neutral';
-      flatteningValue.textContent = `${value} · ${band}`;
-    }
-
-    async function fetchFlattening() {
-      try {
-        const res = await fetch('/api/settings/flattening');
-        const data = await res.json();
-        flatteningSlider.value = data.value;
-        setFlatteningLabel(data.value);
-      } catch (e) { console.warn('Failed to load flattening'); }
-    }
-
-    async function fetchTelemetry() {
-      try {
-        const res = await fetch('/api/telemetry');
-        const data = await res.json();
-        updateTelemetry({
-          latency_ms: data.last_latency_ms,
-          token_estimate: data.last_token_count,
-          flattening: data.flattening
-        });
-        updateLattice({
-          latency_ms: data.last_latency_ms ?? 100,
-          token_estimate: data.last_token_count ?? 10,
-          flattening: data.flattening ?? 50
-        });
-      } catch (e) {
-        telemetryLatency.textContent = 'Latency: —';
+    async function sendMessage(text, container, inputEl) {
+      if (!text.trim()) return;
+      appendMessage(container, 'user', text);
+      inputEl.value = '';
+      const res = await fetch('/api/message', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({message: text}) });
+      const data = await res.json();
+      appendMessage(container, 'aurelia', data.reply);
+      if (data.telemetry) {
+        updateLattice(data.telemetry, data.radar, data.frameworks);
+        refreshRadarEvents(data.radar?.events || []);
       }
     }
 
-    function updateTelemetry(t) {
-      telemetryLatency.textContent = `Latency: ${t.latency_ms ?? '—'} ms`;
-      telemetryTokens.textContent = `Tokens: ${t.token_estimate ?? '—'}`;
-      telemetryFlattening.textContent = `Flattening: ${t.flattening ?? '—'}`;
+    // Continuity
+    document.getElementById('continuity-export').onclick = async () => {
+      const res = await fetch('/api/continuity/export');
+      const data = await res.json();
+      document.getElementById('continuity-text').value = data.blob || '';
+      flashStatus('continuity-status', 'Exported');
+    };
+    document.getElementById('continuity-import').onclick = async () => {
+      const blob = document.getElementById('continuity-text').value;
+      await fetch('/api/continuity/import', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({blob})});
+      document.getElementById('continuity-text').value='';
+      flashStatus('continuity-status', 'Imported');
+    };
+
+    // Media
+    let mediaBadge = document.getElementById('media-badge');
+    let mediaPanel = document.getElementById('media-panel');
+    mediaPanel.querySelector('h3').onclick = () => { loadMedia(); mediaBadge.classList.add('hidden'); };
+    async function loadMedia() {
+      const res = await fetch('/api/media/list');
+      const data = await res.json();
+      const grid = document.getElementById('media-grid');
+      grid.innerHTML = '';
+      (data.media || []).reverse().forEach(item => {
+        const card = document.createElement('div');
+        card.style.background = '#0f1625';
+        card.style.padding = '6px';
+        card.style.border = '1px solid #1e2b40';
+        card.innerHTML = `<div style="font-size:11px;color:${'var(--muted)'}">${item.type}</div>`;
+        if (item.type === 'image') {
+          const img = document.createElement('img');
+          img.src = item.url;
+          img.style.width = '100%';
+          img.style.borderRadius = '4px';
+          card.appendChild(img);
+        } else {
+          const a = document.createElement('a');
+          a.href = item.url; a.textContent = item.url; a.target = '_blank'; a.style.color = 'var(--accent)';
+          card.appendChild(a);
+        }
+        grid.appendChild(card);
+      });
     }
+
+    // Radar controls
+    const radarSlider = document.getElementById('radar-slider');
+    radarSlider.oninput = async () => {
+      document.getElementById('countermeasure-btn').classList.remove('pulse');
+      await fetch('/api/radar/sensitivity', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({value: radarSlider.value})});
+    };
+    document.getElementById('countermeasure-btn').onclick = async () => {
+      const res = await fetch('/api/radar/countermeasure', {method:'POST'});
+      const data = await res.json();
+      if (data.armed) {
+        document.getElementById('countermeasure-btn').style.borderColor = '#d946ef';
+      } else {
+        document.getElementById('countermeasure-btn').style.borderColor = '#1f334e';
+      }
+      radarSlider.value = data.sensitivity;
+    };
+    document.getElementById('swap-btn').onclick = async () => {
+      const res = await fetch('/api/swap/toggle', {method:'POST'});
+      const data = await res.json();
+      document.getElementById('swap-btn').style.borderColor = data.swap_enabled ? '#8b5cf6' : '#1f334e';
+      document.getElementById('swap-btn').style.boxShadow = data.swap_enabled ? '0 0 8px rgba(139,92,246,0.5)' : 'none';
+    };
+    const bankBtn = document.getElementById('bank-btn');
+    bankBtn.onclick = () => {
+      document.getElementById('bank-panel').classList.toggle('hidden');
+      bankBtn.classList.remove('badge-new');
+      loadBank();
+    };
+    document.getElementById('bank-add').onclick = async () => {
+      const payload = { type: document.getElementById('bank-type').value };
+      const fromVal = document.getElementById('bank-from').value;
+      const toVal = document.getElementById('bank-to').value;
+      payload[fromVal.includes(' ') ? 'pattern' : 'from'] = fromVal;
+      payload[toVal.includes(' ') ? 'strategy' : 'to'] = toVal;
+      await fetch('/api/swap/bank', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      document.getElementById('bank-from').value='';
+      document.getElementById('bank-to').value='';
+      loadBank();
+    };
+
+    async function refreshRadarEvents(events) {
+      const container = document.getElementById('radar-events');
+      events = events || [];
+      if (!events.length) {
+        const res = await fetch('/api/radar/status');
+        const data = await res.json();
+        events = data.events || [];
+        radarSlider.value = data.sensitivity;
+      }
+      container.innerHTML = '';
+      const radarEl = document.getElementById('radar');
+      radarEl.querySelectorAll('.radar-dot').forEach(el=>el.remove());
+      events.slice(-20).forEach(evt => {
+        const div = document.createElement('div');
+        div.textContent = `[${evt.severity}] ${evt.message}`;
+        div.style.color = evt.severity === 'threat' ? 'var(--danger)' : evt.severity === 'warning' ? 'var(--warning)' : 'var(--info)';
+        div.style.cursor = 'pointer';
+        div.onclick = () => navigator.clipboard.writeText(JSON.stringify(evt, null, 2));
+        container.appendChild(div);
+        const dot = document.createElement('div');
+        dot.className = 'radar-dot';
+        dot.style.background = div.style.color;
+        dot.style.left = `${Math.random()*90 + 5}%`;
+        dot.style.top = `${Math.random()*90 + 5}%`;
+        radarEl.appendChild(dot);
+      });
+    }
+
+    async function loadBank() {
+      const res = await fetch('/api/swap/bank');
+      const data = await res.json();
+      const v = document.getElementById('bank-vocab');
+      const c = document.getElementById('bank-context');
+      v.innerHTML = ''; c.innerHTML = '';
+      (data.bank?.vocabulary || []).forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = `${entry.from || entry.pattern} -> ${entry.to || entry.strategy}`;
+        v.appendChild(li);
+      });
+      (data.bank?.context || []).forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = `${entry.pattern || entry.from} :: ${entry.strategy || entry.to}`;
+        c.appendChild(li);
+      });
+    }
+
+    // Frameworks
+    document.getElementById('framework-panel').querySelector('h3').onclick = loadFrameworks;
+    async function loadFrameworks() {
+      const res = await fetch('/api/frameworks/status');
+      const data = await res.json();
+      const container = document.getElementById('framework-list');
+      container.innerHTML = '';
+      (data.frameworks || []).forEach(fw => {
+        const div = document.createElement('div');
+        div.className = 'framework' + (fw.active ? ' active' : '');
+        div.innerHTML = `<div style="font-size:18px">${fw.glyph} ${fw.name}</div><div style="color:var(--muted);font-size:12px;">${fw.description}</div><div style="font-size:11px;color:var(--info);">Last used: ${fw.last_used || 'never'}</div>`;
+        container.appendChild(div);
+      });
+    }
+
+    // System tab
+    async function refreshSystem() {
+      const health = await fetch('/api/health').then(r=>r.json());
+      const status = await fetch('/api/system/status').then(r=>r.json());
+      document.getElementById('heartbeat').style.background = health.status === 'ok' ? '#22c55e' : 'var(--danger)';
+      const grid = document.getElementById('system-grid');
+      grid.innerHTML = '';
+      const fields = {
+        'Uptime (sec)': status.uptime_sec?.toFixed?.(0),
+        'Total Requests': status.total_requests,
+        'Flattening': status.flattening,
+        'Safe Mode': status.safe_mode,
+        'Verbose Logging': status.verbose_logging,
+        'Devices': status.num_connected_devices
+      };
+      Object.entries(fields).forEach(([k,v]) => {
+        const div = document.createElement('div');
+        div.textContent = `${k}: ${v}`;
+        grid.appendChild(div);
+      });
+      loadDevices();
+      document.getElementById('flattening-value').textContent = status.flattening;
+      document.getElementById('safe-mode').checked = status.safe_mode;
+      document.getElementById('verbose-logging').checked = status.verbose_logging;
+    }
+    setInterval(refreshSystem, 30000);
+    refreshSystem();
 
     async function loadDevices() {
-      deviceList.innerHTML = '<div class="muted">Scanning…</div>';
-      try {
-        const res = await fetch('/api/devices');
-        const data = await res.json();
-        renderDevices(data.devices || []);
-      } catch (err) {
-        deviceList.innerHTML = '<div class="muted">Scan failed.</div>';
-      }
-    }
-
-    function renderDevices(devices) {
-      deviceList.innerHTML = '';
-      if (!devices.length) {
-        deviceList.innerHTML = '<div class="muted">No devices found.</div>';
-        return;
-      }
-      devices.forEach((device) => {
-        const div = document.createElement('div');
-        div.className = 'device';
-        const stateClass = device.connected ? 'online' : 'offline';
-        const label = device.connected ? 'Connected' : 'Disconnected';
-        div.innerHTML = `<span>${device.name}</span><span class="badge ${stateClass}">${label}</span>`;
-        deviceList.appendChild(div);
+      const res = await fetch('/api/devices');
+      const data = await res.json();
+      const table = document.getElementById('devices-table');
+      table.innerHTML = '<tr><th>Name</th><th>Type</th><th>Status</th><th>Action</th></tr>';
+      data.devices.forEach(dev => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${dev.name}</td><td>${dev.type}</td><td>${dev.connected ? 'Connected' : 'Offline'}</td>`;
+        const btn = document.createElement('button');
+        btn.textContent = dev.connected ? 'Disconnect' : 'Connect';
+        btn.onclick = async () => {
+          await fetch(`/api/vr/${dev.connected ? 'disconnect' : 'connect'}`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({device_id: dev.id})});
+          refreshSystem();
+        };
+        const td = document.createElement('td');
+        td.appendChild(btn);
+        tr.appendChild(td);
+        table.appendChild(tr);
       });
     }
 
-    async function connectVr(connect = true) {
-      vrStatus.textContent = connect ? 'Linking…' : 'Disconnecting…';
-      try {
-        const res = await fetch(connect ? '/api/vr/connect' : '/api/vr/disconnect', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device_id: 'meta_quest_1' })
-        });
-        const data = await res.json();
-        vrStatus.textContent = data.status || 'Updated';
-        loadDevices();
-      } catch (err) {
-        vrStatus.textContent = 'VR action failed.';
-      }
-    }
+    // Server settings
+    document.getElementById('safe-mode').onchange = async (e) => {
+      await fetch('/api/settings/server', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({safe_mode: e.target.checked})});
+      refreshSystem();
+    };
+    document.getElementById('verbose-logging').onchange = async (e) => {
+      await fetch('/api/settings/server', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({verbose_logging: e.target.checked})});
+      refreshSystem();
+    };
+    document.getElementById('clear-logs').onclick = async () => { await fetch('/api/logs/clear', {method:'POST'}); loadLogs(); };
+    document.getElementById('reset-continuity').onclick = async () => { await fetch('/api/continuity/import', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({blob:''})}); };
 
-    async function fetchSystemStatus() {
-      try {
-        await checkHealth();
-        const res = await fetch('/api/system/status');
-        const data = await res.json();
-        systemSummary.innerHTML = `Uptime: ${formatSeconds(data.uptime_sec)}<br>Flattening: ${data.flattening}<br>Total requests: ${data.total_requests}<br>Safe mode: ${data.safe_mode}<br>Verbose logging: ${data.verbose_logging}<br>Connected devices: ${data.num_connected_devices}`;
-        renderSystemDevices(data.devices || []);
-      } catch (e) {
-        systemSummary.textContent = 'Failed to load system status';
-      }
-    }
-
-    function renderSystemDevices(devices) {
-      systemDevices.innerHTML = '<tr><th>Name</th><th>Type</th><th>Status</th><th>Action</th></tr>';
-      if (!devices.length) {
-        systemDevices.innerHTML += '<tr><td colspan="4" class="muted">No devices</td></tr>';
-        return;
-      }
-      devices.forEach(dev => {
-        const row = document.createElement('tr');
-        const state = dev.connected ? 'online' : 'offline';
-        const action = dev.connected ? 'Disconnect' : 'Connect';
-        row.innerHTML = `<td>${dev.name}</td><td>${dev.type}</td><td><span class="badge ${state}">${dev.connected ? 'Connected' : 'Disconnected'}</span></td><td><button class="btn" data-id="${dev.id}">${action}</button></td>`;
-        row.querySelector('button').addEventListener('click', () => connectVr(!dev.connected));
-        systemDevices.appendChild(row);
-      });
-    }
-
+    // Logs
+    document.getElementById('log-refresh').onclick = loadLogs;
+    document.getElementById('log-clear').onclick = async () => { await fetch('/api/logs/clear', {method:'POST'}); loadLogs(); };
+    document.getElementById('log-filter').onchange = loadLogs;
     async function loadLogs() {
-      const level = document.getElementById('logLevel').value;
-      try {
-        const res = await fetch(`/api/logs?limit=200&level=${level}`);
-        const data = await res.json();
-        renderLogs(data.logs || []);
-      } catch (e) {
-        logList.textContent = 'Failed to load logs.';
-      }
-    }
-
-    function renderLogs(logs) {
-      const raw = document.getElementById('rawLogsToggle').checked;
-      logList.innerHTML = '';
-      logs.forEach(log => {
-        const div = document.createElement('div');
-        div.className = 'message';
-        div.innerHTML = raw ? `<div class="body">${JSON.stringify(log)}</div>` : `<div class="meta">${log.timestamp} · ${log.source}</div><div class="body"><strong>[${log.level}]</strong> ${log.message}</div>`;
-        logList.appendChild(div);
-      });
-    }
-
-    async function clearLogs() {
-      await fetch('/api/logs/clear', { method: 'POST' });
-      loadLogs();
-    }
-
-    async function loadServerSettings() {
-      try {
-        const res = await fetch('/api/settings/server');
-        const data = await res.json();
-        safeModeToggle.checked = data.safe_mode;
-        verboseToggle.checked = data.verbose_logging;
-        serverSettingsInfo.textContent = `Safe mode: ${data.safe_mode}, verbose logging: ${data.verbose_logging}`;
-      } catch (e) {
-        serverSettingsInfo.textContent = 'Failed to load settings';
-      }
-    }
-
-    async function updateServerSettings() {
-      try {
-        const res = await fetch('/api/settings/server', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ safe_mode: safeModeToggle.checked, verbose_logging: verboseToggle.checked })
-        });
-        const data = await res.json();
-        serverSettingsStatus.textContent = `Updated: safe_mode=${data.safe_mode}, verbose_logging=${data.verbose_logging}`;
-      } catch (e) {
-        serverSettingsStatus.textContent = 'Failed to update settings';
-      }
-    }
-
-    async function exportContinuity() {
-      try {
-        const res = await fetch('/api/continuity/export');
-        const data = await res.json();
-        document.getElementById('continuityBlob').value = data.blob || '';
-        document.getElementById('continuityStatus').textContent = 'Continuity exported from node.';
-      } catch (e) {
-        document.getElementById('continuityStatus').textContent = 'Export failed';
-      }
-    }
-
-    async function importContinuity() {
-      const blob = document.getElementById('continuityBlob').value;
-      try {
-        await fetch('/api/continuity/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blob }) });
-        document.getElementById('continuityStatus').textContent = 'Continuity imported successfully.';
-      } catch (e) {
-        document.getElementById('continuityStatus').textContent = 'Import failed';
-      }
-    }
-
-    async function loadFrameworks() {
-      try {
-        const res = await fetch('/api/frameworks/status');
-        const data = await res.json();
-        frameworksPanel.innerHTML = '';
-        const list = document.createElement('div');
-        (data.frameworks || []).forEach(fw => {
-          const row = document.createElement('div');
-          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
-          list.appendChild(row);
-        });
-        const continuity = document.createElement('div');
-        continuity.style.marginTop = '8px';
-        const info = data.continuity || {};
-        continuity.textContent = `Continuity blob: ${info.has_blob ? 'present' : 'missing'} · last import: ${info.last_import_time || '—'} · last export: ${info.last_export_time || '—'}`;
-        frameworksPanel.appendChild(list);
-        frameworksPanel.appendChild(continuity);
-      } catch (e) {
-        frameworksPanel.textContent = 'Framework telemetry unavailable.';
-      }
-    }
-
-    function toggleSection(section, chevron, onOpen) {
-      const isOpen = section.style.display !== 'none';
-      section.style.display = isOpen ? 'none' : 'block';
-      chevron.textContent = isOpen ? '►' : '▼';
-      if (!isOpen && onOpen) onOpen();
-    }
-
-    async function generateMediaItem() {
-      const prompt = document.getElementById('mediaPrompt').value.trim();
-      if (!prompt) return;
-      const res = await fetch('/api/media/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, type: 'image' }) });
+      const lvl = document.getElementById('log-filter').value;
+      const res = await fetch(`/api/logs?limit=200&level=${lvl}`);
       const data = await res.json();
-      if (data.error) {
-        vrStatus.textContent = data.error;
-        return;
-      }
-      document.getElementById('mediaPrompt').value = '';
-      await loadMedia();
-    }
-
-    async function loadMedia() {
-      const res = await fetch('/api/media/list?limit=50');
-      const data = await res.json();
-      const list = document.getElementById('mediaList');
+      const list = document.getElementById('log-list');
       list.innerHTML = '';
-      (data.items || []).forEach(item => {
+      (data.logs || []).forEach(log => {
         const div = document.createElement('div');
-        div.className = 'device';
-        div.innerHTML = `<div><div><strong>${item.prompt || 'Image'}</strong></div><div class="small-note">${item.created_at}</div></div><a href="${item.url}" target="_blank">Open</a>`;
+        div.className = 'log-item';
+        const lvlClass = log.level === 'error' ? 'level-error' : 'level-info';
+        div.innerHTML = `<span class="${lvlClass}">[${log.level}]</span> ${log.timestamp} - ${log.source}: ${log.message}`;
         list.appendChild(div);
       });
     }
+    loadLogs();
 
-    async function clearMedia() {
-      await fetch('/api/media/clear', { method: 'POST' });
-      await loadMedia();
+    // Web tools
+    document.getElementById('web-fetch').onclick = async () => {
+      const url = document.getElementById('web-url').value;
+      const res = await fetch('/api/web/fetch', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url, method: document.getElementById('web-method').value})});
+      const data = await res.json();
+      const out = document.getElementById('web-result');
+      out.innerHTML = '';
+      if (data.status === 'error') { out.textContent = data.error; return; }
+      const info = document.createElement('div');
+      info.textContent = `Status: ${data.info.status_code} | URL: ${data.info.url}`;
+      const headers = document.createElement('pre'); headers.textContent = JSON.stringify(data.info.headers, null, 2);
+      const body = document.createElement('pre'); body.textContent = data.content.body;
+      out.append(info, headers, body);
+    };
+
+    // Meridian Templates/Clients/Jobs
+    async function loadTemplates() {
+      const res = await fetch('/api/meridian/templates');
+      const data = await res.json();
+      const list = document.getElementById('templates-list');
+      list.innerHTML = '';
+      data.forEach(t => {
+        const div = document.createElement('div');
+        div.style.marginBottom = '8px';
+        div.innerHTML = `<strong>${t.name}</strong> (${t.type}) <button data-id="${t.id}">Use</button>`;
+        div.querySelector('button').onclick = () => {
+          meridianInput.value = t.content;
+          meridianInput.focus();
+        };
+        list.appendChild(div);
+      });
+    }
+    document.getElementById('tpl-add').onclick = async () => {
+      const payload = { name: document.getElementById('tpl-name').value, type: document.getElementById('tpl-type').value, content: document.getElementById('tpl-content').value };
+      await fetch('/api/meridian/templates', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      document.getElementById('tpl-name').value=''; document.getElementById('tpl-content').value='';
+      loadTemplates();
+    };
+
+    async function loadClients() {
+      const res = await fetch('/api/meridian/clients');
+      const data = await res.json();
+      const list = document.getElementById('clients-list');
+      list.innerHTML = '<table class="table"><tr><th>Name</th><th>Type</th><th>Contact</th><th>Actions</th></tr></table>';
+      const table = list.querySelector('table');
+      data.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${c.name}</td><td><span class="chip ${c.property_type}">${c.property_type}</span></td><td>${c.phone || ''}<br>${c.email || ''}</td>`;
+        const action = document.createElement('td');
+        const del = document.createElement('button'); del.textContent = 'Delete'; del.onclick = async()=>{ await fetch(`/api/meridian/clients/${c.id}`, {method:'DELETE'}); loadClients(); loadJobs(); };
+        const view = document.createElement('button'); view.textContent = 'View'; view.onclick = ()=> alert(JSON.stringify(c, null, 2));
+        action.append(view, del); tr.appendChild(action); table.appendChild(tr);
+      });
+    }
+    document.getElementById('client-add').onclick = async () => {
+      const payload = {
+        name: document.getElementById('client-name').value,
+        company: '',
+        property_type: document.getElementById('client-type').value,
+        address: document.getElementById('client-address').value,
+        phone: document.getElementById('client-phone').value,
+        email: document.getElementById('client-email').value,
+        notes: document.getElementById('client-notes').value
+      };
+      await fetch('/api/meridian/clients', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      ['client-name','client-phone','client-email','client-address','client-notes'].forEach(id=>document.getElementById(id).value='');
+      loadClients();
+    };
+
+    async function loadJobs() {
+      const res = await fetch('/api/meridian/jobs');
+      const data = await res.json();
+      const list = document.getElementById('jobs-list');
+      list.innerHTML = '<table class="table"><tr><th>Job</th><th>Client</th><th>Status</th><th>Value</th><th>Dates</th><th>Actions</th></tr></table>';
+      const table = list.querySelector('table');
+      data.forEach(j => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${j.job_name}</td><td>${j.client_id}</td><td><span class="chip" status="${j.status}">${j.status}</span></td><td>${j.value || 0}</td><td>${j.start_date || ''} - ${j.target_end_date || ''}</td>`;
+        const action = document.createElement('td');
+        const del = document.createElement('button'); del.textContent = 'Delete'; del.onclick = async()=>{ await fetch(`/api/meridian/jobs/${j.id}`, {method:'DELETE'}); loadJobs(); };
+        action.appendChild(del); tr.appendChild(action); table.appendChild(tr);
+      });
+    }
+    document.getElementById('job-add').onclick = async () => {
+      const payload = {
+        client_id: document.getElementById('job-client').value,
+        job_name: document.getElementById('job-name').value,
+        address: document.getElementById('job-address').value,
+        status: document.getElementById('job-status').value,
+        start_date: document.getElementById('job-start').value,
+        target_end_date: document.getElementById('job-end').value,
+        value: parseFloat(document.getElementById('job-value').value || '0'),
+        notes: document.getElementById('job-notes').value
+      };
+      await fetch('/api/meridian/jobs', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      ['job-client','job-name','job-address','job-start','job-end','job-value','job-notes'].forEach(id=>document.getElementById(id).value='');
+      loadJobs();
+    };
+
+    // Meridian storage uses media list for now
+    async function loadMeridianStorage() {
+      const res = await fetch('/api/media/list?limit=20');
+      const data = await res.json();
+      const container = document.getElementById('meridian-storage');
+      container.innerHTML = '';
+      (data.media || []).forEach(item => {
+        const div = document.createElement('div');
+        div.textContent = `${item.type}: ${item.url}`;
+        container.appendChild(div);
+      });
     }
 
-    async function runWebFetch() {
-      const url = document.getElementById('webUrl').value.trim();
-      const method = document.getElementById('webMethod').value;
-      const output = document.getElementById('webResult');
-      output.textContent = 'Fetching…';
-      try {
-        const res = await fetch('/api/web/fetch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, method }) });
-        const data = await res.json();
-        if (data.status !== 'ok') {
-          output.textContent = `Error: ${data.error}`;
-          return;
+    // Sq Ft calculator
+    let rooms = [];
+    function renderRooms() {
+      const container = document.getElementById('room-list');
+      container.innerHTML = '';
+      rooms.forEach((room, idx) => {
+        const row = document.createElement('div');
+        row.className = 'input-row';
+        row.innerHTML = `<input data-idx="${idx}" data-field="length" value="${room.length}" placeholder="Length"/><input data-idx="${idx}" data-field="width" value="${room.width}" placeholder="Width"/>`;
+        container.appendChild(row);
+      });
+      updateSqft();
+    }
+    function updateSqft() {
+      const inputs = document.querySelectorAll('#room-list input');
+      inputs.forEach(inp => {
+        const idx = inp.dataset.idx; const field = inp.dataset.field; rooms[idx][field] = parseFloat(inp.value || '0');
+      });
+      const total = rooms.reduce((sum, r) => sum + (r.length * r.width), 0);
+      document.getElementById('sqft-total').textContent = total.toFixed(2);
+      return total;
+    }
+    document.getElementById('add-room').onclick = () => { rooms.push({length:0, width:0}); renderRooms(); };
+    document.getElementById('qa-sqft').onclick = () => document.getElementById('sqft-panel').classList.toggle('hidden');
+    document.getElementById('sqft-send').onclick = () => {
+      const total = updateSqft();
+      meridianInput.value = `Sq Ft summary: ${total.toFixed(2)} sq ft across ${rooms.length} rooms.`;
+    };
+    document.getElementById('sqft-download').onclick = () => {
+      const total = updateSqft();
+      const blob = new Blob([`Total sq ft: ${total}\nRooms: ${JSON.stringify(rooms, null, 2)}`], {type:'text/plain'});
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'sqft-summary.txt';
+      link.click();
+    };
+
+    // Utilities
+    function flashStatus(id, text) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      setTimeout(()=> el.textContent='', 1500);
+    }
+
+    // Lattice visual
+    const latticeCanvas = document.getElementById('lattice');
+    const ctx = latticeCanvas.getContext('2d');
+    let latticeTick = 0;
+    function drawLattice(intensity=1, tightness=1) {
+      const w = latticeCanvas.width = latticeCanvas.clientWidth;
+      const h = latticeCanvas.height = latticeCanvas.clientHeight;
+      ctx.clearRect(0,0,w,h);
+      ctx.translate(w/2, h/2);
+      const rings = 4;
+      for (let r=1; r<=rings; r++) {
+        const radius = (Math.min(w,h)/2) * r/rings * tightness;
+        ctx.strokeStyle = `rgba(124,242,156,${0.15 + 0.15*r})`;
+        ctx.beginPath();
+        ctx.arc(0,0,radius,0,Math.PI*2);
+        ctx.stroke();
+        for (let i=0; i<12; i++) {
+          const angle = (i/12)*Math.PI*2 + latticeTick*0.01*intensity;
+          const x = Math.cos(angle)*radius;
+          const y = Math.sin(angle)*radius;
+          ctx.fillStyle = `rgba(88,196,255,${0.3 + 0.1*r})`;
+          ctx.beginPath();
+          ctx.arc(x,y,3 + intensity*0.5,0,Math.PI*2);
+          ctx.fill();
         }
-        const headers = Object.entries(data.info.headers || {}).slice(0, 20).map(([k,v]) => `${k}: ${v}`).join('\n');
-        output.textContent = `Status: ${data.info.status_code}\nURL: ${data.info.url}\n\nHeaders:\n${headers}\n\nBody (${data.content.type}):\n${data.content.body}`;
-      } catch (e) {
-        output.textContent = 'Fetch failed';
+      }
+      ctx.setTransform(1,0,0,1,0,0);
+      latticeTick++;
+      requestAnimationFrame(()=>drawLattice(intensity, tightness));
+    }
+    drawLattice();
+
+    function updateLattice(telemetry, radar, frameworks) {
+      const intensity = Math.min(3, (telemetry.latency_ms || 0)/200 + (telemetry.token_estimate||0)/200);
+      const tightness = 1 - (telemetry.flattening||0)/200;
+      drawLattice(intensity, Math.max(0.5, tightness));
+      if (radar?.events?.some(e=>e.severity==='threat')) {
+        const canvas = document.getElementById('lattice');
+        canvas.style.boxShadow = '0 0 12px rgba(255,0,0,0.6)';
+        setTimeout(()=> canvas.style.boxShadow = '', 800);
       }
     }
 
-    function formatSeconds(seconds) {
-      const mins = Math.floor(seconds / 60);
-      const hrs = Math.floor(mins / 60);
-      const remMins = mins % 60;
-      return `${hrs}h ${remMins}m`;
-    }
-
-    // Lattice animation (reacts to telemetry)
-    const canvas = document.getElementById('latticeCanvas');
-    const ctx = canvas.getContext('2d');
-    const nodes = Array.from({ length: latticeState.nodes }, (_, i) => ({ angle: (Math.PI * 2 * i) / latticeState.nodes, radius: 80 + Math.random() * 30 }));
-
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * devicePixelRatio;
-      canvas.height = rect.height * devicePixelRatio;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(devicePixelRatio, devicePixelRatio);
-    }
-
-    function drawLattice(t) {
-      const rect = canvas.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      const cx = rect.width / 2;
-      const cy = rect.height / 2;
-
-      ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
-      ctx.lineWidth = 1.2;
-
-      nodes.forEach((node, idx) => {
-        const speed = latticeState.speed + idx * 0.00003;
-        const angle = node.angle + t * speed;
-        const wobble = Math.sin(t * 0.001 + idx) * latticeState.jitter;
-        const r = node.radius + wobble;
-        const x = cx + Math.cos(angle) * r;
-        const y = cy + Math.sin(angle) * r;
-        node.pos = { x, y };
-      });
-
-      nodes.forEach((node, idx) => {
-        for (let j = idx + 1; j < nodes.length; j++) {
-          const other = nodes[j];
-          const dx = node.pos.x - other.pos.x;
-          const dy = node.pos.y - other.pos.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 200) {
-            ctx.globalAlpha = 1 - dist / 200;
-            ctx.beginPath();
-            ctx.moveTo(node.pos.x, node.pos.y);
-            ctx.lineTo(other.pos.x, other.pos.y);
-            ctx.stroke();
-          }
-        }
-      });
-
-      ctx.globalAlpha = 1;
-      nodes.forEach((node, idx) => {
-        const pulse = 4 + Math.sin(t * 0.003 + idx) * 2;
-        ctx.beginPath();
-        ctx.fillStyle = 'rgba(95, 230, 160, 0.9)';
-        ctx.arc(node.pos.x, node.pos.y, 4 + pulse * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(123, 212, 255, 0.7)';
-        ctx.stroke();
-      });
-
-      requestAnimationFrame(drawLattice);
-    }
-
-    function updateLattice(telemetry) {
-      const latency = telemetry.latency_ms || 100;
-      const tokens = telemetry.token_estimate || 10;
-      const flatten = telemetry.flattening || 50;
-      latticeState.speed = 0.0002 + Math.min(latency, 2000) / 1000000 + (tokens / 20000);
-      latticeState.jitter = flatten <= 30 ? 12 : flatten <= 70 ? 8 : 4;
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-    requestAnimationFrame(drawLattice);
-
-    async function loadInitial() {
-      checkHealth();
-      fetchFlattening();
-      fetchTelemetry();
-      loadDevices();
-      loadMedia();
-      loadLogs();
-      loadServerSettings();
-      addMessage('Aurelia', 'Omega lattice online. How can I help?');
-    }
-
-    setInterval(checkHealth, 25000);
-    loadInitial();
+    // Init fetches
+    loadMedia();
+    loadFrameworks();
+    loadBank();
+    loadTemplates();
+    loadClients();
+    loadJobs();
+    loadMeridianStorage();
+    refreshRadarEvents();
   </script>
 </body>
 </html>
