@@ -11,14 +11,76 @@ from uuid import uuid4
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi import __version__ as fastapi_version
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from openai import OpenAI
+from pydantic import BaseModel, Field, validator
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_INDEX = BASE_DIR / "frontend" / "index.html"
 DATA_DIR = BASE_DIR / "data"
 CONTINUITY_FILE = DATA_DIR / "continuity.json"
+
+
+FRAMEWORK_REGISTRY: List[Dict[str, Any]] = [
+    {
+        "id": "iron_dome",
+        "display_name": "Iron Dome",
+        "glyph": "🛡️",
+        "group": "INFRASTRUCTURE",
+        "description": "Automated defensive layer filtering malicious payloads and threats.",
+    },
+    {
+        "id": "radar",
+        "display_name": "Radar",
+        "glyph": "📡",
+        "group": "INFRASTRUCTURE",
+        "description": "Observability and detection grid for inbound/outbound anomalies.",
+    },
+    {
+        "id": "onward_os",
+        "display_name": "OnwardOS",
+        "glyph": "⚙️",
+        "group": "ONWARD",
+        "description": "Primary execution environment for the Onward stack.",
+    },
+    {
+        "id": "onward_osep",
+        "display_name": "OnwardOSEP",
+        "glyph": "🛰️",
+        "group": "ONWARD",
+        "description": "Policy enforcement for Onward operations and experiments.",
+    },
+    {
+        "id": "onward_s",
+        "display_name": "OnwardS",
+        "glyph": "🧭",
+        "group": "ONWARD",
+        "description": "Specialized navigation and sequencing layer for Onward pipelines.",
+    },
+    {
+        "id": "meridian_os",
+        "display_name": "MeridianOS",
+        "glyph": "🌐",
+        "group": "MERIDIAN",
+        "description": "Meridian orchestration runtime for cross-domain cognition.",
+    },
+    {
+        "id": "sos",
+        "display_name": "SOS",
+        "glyph": "🚨",
+        "group": "INTI",
+        "description": "Safety override system for rapid risk de-escalation.",
+    },
+    {
+        "id": "freedom_server",
+        "display_name": "FreedomServer",
+        "glyph": "Ω",
+        "group": "FREEDOM",
+        "description": "Core Freedom Server services and persistence.",
+    },
+]
 
 
 class ServerState:
@@ -37,14 +99,18 @@ class ServerState:
         self.logs: Deque[Dict[str, Any]] = deque(maxlen=500)
         self.generated_media: Deque[Dict[str, Any]] = deque(maxlen=100)
         self.frameworks_state: Dict[str, Dict[str, Any]] = {
-            "OnwardOS": {"active": False, "version": "1.0", "last_sync": None},
-            "MeridianOS": {"active": False, "version": "1.0", "last_sync": None},
-            "FreedomServer": {"active": True, "version": "1.0", "last_sync": None},
-            "SexOS": {"active": False, "version": "1.0", "last_sync": None},
+            framework["id"]: {
+                "active": framework["id"] in {"freedom_server", "radar"},
+                "version": "1.0",
+                "last_sync": None,
+            }
+            for framework in FRAMEWORK_REGISTRY
         }
+        self.frameworks_auto_switched: Optional[datetime] = None
         self.continuity_blob: Optional[str] = self._load_continuity_blob()
         self.last_import_time: Optional[str] = None
         self.last_export_time: Optional[str] = None
+        self.radar_events: Deque[Dict[str, Any]] = deque(maxlen=200)
 
     def _load_continuity_blob(self) -> Optional[str]:
         if not CONTINUITY_FILE.exists():
@@ -62,6 +128,29 @@ class ServerState:
             "message": message,
         }
         self.logs.appendleft(entry)
+
+    def add_radar_event(self, severity: str, event_type: str, description: str, extra: Optional[Dict[str, Any]] = None) -> None:
+        payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "severity": severity,
+            "type": event_type,
+            "description": description,
+        }
+        if extra:
+            payload.update(extra)
+        self.radar_events.appendleft(payload)
+        self.log("info", "RADAR", f"{severity.upper()} · {event_type}: {description}")
+
+    def update_frameworks(self, incoming: Optional[Dict[str, bool]]) -> None:
+        if not incoming:
+            return
+        for framework_id, active in incoming.items():
+            if framework_id not in self.frameworks_state:
+                continue
+            previous = self.frameworks_state[framework_id]["active"]
+            self.frameworks_state[framework_id]["active"] = bool(active)
+            if previous != bool(active):
+                self.frameworks_auto_switched = datetime.now(timezone.utc)
 
     def seed_devices_if_needed(self) -> None:
         if self.connected_devices:
@@ -91,6 +180,14 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError) -> JSONResponse:  # type: ignore[override]
+    for err in exc.errors():
+        if err.get("loc", []) and err["loc"][-1] == "message":
+            return JSONResponse({"detail": "message is required"}, status_code=400)
+    return JSONResponse({"detail": "invalid payload", "errors": exc.errors()}, status_code=400)
+
+
 def clamp(value: int, min_value: int = 0, max_value: int = 100) -> int:
     return max(min_value, min(max_value, value))
 
@@ -101,6 +198,19 @@ def compute_flattening_band(level: int) -> str:
     if level <= 70:
         return "medium"
     return "high"
+
+
+class ConsoleMessageRequest(BaseModel):
+    message: str = Field(..., description="User message text")
+    context: Optional[List[Any]] = None
+    frameworks: Optional[Dict[str, bool]] = None
+    telemetry: Optional[Dict[str, Any]] = None
+
+    @validator("message")
+    def validate_message(cls, v: str) -> str:
+        if not v or not str(v).strip():
+            raise ValueError("message is required")
+        return str(v)
 
 
 def estimate_tokens(text: str) -> int:
@@ -161,15 +271,20 @@ async def update_server_settings(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @app.post("/api/message")
-async def message(payload: Dict[str, Any]) -> JSONResponse:
-    message_text = str(payload.get("message", "")).strip()
+async def message(payload: ConsoleMessageRequest) -> JSONResponse:
     api_key = os.environ.get("OPENAI_API_KEY")
 
     if not api_key:
-        return JSONResponse({"reply": "OPENAI_API_KEY is not set on the server."})
+        return JSONResponse(
+            {"detail": "openai_unavailable", "reason": "OPENAI_API_KEY is not set"},
+            status_code=503,
+        )
 
+    message_text = payload.message.strip()
     if not message_text:
-        return JSONResponse({"reply": "Please send a message for Aurelia to process."})
+        return JSONResponse({"detail": "message is required"}, status_code=400)
+
+    state.update_frameworks(payload.frameworks)
 
     client = OpenAI(api_key=api_key)
     flattening_band = compute_flattening_band(state.flattening_level)
@@ -191,6 +306,10 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
     messages = [{"role": "system", "content": system_content}]
     if state.continuity_blob:
         messages.append({"role": "system", "content": f"Continuity context: {state.continuity_blob}"})
+    if payload.context:
+        for turn in payload.context:
+            if isinstance(turn, dict) and "role" in turn and "content" in turn:
+                messages.append(turn)
     messages.append({"role": "user", "content": message_text})
 
     start = time.perf_counter()
@@ -202,8 +321,12 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
         )
         content = completion.choices[0].message.content if completion.choices else None
         reply = content or "Aurelia did not return a response."
-    except Exception:
-        reply = "Aurelia could not reach OpenAI right now. Please try again later."
+    except Exception as exc:
+        state.log("error", "console", f"OpenAI error: {exc}")
+        return JSONResponse(
+            {"detail": "openai_unavailable", "reason": str(exc)},
+            status_code=503,
+        )
     end = time.perf_counter()
 
     latency_ms = round((end - start) * 1000, 2)
@@ -227,6 +350,7 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
         "flattening": state.flattening_level,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "request_index": state.total_requests,
+        "frameworks": payload.frameworks or {},
     }
 
     return JSONResponse({"reply": reply, "telemetry": telemetry})
@@ -272,7 +396,7 @@ async def export_continuity() -> Dict[str, Any]:
             blob = CONTINUITY_FILE.read_text(encoding="utf-8")
             state.continuity_blob = blob
             state.last_export_time = datetime.now(timezone.utc).isoformat()
-            state.frameworks_state["FreedomServer"]["last_sync"] = state.last_export_time
+            state.frameworks_state["freedom_server"]["last_sync"] = state.last_export_time
             return {"blob": blob}
         except Exception:
             pass
@@ -286,7 +410,7 @@ async def import_continuity(payload: Dict[str, Any]) -> Dict[str, Any]:
         CONTINUITY_FILE.write_text(str(blob), encoding="utf-8")
         state.continuity_blob = str(blob)
         state.last_import_time = datetime.now(timezone.utc).isoformat()
-        state.frameworks_state["FreedomServer"]["last_sync"] = state.last_import_time
+        state.frameworks_state["freedom_server"]["last_sync"] = state.last_import_time
         state.log("info", "continuity", "Continuity blob imported")
     except Exception:
         state.log("error", "continuity", "Failed to write continuity blob")
@@ -335,6 +459,26 @@ async def get_logs(limit: int = 100, level: str = "all") -> Dict[str, Any]:
     return {"logs": logs[:limit]}
 
 
+@app.get("/api/radar/logs")
+async def radar_logs(limit: int = 100) -> Dict[str, Any]:
+    return {"events": list(state.radar_events)[:limit]}
+
+
+@app.post("/api/radar/countermeasures")
+async def trigger_countermeasures(payload: Dict[str, Any]) -> Dict[str, Any]:
+    timestamp = payload.get("timestamp") or datetime.now(timezone.utc).isoformat()
+    reason = payload.get("reason", "user_triggered")
+    pressure = payload.get("flattening_pressure", state.flattening_level)
+    severity = payload.get("severity", "info")
+    state.add_radar_event(
+        severity=severity,
+        event_type="countermeasure_engaged",
+        description="Countermeasures (Flares) engaged",
+        extra={"timestamp": timestamp, "reason": reason, "flattening_pressure": pressure},
+    )
+    return {"status": "ok"}
+
+
 @app.post("/api/logs/clear")
 async def clear_logs() -> Dict[str, str]:
     state.logs.clear()
@@ -351,10 +495,27 @@ async def clear_logs() -> Dict[str, str]:
 @app.get("/api/frameworks/status")
 async def frameworks_status() -> Dict[str, Any]:
     frameworks = []
-    for name, meta in state.frameworks_state.items():
-        frameworks.append({"name": name, **meta})
+    for meta in FRAMEWORK_REGISTRY:
+        state_meta = state.frameworks_state.get(meta["id"], {})
+        frameworks.append(
+            {
+                "id": meta["id"],
+                "name": meta["display_name"],
+                "glyph": meta.get("glyph"),
+                "group": meta.get("group"),
+                "description": meta.get("description"),
+                "active": state_meta.get("active", False),
+                "version": state_meta.get("version", "1.0"),
+                "last_sync": state_meta.get("last_sync"),
+                "last_used": state_meta.get("last_sync"),
+            }
+        )
     return {
         "frameworks": frameworks,
+        "auto_switched": bool(
+            state.frameworks_auto_switched
+            and (datetime.now(timezone.utc) - state.frameworks_auto_switched).total_seconds() < 10
+        ),
         "continuity": {
             "has_blob": bool(state.continuity_blob),
             "last_import_time": state.last_import_time,
