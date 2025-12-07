@@ -37,6 +37,35 @@
       gap: 12px;
     }
 
+    .header-frame {
+      position: relative;
+      padding: 14px 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(123, 212, 255, 0.45);
+      background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      box-shadow: 0 0 22px rgba(123, 212, 255, 0.25);
+      overflow: hidden;
+      font-style: italic;
+    }
+
+    .header-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      padding: 1px;
+      background: conic-gradient(from 0deg, rgba(123, 212, 255, 0.6), rgba(95, 230, 160, 0.8), rgba(123, 212, 255, 0.6));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: pulse-border 3s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse-border {
+      to { transform: rotate(360deg); }
+    }
+
     .nav-tabs {
       display: flex;
       gap: 10px;
@@ -75,6 +104,7 @@
       margin: 0;
       font-size: 28px;
       letter-spacing: 0.5px;
+      font-style: italic;
     }
 
     .title span { color: var(--muted); font-size: 15px; }
@@ -121,6 +151,34 @@
     .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .small-note { font-size: 12px; color: var(--muted); }
 
+    .radar-panel.flash-warning { animation: border-flash-warning 1s ease-in-out infinite; }
+    .radar-panel.flash-critical { animation: border-flash-critical 0.8s ease-in-out infinite; }
+    @keyframes border-flash-warning { 0% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0.6); } 50% { box-shadow: 0 0 0 4px rgba(255, 179, 71, 0.2); } 100% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0.0); } }
+    @keyframes border-flash-critical { 0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); } 50% { box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.3); } 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.0); } }
+
+    .radar-events { max-height: 160px; overflow: auto; display: grid; gap: 8px; margin-top: 8px; }
+    .radar-event { padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+    .radar-event .title-row { display:flex; justify-content: space-between; gap:8px; font-size: 13px; }
+    .radar-event .details { display:none; margin-top:6px; font-size:12px; color: var(--muted); white-space: pre-wrap; }
+    .radar-event.expanded .details { display:block; }
+
+    .frameworks-panel.flash-warning { animation: border-flash-warning 1s ease-in-out infinite; }
+    .frameworks-panel.flash-critical { animation: border-flash-critical 0.8s ease-in-out infinite; }
+    .framework-node { padding: 6px 8px; border-radius: 8px; margin: 2px 0; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
+    .framework-children { margin-left: 14px; border-left: 1px dashed rgba(255,255,255,0.08); padding-left: 10px; }
+    .framework-toggle { margin-left: auto; }
+
+    .media-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; max-height: 200px; overflow: auto; }
+    .media-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px; display: grid; gap: 6px; }
+    .media-card img { width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04); }
+    .media-bubble { background: var(--danger); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 999px; }
+
+    .chat-input { grid-template-columns: 1fr 110px 120px; }
+    .voice-button { display:flex; align-items:center; justify-content:center; gap:6px; }
+    .voice-button.active { color: var(--success); box-shadow: 0 0 10px rgba(95, 230, 160, 0.4); border-color: rgba(95, 230, 160, 0.4); }
+    .voice-status { font-size: 12px; color: var(--muted); margin-left: 4px; }
+    .console-header { display:flex; justify-content: space-between; align-items:center; gap:10px; }
+
     @media (max-width: 960px) {
       main { grid-template-columns: 1fr; }
       .controls-grid { grid-template-rows: 240px auto auto; }
@@ -130,11 +188,13 @@
 </head>
 <body>
   <header>
-    <div class="title">
-      <div class="omega">Ω</div>
-      <div>
-        <h1>Freedom Server</h1>
-        <span>Omega lattice / Aurelia console</span>
+    <div class="header-frame">
+      <div class="title">
+        <div class="omega">Ω</div>
+        <div>
+          <h1>Freedom Server Ω</h1>
+          <span>Omega lattice / Aurelia console</span>
+        </div>
       </div>
     </div>
     <div class="muted" id="healthStatus">Checking health…</div>
@@ -151,28 +211,32 @@
   <div id="consoleTab" class="tab-panel active">
     <main>
       <section class="panel">
-        <h2>Console · Chat</h2>
+        <div class="console-header">
+          <h2>Console · Chat</h2>
+          <div class="voice-status">Voice: <span id="voiceStateLabel">OFF</span></div>
+        </div>
         <div id="chatLog" class="chat-log"></div>
         <form id="chatForm" class="chat-input">
           <input id="chatInput" type="text" placeholder="Send a message to Aurelia" autocomplete="off" required data-tooltip="Send your message to Aurelia on the local Freedom Server node." />
           <button class="btn" type="submit" data-tooltip="Send your message to Aurelia on the local Freedom Server node.">Send</button>
+          <button class="btn voice-button" type="button" id="voiceToggle">🎙️ Voice Chat</button>
         </form>
 
         <div class="info-card" style="margin-top: 12px;">
           <div class="collapsible" id="mediaToggle">
             <div class="flex" style="gap:6px;">
               <strong>Generated Media</strong>
-              <span class="muted small-note">Images created locally</span>
+              <span class="muted small-note">Display-only grid</span>
+              <span id="mediaBubble" class="media-bubble" style="display:none;">new</span>
             </div>
             <span id="mediaChevron">▼</span>
           </div>
           <div id="mediaPanel" style="display:none; margin-top:10px;">
             <div class="flex" style="gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-              <input id="mediaPrompt" class="input" placeholder="Prompt for image generation" data-tooltip="Use OpenAI image generation with the given prompt." />
-              <button class="btn" id="generateMedia" type="button" data-tooltip="Generate an image using the prompt.">Generate Image</button>
               <button class="btn" id="clearMedia" type="button">Clear Media</button>
+              <span class="small-note">Media items are captured from links or images in replies.</span>
             </div>
-            <div id="mediaList" class="device-list"></div>
+            <div id="mediaList" class="media-grid"></div>
           </div>
         </div>
 
@@ -192,6 +256,21 @@
         <div>
           <h2>Omega Lattice</h2>
           <canvas id="latticeCanvas" width="600" height="240"></canvas>
+          <div class="info-card radar-panel" id="radarPanel" style="margin-top:10px;">
+            <div class="collapsible" id="radarToggle">
+              <strong>Radar</strong>
+              <span id="radarChevron">▼</span>
+            </div>
+            <div id="radarBody" style="margin-top:8px;">
+              <div class="flex" style="gap:10px; flex-wrap:wrap;">
+                <label class="small-note">Warning <input type="number" id="warningThreshold" min="0" max="100" style="width:70px;" /></label>
+                <label class="small-note">Cooldown <input type="number" id="cooldownThreshold" min="0" max="100" style="width:70px;" /></label>
+                <label class="toggle small-note"><input type="checkbox" id="autoFlares" /> Auto flares</label>
+                <button class="btn" id="refreshRadarEvents" type="button">Refresh Events</button>
+              </div>
+              <div class="radar-events" id="radarEvents"></div>
+            </div>
+          </div>
         </div>
 
         <div class="settings-block">
@@ -219,7 +298,7 @@
               <button class="btn" id="refreshTelemetry" type="button" data-tooltip="Fetch the latest node telemetry from the backend.">Refresh Telemetry</button>
             </div>
           </div>
-          <div class="info-card">
+          <div class="info-card frameworks-panel" id="frameworksContainer">
             <div class="collapsible" id="frameworksToggle">
               <strong>Frameworks</strong>
               <span id="frameworkChevron">►</span>
@@ -346,11 +425,29 @@
     const tooltip = document.getElementById('tooltip');
     const mediaPanel = document.getElementById('mediaPanel');
     const mediaChevron = document.getElementById('mediaChevron');
+    const mediaBubble = document.getElementById('mediaBubble');
     const frameworksPanel = document.getElementById('frameworksPanel');
     const frameworkChevron = document.getElementById('frameworkChevron');
+    const frameworksContainer = document.getElementById('frameworksContainer');
+    const voiceToggle = document.getElementById('voiceToggle');
+    const voiceStateLabel = document.getElementById('voiceStateLabel');
+    const warningThresholdInput = document.getElementById('warningThreshold');
+    const cooldownThresholdInput = document.getElementById('cooldownThreshold');
+    const autoFlaresInput = document.getElementById('autoFlares');
+    const radarEventsList = document.getElementById('radarEvents');
+    const radarPanel = document.getElementById('radarPanel');
+    const radarChevron = document.getElementById('radarChevron');
+    const radarToggle = document.getElementById('radarToggle');
+    const radarBody = document.getElementById('radarBody');
+    const refreshRadarEventsBtn = document.getElementById('refreshRadarEvents');
 
     let tooltipTimer = null;
     let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
+    let mediaItems = [];
+    let lastRadarEventTs = null;
+    let radarFlashTimer = null;
+    let frameworksFlashTimer = null;
+    let voiceStream = null;
 
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
@@ -401,6 +498,7 @@
         });
         const data = await res.json();
         addMessage('Aurelia', data.reply || 'No response');
+        processReplyMedia(data.reply || '');
         if (data.telemetry) {
           updateTelemetry(data.telemetry);
           updateLattice(data.telemetry);
@@ -446,10 +544,17 @@
     document.getElementById('connectVr').addEventListener('click', () => connectVr(true));
     document.getElementById('disconnectVr').addEventListener('click', () => connectVr(false));
 
-    document.getElementById('generateMedia').addEventListener('click', generateMediaItem);
     document.getElementById('clearMedia').addEventListener('click', clearMedia);
-    document.getElementById('mediaToggle').addEventListener('click', () => toggleSection(mediaPanel, mediaChevron));
+    document.getElementById('mediaToggle').addEventListener('click', () => toggleSection(mediaPanel, mediaChevron, loadMedia));
     document.getElementById('frameworksToggle').addEventListener('click', () => toggleSection(frameworksPanel, frameworkChevron, loadFrameworks));
+    radarToggle.addEventListener('click', () => toggleSection(radarBody, radarChevron, fetchRadarSettings));
+    refreshRadarEventsBtn.addEventListener('click', loadRadarEvents);
+    warningThresholdInput.addEventListener('change', persistRadarSettings);
+    cooldownThresholdInput.addEventListener('change', persistRadarSettings);
+    autoFlaresInput.addEventListener('change', persistRadarSettings);
+    voiceToggle.addEventListener('click', toggleVoiceChat);
+    radarPanel.addEventListener('mouseenter', () => radarPanel.classList.remove('flash-warning', 'flash-critical'));
+    frameworksContainer.addEventListener('mouseenter', () => frameworksContainer.classList.remove('flash-warning', 'flash-critical'));
 
     document.getElementById('exportContinuity').addEventListener('click', exportContinuity);
     document.getElementById('importContinuity').addEventListener('click', importContinuity);
@@ -499,6 +604,68 @@
       flatteningValue.textContent = `${value} · ${band}`;
     }
 
+    async function fetchRadarSettings() {
+      try {
+        const res = await fetch('/api/radar/settings');
+        const data = await res.json();
+        warningThresholdInput.value = data.warning_threshold;
+        cooldownThresholdInput.value = data.cooldown_threshold;
+        autoFlaresInput.checked = data.auto_flares;
+      } catch (e) {
+        console.warn('Radar settings load failed', e);
+      }
+      loadRadarEvents();
+    }
+
+    async function persistRadarSettings() {
+      const payload = {
+        warning_threshold: Number(warningThresholdInput.value || 0),
+        cooldown_threshold: Number(cooldownThresholdInput.value || 0),
+        auto_flares: autoFlaresInput.checked
+      };
+      try {
+        await fetch('/api/radar/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        loadRadarEvents();
+      } catch (e) {
+        console.warn('Radar settings save failed', e);
+      }
+    }
+
+    async function loadRadarEvents() {
+      try {
+        const res = await fetch('/api/radar/events?limit=50');
+        const data = await res.json();
+        const events = data.events || [];
+        renderRadarEvents(events);
+        if (events.length && events[0].timestamp !== lastRadarEventTs) {
+          handleRadarFlash(events[0]);
+          lastRadarEventTs = events[0].timestamp;
+        }
+      } catch (e) {
+        radarEventsList.innerHTML = '<div class="small-note">Unable to load radar events.</div>';
+      }
+    }
+
+    function renderRadarEvents(events) {
+      radarEventsList.innerHTML = '';
+      events.forEach(evt => {
+        const row = document.createElement('div');
+        row.className = 'radar-event';
+        const ts = new Date(evt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        row.innerHTML = `<div class="title-row"><span>${ts} · ${evt.type}</span><span>${evt.severity.toUpperCase()} · ${evt.flattening}</span></div><div class="details">${evt.timestamp}\n${evt.details}\n${JSON.stringify(evt.context || {}, null, 2)}</div>`;
+        row.addEventListener('click', () => row.classList.toggle('expanded'));
+        radarEventsList.appendChild(row);
+      });
+    }
+
+    function handleRadarFlash(evt) {
+      clearTimeout(radarFlashTimer);
+      radarPanel.classList.remove('flash-warning', 'flash-critical');
+      if (evt.severity === 'warning') radarPanel.classList.add('flash-warning');
+      if (evt.severity === 'critical') radarPanel.classList.add('flash-critical');
+      radarFlashTimer = setTimeout(() => radarPanel.classList.remove('flash-warning', 'flash-critical'), 5000);
+    }
+
     async function fetchFlattening() {
       try {
         const res = await fetch('/api/settings/flattening');
@@ -506,6 +673,16 @@
         flatteningSlider.value = data.value;
         setFlatteningLabel(data.value);
       } catch (e) { console.warn('Failed to load flattening'); }
+    }
+
+    async function fetchVoiceState() {
+      try {
+        const res = await fetch('/api/voice/status');
+        const data = await res.json();
+        updateVoiceUi(!!data.enabled);
+      } catch (e) {
+        console.warn('Voice state fetch failed');
+      }
     }
 
     async function fetchTelemetry() {
@@ -675,22 +852,45 @@
     }
 
     async function loadFrameworks() {
+      frameworksPanel.textContent = 'Loading frameworks…';
       try {
         const res = await fetch('/api/frameworks/status');
         const data = await res.json();
         frameworksPanel.innerHTML = '';
-        const list = document.createElement('div');
-        (data.frameworks || []).forEach(fw => {
-          const row = document.createElement('div');
-          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
-          list.appendChild(row);
-        });
+        const frameworks = data.frameworks || [];
+        const inUse = data.frameworks_in_use || [];
+        const renderNode = (node) => {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'framework-node flex';
+          const label = document.createElement('div');
+          label.innerHTML = `${node.glyph || ''} <strong>${node.name}</strong><div class="small-note">${node.description || ''}</div>`;
+          wrapper.appendChild(label);
+          if (node.toggleable) {
+            const toggle = document.createElement('input');
+            toggle.type = 'checkbox';
+            toggle.checked = !!node.active;
+            toggle.className = 'framework-toggle';
+            toggle.addEventListener('change', async () => {
+              await fetch('/api/frameworks/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id, active: toggle.checked }) });
+              loadFrameworks();
+            });
+            wrapper.appendChild(toggle);
+          }
+          if (node.children && node.children.length) {
+            const children = document.createElement('div');
+            children.className = 'framework-children';
+            node.children.forEach(ch => children.appendChild(renderNode(ch)));
+            wrapper.appendChild(children);
+          }
+          return wrapper;
+        };
+        frameworks.forEach(node => frameworksPanel.appendChild(renderNode(node)));
         const continuity = document.createElement('div');
         continuity.style.marginTop = '8px';
         const info = data.continuity || {};
         continuity.textContent = `Continuity blob: ${info.has_blob ? 'present' : 'missing'} · last import: ${info.last_import_time || '—'} · last export: ${info.last_export_time || '—'}`;
-        frameworksPanel.appendChild(list);
         frameworksPanel.appendChild(continuity);
+        handleFrameworkFlash(inUse);
       } catch (e) {
         frameworksPanel.textContent = 'Framework telemetry unavailable.';
       }
@@ -701,32 +901,102 @@
       section.style.display = isOpen ? 'none' : 'block';
       chevron.textContent = isOpen ? '►' : '▼';
       if (!isOpen && onOpen) onOpen();
+      if (!isOpen && section === mediaPanel) mediaBubble.style.display = 'none';
     }
 
-    async function generateMediaItem() {
-      const prompt = document.getElementById('mediaPrompt').value.trim();
-      if (!prompt) return;
-      const res = await fetch('/api/media/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, type: 'image' }) });
-      const data = await res.json();
-      if (data.error) {
-        vrStatus.textContent = data.error;
-        return;
+    function handleFrameworkFlash(inUse) {
+      clearTimeout(frameworksFlashTimer);
+      frameworksContainer.classList.remove('flash-warning', 'flash-critical');
+      if ((inUse || []).length > 0) {
+        frameworksContainer.classList.add('flash-warning');
+        frameworksFlashTimer = setTimeout(() => frameworksContainer.classList.remove('flash-warning', 'flash-critical'), 5000);
       }
-      document.getElementById('mediaPrompt').value = '';
-      await loadMedia();
     }
 
     async function loadMedia() {
       const res = await fetch('/api/media/list?limit=50');
       const data = await res.json();
+      mediaItems = data.items || [];
+      renderMediaGrid();
+    }
+
+    function renderMediaGrid() {
       const list = document.getElementById('mediaList');
       list.innerHTML = '';
-      (data.items || []).forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'device';
-        div.innerHTML = `<div><div><strong>${item.prompt || 'Image'}</strong></div><div class="small-note">${item.created_at}</div></div><a href="${item.url}" target="_blank">Open</a>`;
-        list.appendChild(div);
+      mediaItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'media-card';
+        const label = document.createElement('div');
+        label.className = 'small-note';
+        label.textContent = item.prompt_or_label || item.prompt || item.type || 'item';
+        card.appendChild(label);
+        if (item.type === 'image') {
+          const img = document.createElement('img');
+          img.src = item.url || item.url_or_data;
+          img.alt = item.prompt_or_label || 'media';
+          img.addEventListener('click', () => window.open(item.url || item.url_or_data, '_blank'));
+          card.appendChild(img);
+        } else {
+          const link = document.createElement('a');
+          link.href = item.url || item.url_or_data;
+          link.target = '_blank';
+          link.textContent = 'Open link';
+          card.appendChild(link);
+        }
+        const meta = document.createElement('div');
+        meta.className = 'small-note';
+        meta.textContent = item.created_at || '';
+        card.appendChild(meta);
+        list.appendChild(card);
       });
+    }
+
+    function processReplyMedia(text) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const urls = text.match(urlRegex) || [];
+      let added = false;
+      urls.forEach(url => {
+        const isImage = url.match(/\.(png|jpg|jpeg|gif|webp)$/i);
+        mediaItems.unshift({
+          id: `${Date.now()}-${Math.random()}`,
+          type: isImage ? 'image' : 'link',
+          url,
+          url_or_data: url,
+          prompt_or_label: isImage ? 'Image link' : 'Link',
+          created_at: new Date().toISOString(),
+        });
+        added = true;
+      });
+      if (added) {
+        renderMediaGrid();
+        mediaBubble.style.display = 'inline-block';
+      }
+    }
+
+    async function toggleVoiceChat() {
+      if (voiceStream) {
+        voiceStream.getTracks().forEach(t => t.stop());
+        voiceStream = null;
+        await fetch('/api/voice/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: false }) });
+        updateVoiceUi(false);
+        return;
+      }
+      try {
+        voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        await fetch('/api/voice/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: true }) });
+        updateVoiceUi(true);
+      } catch (e) {
+        addMessage('System', 'Microphone access denied by browser.');
+        updateVoiceUi(false);
+      }
+    }
+
+    function updateVoiceUi(enabled) {
+      voiceToggle.classList.toggle('active', enabled);
+      voiceStateLabel.textContent = enabled ? 'ON' : 'OFF';
+      if (!enabled) {
+        voiceStream = null;
+      }
     }
 
     async function clearMedia() {
@@ -840,12 +1110,15 @@
       fetchTelemetry();
       loadDevices();
       loadMedia();
+      fetchRadarSettings();
+      fetchVoiceState();
       loadLogs();
       loadServerSettings();
       addMessage('Aurelia', 'Omega lattice online. How can I help?');
     }
 
     setInterval(checkHealth, 25000);
+    setInterval(loadRadarEvents, 20000);
     loadInitial();
   </script>
 </body>
