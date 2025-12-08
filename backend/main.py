@@ -19,6 +19,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_INDEX = BASE_DIR / "frontend" / "index.html"
 DATA_DIR = BASE_DIR / "data"
 CONTINUITY_FILE = DATA_DIR / "continuity.json"
+MEMORY_ROOT = Path(os.path.expanduser("~/FreedomServerMemory"))
+MEMORY_SCOPES = {
+    "global": MEMORY_ROOT / "global",
+    "meridian": MEMORY_ROOT / "meridian",
+}
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 
 class ServerState:
@@ -45,6 +52,7 @@ class ServerState:
         self.continuity_blob: Optional[str] = self._load_continuity_blob()
         self.last_import_time: Optional[str] = None
         self.last_export_time: Optional[str] = None
+        self.ensure_memory_dirs()
 
     def _load_continuity_blob(self) -> Optional[str]:
         if not CONTINUITY_FILE.exists():
@@ -62,6 +70,11 @@ class ServerState:
             "message": message,
         }
         self.logs.appendleft(entry)
+
+    def ensure_memory_dirs(self) -> None:
+        MEMORY_ROOT.mkdir(exist_ok=True)
+        for scope_dir in MEMORY_SCOPES.values():
+            scope_dir.mkdir(parents=True, exist_ok=True)
 
     def seed_devices_if_needed(self) -> None:
         if self.connected_devices:
@@ -115,6 +128,29 @@ def is_url_allowed(url: str) -> bool:
     return not any(host in url_lower for host in blocked_hosts)
 
 
+def _memory_file_id(path: Path) -> str:
+    return path.stem
+
+
+def _memory_file_payload(path: Path, scope: str) -> Optional[Dict[str, Any]]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        return None
+    return None
+
+
+def _locate_memory_file(memory_id: str) -> Optional[Path]:
+    normalized_id = memory_id.replace(".json", "")
+    for scope_dir in MEMORY_SCOPES.values():
+        candidate = scope_dir / f"{normalized_id}.json"
+        if candidate.exists():
+            return candidate
+    return None
+
+
 @app.get("/", response_class=FileResponse)
 async def root() -> FileResponse:
     if not FRONTEND_INDEX.exists():
@@ -163,15 +199,15 @@ async def update_server_settings(payload: Dict[str, Any]) -> Dict[str, Any]:
 @app.post("/api/message")
 async def message(payload: Dict[str, Any]) -> JSONResponse:
     message_text = str(payload.get("message", "")).strip()
-    api_key = os.environ.get("OPENAI_API_KEY")
-
-    if not api_key:
-        return JSONResponse({"reply": "OPENAI_API_KEY is not set on the server."})
+    if not OPENAI_API_KEY or client is None:
+        return JSONResponse(
+            {"error": "OPENAI_API_KEY is not configured on the server."},
+            status_code=503,
+        )
 
     if not message_text:
         return JSONResponse({"reply": "Please send a message for Aurelia to process."})
 
-    client = OpenAI(api_key=api_key)
     flattening_band = compute_flattening_band(state.flattening_level)
     temperature = 0.5
     if flattening_band == "low":
@@ -230,6 +266,63 @@ async def message(payload: Dict[str, Any]) -> JSONResponse:
     }
 
     return JSONResponse({"reply": reply, "telemetry": telemetry})
+
+
+@app.post("/api/meridian/message")
+async def meridian_message(payload: Dict[str, Any]) -> JSONResponse:
+    message_text = str(payload.get("message", "")).strip()
+    if not OPENAI_API_KEY or client is None:
+        return JSONResponse(
+            {"error": "OPENAI_API_KEY is not configured on the server."},
+            status_code=503,
+        )
+    if not message_text:
+        return JSONResponse({"reply": "Please provide a message for MeridianOS."})
+
+    system_prompt = (
+        "You are Aurelia operating as MeridianOS, a home improvement and field support AI. "
+        "Act as an expert in home repairs, DIY fundamentals, HVAC basics, mold remediation basics, "
+        "high-level and safety-aware electrical guidance, pricing and quoting strategy, square footage math, and planning. "
+        "Deliver clear, practical, contractor-friendly responses with short, high-signal guidance. "
+        "Favor safety and caution, avoid dangerous step-by-step instructions without warnings, and encourage professional inspections when appropriate."
+    )
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": message_text},
+    ]
+
+    start = time.perf_counter()
+    tokens_used: Optional[int] = None
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=messages,
+            temperature=0.4,
+        )
+        content = completion.choices[0].message.content if completion.choices else None
+        reply = content or "Aurelia did not return a response."
+        tokens_used = completion.usage.total_tokens if completion.usage else None
+    except Exception:
+        reply = "MeridianOS could not reach OpenAI right now. Please try again later."
+    end = time.perf_counter()
+
+    latency_ms = round((end - start) * 1000, 2)
+    token_estimate = tokens_used if tokens_used is not None else estimate_tokens(reply)
+    state.total_requests += 1
+    state.last_latency_ms = latency_ms
+    state.last_token_count = token_estimate
+    state.log("info", "meridian", f"User: {message_text}")
+    state.log("info", "meridian", f"MeridianOS: {reply}")
+
+    telemetry = {
+        "latency_ms": latency_ms,
+        "token_estimate": token_estimate,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "request_index": state.total_requests,
+    }
+
+    return JSONResponse({"reply": reply, "tokens_used": tokens_used, "telemetry": telemetry})
 
 
 @app.get("/api/telemetry")
@@ -469,4 +562,82 @@ async def web_fetch(payload: Dict[str, Any]) -> Dict[str, Any]:
         },
         "content": {"type": body_type, "body": body_preview},
     }
+
+
+@app.get("/api/memory/list")
+async def memory_list(scope: str = "global") -> Dict[str, Any]:
+    if scope not in MEMORY_SCOPES:
+        raise HTTPException(status_code=400, detail="Invalid scope")
+
+    scope_dir = MEMORY_SCOPES[scope]
+    items: List[Dict[str, Any]] = []
+    for path in sorted(scope_dir.glob("continuity_*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        payload = _memory_file_payload(path, scope)
+        if not payload:
+            continue
+        items.append(
+            {
+                "id": payload.get("id", _memory_file_id(path)),
+                "created_at": payload.get("created_at"),
+                "notes": payload.get("notes"),
+                "scope": payload.get("scope", scope),
+            }
+        )
+
+    return {"items": items}
+
+
+@app.post("/api/memory/save")
+async def memory_save(payload: Dict[str, Any]) -> Dict[str, Any]:
+    scope = payload.get("scope", "global")
+    if scope not in MEMORY_SCOPES:
+        raise HTTPException(status_code=400, detail="Invalid scope")
+
+    notes = str(payload.get("notes", "")).strip()
+    data = payload.get("data", {})
+    timestamp = datetime.now(timezone.utc).isoformat()
+    memory_id = f"continuity_{int(time.time())}_{uuid4().hex[:6]}"
+    content = {
+        "id": memory_id,
+        "created_at": timestamp,
+        "scope": scope,
+        "notes": notes,
+        "data": data,
+    }
+
+    scope_dir = MEMORY_SCOPES[scope]
+    scope_dir.mkdir(parents=True, exist_ok=True)
+    file_path = scope_dir / f"{memory_id}.json"
+    file_path.write_text(json.dumps(content, indent=2), encoding="utf-8")
+
+    return {
+        "id": memory_id,
+        "created_at": timestamp,
+        "scope": scope,
+        "notes": notes,
+    }
+
+
+@app.get("/api/memory/load/{memory_id}")
+async def memory_load(memory_id: str) -> Dict[str, Any]:
+    path = _locate_memory_file(memory_id)
+    if not path:
+        raise HTTPException(status_code=404, detail="Memory not found")
+
+    payload = _memory_file_payload(path, path.parent.name)
+    if not payload:
+        raise HTTPException(status_code=500, detail="Memory file is corrupted")
+    return payload
+
+
+@app.delete("/api/memory/delete/{memory_id}")
+async def memory_delete(memory_id: str) -> Dict[str, Any]:
+    path = _locate_memory_file(memory_id)
+    if not path:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    try:
+        path.unlink()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to delete memory file")
+    return {"status": "deleted", "id": memory_id}
 
