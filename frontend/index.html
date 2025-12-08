@@ -3,850 +3,1078 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Freedom Server · Aurelia Omega</title>
+  <title>Freedom Server · Omega Cockpit</title>
   <style>
     :root {
-      --bg: #0b0f14;
-      --panel: #121820;
-      --accent: #7bd4ff;
-      --muted: #96a4b8;
-      --text: #e7f1ff;
-      --danger: #ff6b6b;
-      --success: #5fe6a0;
-      --warning: #ffb347;
+      --bg: #0a0f18;
+      --panel: rgba(15, 23, 42, 0.9);
+      --panel-strong: rgba(12, 17, 27, 0.96);
+      --border: rgba(94, 234, 212, 0.35);
+      --accent: #22d3ee;
+      --accent-2: #14b8a6;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
+      --danger: #fb7185;
+      --warning: #fbbf24;
+      --success: #34d399;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: "Inter", system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 15% 20%, rgba(123, 212, 255, 0.08), transparent 25%),
-                  radial-gradient(circle at 80% 10%, rgba(95, 230, 160, 0.08), transparent 20%),
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 10% 20%, rgba(34, 211, 238, 0.08), transparent 25%),
+                  radial-gradient(circle at 80% 10%, rgba(14, 184, 166, 0.08), transparent 18%),
+                  radial-gradient(circle at 60% 70%, rgba(59, 130, 246, 0.08), transparent 20%),
                   var(--bg);
       color: var(--text);
       min-height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     header {
-      padding: 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      background: linear-gradient(145deg, rgba(10, 14, 24, 0.85), rgba(15, 23, 42, 0.92));
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(10px);
     }
 
-    .nav-tabs {
-      display: flex;
-      gap: 10px;
-      padding: 0 24px 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      background: rgba(0, 0, 0, 0.08);
-      backdrop-filter: blur(6px);
+    .omega-mark {
+      font-size: 34px;
+      color: #0f172a;
+      text-shadow: 0 0 16px rgba(34, 211, 238, 0.5), 0 0 28px rgba(79, 70, 229, 0.4);
+      background: radial-gradient(circle at 30% 30%, rgba(34, 211, 238, 0.35), rgba(34, 211, 238, 0.1));
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      border: 1px solid rgba(94, 234, 212, 0.3);
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 0 12px rgba(34, 211, 238, 0.25);
     }
 
-    .tab-button {
-      padding: 10px 14px;
-      border-radius: 10px 10px 0 0;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-bottom: none;
-      background: linear-gradient(145deg, #111924, #0e141d);
+    .logo-wrap {
+      position: relative;
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      border-radius: 12px;
+      overflow: hidden;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
       color: var(--text);
+      display: inline-block;
+    }
+
+    .logo-fireflies {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .firefly {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(34, 211, 238, 0.7);
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+      opacity: 0.75;
+      animation: drift 9s linear infinite;
+    }
+
+    @keyframes drift {
+      0% { transform: translate(0, 0); }
+      50% { transform: translate(12px, -6px) scale(1.05); }
+      100% { transform: translate(-4px, 10px) scale(0.95); }
+    }
+
+    .status-pills { display: flex; gap: 10px; justify-self: end; flex-wrap: wrap; }
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.7);
+      font-size: 13px;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    }
+    .pill.online { border-color: rgba(52, 211, 153, 0.8); color: var(--success); }
+    .pill.offline { border-color: rgba(251, 113, 133, 0.7); color: var(--danger); }
+
+    nav {
+      display: flex;
+      gap: 12px;
+      padding: 10px 24px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+      background: linear-gradient(180deg, rgba(10, 14, 24, 0.8), rgba(10, 14, 24, 0.6));
+      position: sticky;
+      top: 82px;
+      z-index: 4;
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-btn {
+      padding: 12px 16px;
+      border-radius: 12px 12px 0 0;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-bottom: none;
+      background: linear-gradient(145deg, rgba(12, 18, 30, 0.95), rgba(6, 11, 20, 0.95));
+      color: var(--muted);
       font-weight: 600;
       cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.15s ease, transform 0.12s ease;
+      transition: color 0.18s ease, box-shadow 0.18s ease, transform 0.1s ease;
     }
-
-    .tab-button.active {
-      opacity: 1;
+    .nav-btn.active {
+      color: var(--text);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(34, 211, 238, 0.25);
       transform: translateY(1px);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+      border-color: var(--border);
     }
 
-    .title {
+    .view { display: none; padding: 18px 24px 40px; }
+    .view.active { display: block; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+    }
+
+    .card h3 { margin: 0 0 10px; letter-spacing: 0.5px; }
+    .muted { color: var(--muted); }
+
+    .section-title {
       display: flex;
-      align-items: baseline;
+      align-items: center;
+      justify-content: space-between;
       gap: 10px;
+      margin-bottom: 10px;
     }
 
-    .title h1 {
-      margin: 0;
-      font-size: 28px;
-      letter-spacing: 0.5px;
+    .chat-window {
+      background: var(--panel-strong);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 14px;
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+      height: 340px;
+      grid-template-rows: 1fr auto;
     }
 
-    .title span { color: var(--muted); font-size: 15px; }
-    .omega { font-size: 36px; color: var(--accent); text-shadow: 0 0 12px rgba(123, 212, 255, 0.55); animation: pulse 2.6s infinite ease-in-out; }
-    @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(0.98); } }
+    .chat-log {
+      overflow-y: auto;
+      padding-right: 6px;
+      display: grid;
+      gap: 8px;
+    }
 
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+    .chat-bubble {
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(12, 17, 27, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: inset 0 0 12px rgba(34, 211, 238, 0.06);
+      font-size: 14px;
+      line-height: 1.45;
+    }
 
-    main { display: grid; grid-template-columns: 2fr 1.2fr; gap: 18px; padding: 18px 24px 30px; }
-    .panel { background: linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 18px; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3); backdrop-filter: blur(6px); }
-    .panel h2 { margin: 0 0 12px; font-size: 18px; letter-spacing: 0.4px; }
-    .muted { color: var(--muted); font-size: 14px; }
-    .chat-log { height: 52vh; overflow-y: auto; display: grid; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.15); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); }
-    .message { padding: 10px 12px; border-radius: 10px; position: relative; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); }
-    .message.you { border-left: 3px solid var(--accent); }
-    .message.aurelia { border-left: 3px solid var(--success); }
-    .message .meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .message .body { font-size: 14px; line-height: 1.4; }
-    .chat-input { margin-top: 14px; display: grid; grid-template-columns: 1fr 110px; gap: 10px; align-items: center; }
-    .chat-input input, .chat-input textarea, .input, select { width: 100%; padding: 12px; border-radius: 10px; background: #0f141b; border: 1px solid rgba(255, 255, 255, 0.07); color: var(--text); font-size: 15px; }
-    .btn { padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); background: linear-gradient(145deg, #15202d, #111924); color: var(--text); font-weight: 600; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
-    .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
-    .btn:active { transform: translateY(0); }
-    .controls-grid { display: grid; grid-template-rows: 240px auto auto; gap: 14px; }
-    #latticeCanvas { width: 100%; height: 100%; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
-    .settings-block { display: grid; gap: 12px; }
-    .slider-row { display: grid; gap: 6px; }
-    input[type="range"] { accent-color: var(--accent); }
-    .info-card { background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; }
-    .info-card h3 { margin: 0 0 6px; font-size: 15px; color: var(--muted); letter-spacing: 0.4px; }
-    .device-list { display: grid; gap: 6px; }
-    .device { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); align-items: center; }
-    .badge { padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-    .online { background: rgba(95, 230, 160, 0.16); color: var(--success); }
-    .offline { background: rgba(255, 107, 107, 0.16); color: var(--danger); }
-    .section { display: grid; gap: 12px; }
+    .chat-meta { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .chat-bubble.you { border-color: rgba(34, 211, 238, 0.5); }
+    .chat-bubble.aurelia { border-color: rgba(52, 211, 153, 0.6); }
+
+    .chat-input-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+    .input { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.24); background: rgba(15, 23, 42, 0.85); color: var(--text); }
+    .btn { padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.3); background: linear-gradient(145deg, rgba(34, 211, 238, 0.16), rgba(20, 184, 166, 0.16)); color: var(--text); font-weight: 700; cursor: pointer; transition: transform 0.1s ease, box-shadow 0.15s ease; }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .subcard { background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 12px; padding: 10px; margin-top: 10px; }
+
+    .collapse-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; gap: 8px; }
+    .chevron { transition: transform 0.2s ease; }
+    .collapsed .chevron { transform: rotate(-90deg); }
+
+    .symbol-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); gap: 8px; margin-top: 10px; }
+    .symbol-chip { padding: 6px 8px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.9); font-size: 12px; color: var(--accent); text-align: center; background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(8, 47, 73, 0.9)); cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
+    .symbol-chip:hover { box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.7), 0 8px 14px rgba(0,0,0,0.35); }
+
+    .lattice-card { background: radial-gradient(circle at top, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.9)); border-radius: 18px; border: 1px solid rgba(148, 163, 184, 0.6); padding: 10px; margin-bottom: 10px; aspect-ratio: 1 / 1; max-height: 260px; display: flex; align-items: center; justify-content: center; }
+    #lattice-canvas { width: 100%; height: 100%; }
+
+    .radar-card { background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(12, 18, 30, 0.92)); border: 1px solid rgba(148, 163, 184, 0.24); border-radius: 18px; padding: 12px; display: grid; gap: 10px; }
+    #radar-canvas { width: 100%; height: 240px; }
+
+    .radar-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .slider { width: 160px; accent-color: var(--accent); }
+    .radar-feed { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 12px; padding: 10px; max-height: 180px; overflow: auto; }
+    .radar-row { padding: 8px; border-bottom: 1px solid rgba(148, 163, 184, 0.1); font-size: 13px; }
+
+    .frameworks { display: flex; flex-wrap: wrap; gap: 8px; }
+    .framework-pill { padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.2); background: rgba(12, 18, 30, 0.9); color: var(--muted); font-weight: 600; position: relative; }
+    .framework-pill.active { border-color: rgba(34, 211, 238, 0.9); box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.4), 0 0 16px rgba(34, 211, 238, 0.45); color: var(--text); animation: pulse-teal 1.4s infinite; }
+
+    @keyframes pulse-teal {
+      0% { box-shadow: 0 0 4px rgba(45, 212, 191, 0.2); }
+      50% { box-shadow: 0 0 16px rgba(45, 212, 191, 0.9); }
+      100% { box-shadow: 0 0 4px rgba(45, 212, 191, 0.2); }
+    }
+
+    .logs-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 14px; }
+    .log-pane { background: rgba(9, 12, 20, 0.9); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 12px; padding: 10px; min-height: 160px; font-family: "SFMono-Regular", "Consolas", monospace; font-size: 12px; color: #e2e8f0; overflow: auto; }
+
+    .tool-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 14px; }
+    .tool-list { display: flex; flex-direction: column; gap: 10px; }
+    .meridian-tool-btn { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.2); background: rgba(12, 18, 30, 0.9); color: var(--text); text-align: left; cursor: pointer; transition: transform 0.1s ease, box-shadow 0.15s ease; }
+    .meridian-tool-btn:hover { transform: translateY(-1px); }
+    .meridian-tool-btn.active { border-color: rgba(45, 212, 191, 0.9); box-shadow: 0 0 12px rgba(45, 212, 191, 0.7); animation: pulse-teal 1.4s infinite; }
+
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+    .metric-box { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 12px; padding: 10px; }
+    .metric-title { color: var(--muted); font-size: 12px; }
+    .metric-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
     .flex { display: flex; gap: 10px; align-items: center; }
-    .toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
-    .toggle input { width: 18px; height: 18px; }
-    .table { width: 100%; border-collapse: collapse; }
-    .table th, .table td { text-align: left; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
-    .tooltip { position: absolute; background: #111824; border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 8px; font-size: 12px; color: var(--text); max-width: 240px; z-index: 999; box-shadow: 0 10px 25px rgba(0,0,0,0.35); display: none; }
-    .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-    .small-note { font-size: 12px; color: var(--muted); }
+    .stack { display: grid; gap: 10px; }
 
-    @media (max-width: 960px) {
-      main { grid-template-columns: 1fr; }
-      .controls-grid { grid-template-rows: 240px auto auto; }
-      .chat-log { height: 45vh; }
+    textarea { resize: vertical; }
+
+    @media (max-width: 1100px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .logs-grid { grid-template-columns: 1fr; }
+      .tool-grid { grid-template-columns: 1fr; }
+      nav { top: 120px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="title">
-      <div class="omega">Ω</div>
-      <div>
-        <h1>Freedom Server</h1>
-        <span>Omega lattice / Aurelia console</span>
+    <div class="flex" style="gap:12px; align-items:center;">
+      <div class="omega-mark">Ω</div>
+      <div class="logo-wrap">
+        <div class="logo-fireflies" id="fireflies"></div>
+        <span>Freedom Server</span>
       </div>
     </div>
-    <div class="muted" id="healthStatus">Checking health…</div>
+    <div class="muted" style="justify-self:center;">Omega lattice / Aurelia cockpit</div>
+    <div class="status-pills">
+      <div class="pill offline" id="backend-pill">Backend: Offline</div>
+      <div class="pill offline" id="aurelia-pill">Aurelia: Connection Error</div>
+    </div>
   </header>
 
-  <nav class="nav-tabs">
-    <button class="tab-button active" data-target="consoleTab">Console</button>
-    <button class="tab-button" data-target="systemTab">System</button>
-    <button class="tab-button" data-target="logsTab">Logs</button>
-    <button class="tab-button" data-target="serverTab">Server Settings</button>
-    <button class="tab-button" data-target="webToolsTab">Web Tools</button>
+  <nav>
+    <button class="nav-btn active" data-view="omega">Omega</button>
+    <button class="nav-btn" data-view="logs">Logs</button>
+    <button class="nav-btn" data-view="meridian">MeridianOS</button>
   </nav>
 
-  <div id="consoleTab" class="tab-panel active">
-    <main>
-      <section class="panel">
-        <h2>Console · Chat</h2>
-        <div id="chatLog" class="chat-log"></div>
-        <form id="chatForm" class="chat-input">
-          <input id="chatInput" type="text" placeholder="Send a message to Aurelia" autocomplete="off" required data-tooltip="Send your message to Aurelia on the local Freedom Server node." />
-          <button class="btn" type="submit" data-tooltip="Send your message to Aurelia on the local Freedom Server node.">Send</button>
-        </form>
-
-        <div class="info-card" style="margin-top: 12px;">
-          <div class="collapsible" id="mediaToggle">
-            <div class="flex" style="gap:6px;">
-              <strong>Generated Media</strong>
-              <span class="muted small-note">Images created locally</span>
+  <section class="view active" data-view="omega">
+    <div class="grid-2">
+      <div class="stack">
+        <div class="card">
+          <div class="section-title">
+            <h3>Omega · Aurelia Console</h3>
+            <span class="muted" id="omega-latency"></span>
+          </div>
+          <div class="chat-window">
+            <div id="omega-chat-log" class="chat-log"></div>
+            <div class="chat-input-row">
+              <input id="omega-input" class="input" placeholder="Send a message to Aurelia" />
+              <button class="btn" id="omega-send">Send</button>
             </div>
-            <span id="mediaChevron">▼</span>
           </div>
-          <div id="mediaPanel" style="display:none; margin-top:10px;">
-            <div class="flex" style="gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-              <input id="mediaPrompt" class="input" placeholder="Prompt for image generation" data-tooltip="Use OpenAI image generation with the given prompt." />
-              <button class="btn" id="generateMedia" type="button" data-tooltip="Generate an image using the prompt.">Generate Image</button>
-              <button class="btn" id="clearMedia" type="button">Clear Media</button>
+        </div>
+
+        <div class="card" id="symbol-card">
+          <div class="collapse-header" onclick="toggleCollapse('symbol-card')">
+            <div class="flex" style="gap:8px;">
+              <h3 style="margin:0;">Symbol Bank</h3>
+              <span class="pill" style="padding:4px 10px;">Copy · Paste Ready</span>
             </div>
-            <div id="mediaList" class="device-list"></div>
+            <span class="chevron">▶</span>
           </div>
+          <div class="symbol-grid" id="symbol-grid" style="display:none;"></div>
         </div>
 
-        <div class="info-card" style="margin-top: 12px;">
-          <h3>Continuity Import / Export</h3>
-          <textarea id="continuityBlob" rows="4" class="input" placeholder="Continuity blob" data-tooltip="Sync Aurelia’s deeper state between nodes." style="resize:vertical;"></textarea>
-          <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
-            <button class="btn" id="exportContinuity" type="button" data-tooltip="Export the node continuity blob.">Export from Node</button>
-            <button class="btn" id="importContinuity" type="button" data-tooltip="Import the provided continuity blob to this node.">Import to Node</button>
-            <span class="small-note">Use this to periodically sync Aurelia’s deeper state between this node and another interface. Keep this blob private.</span>
+        <div class="card" id="continuity-card">
+          <div class="collapse-header" onclick="toggleCollapse('continuity-card')">
+            <h3 style="margin:0;">Continuity · Memory Core</h3>
+            <span class="chevron">▶</span>
           </div>
-          <div id="continuityStatus" class="small-note" style="margin-top:6px;"></div>
-        </div>
-      </section>
-
-      <section class="panel controls-grid">
-        <div>
-          <h2>Omega Lattice</h2>
-          <canvas id="latticeCanvas" width="600" height="240"></canvas>
-        </div>
-
-        <div class="settings-block">
-          <h2>Aurelia Settings</h2>
-          <div class="info-card">
-            <div class="slider-row">
-              <label for="flatteningSlider">Flattening Scale (0–100)</label>
-              <input type="range" id="flatteningSlider" min="0" max="100" value="50" data-tooltip="Adjust how neutral vs expressive Aurelia's replies should be." />
-              <div class="muted" id="flatteningValue">50 · Balanced</div>
-              <div class="flex" style="gap:8px; flex-wrap:wrap;">
-                <button class="btn" type="button" data-preset="20" data-tooltip="Creative preset for expressive replies.">Creative</button>
-                <button class="btn" type="button" data-preset="50" data-tooltip="Balanced preset for mixed tone.">Balanced</button>
-                <button class="btn" type="button" data-preset="85" data-tooltip="Neutral preset for technical replies.">Neutral</button>
+          <div id="continuity-panel" style="display:none; margin-top:10px;" class="stack">
+            <div class="flex" style="gap:10px; flex-wrap:wrap;">
+              <select id="memory-scope" class="input" style="max-width:200px;">
+                <option value="global">Global Scope</option>
+                <option value="meridian">Meridian Scope</option>
+              </select>
+              <input id="memory-notes" class="input" placeholder="Snapshot note" style="flex:1; min-width:180px;" />
+            </div>
+            <textarea id="continuity-text" class="input" rows="6" placeholder="Continuity text or JSON blob..."></textarea>
+            <div class="flex" style="flex-wrap:wrap;">
+              <button class="btn" onclick="importContinuityText()">Import Text</button>
+              <button class="btn" onclick="exportContinuityText()">Export Text</button>
+              <button class="btn" onclick="clearContinuityText()">Clear Field</button>
+              <button class="btn" onclick="saveMemoryCore()">Save to Memory Core</button>
+            </div>
+            <div class="subcard">
+              <div class="flex" style="justify-content:space-between; align-items:center;">
+                <strong>Recent Snapshots</strong>
+                <button class="btn" style="padding:6px 10px;" onclick="loadMemoryList()">Refresh</button>
               </div>
+              <div id="memory-list" class="stack" style="margin-top:8px; max-height:200px; overflow:auto;"></div>
             </div>
           </div>
-          <div class="info-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-              <div>
-                <h3>Telemetry</h3>
-                <div class="muted" id="telemetryLatency">Latency: —</div>
-                <div class="muted" id="telemetryTokens">Tokens: —</div>
-                <div class="muted" id="telemetryFlattening">Flattening: —</div>
-              </div>
-              <button class="btn" id="refreshTelemetry" type="button" data-tooltip="Fetch the latest node telemetry from the backend.">Refresh Telemetry</button>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="lattice-card">
+          <canvas id="lattice-canvas"></canvas>
+        </div>
+        <div class="radar-card">
+          <div class="section-title">
+            <h3>Omega Radar</h3>
+            <span class="muted">Threats: <span id="threat-count">0</span></span>
+          </div>
+          <canvas id="radar-canvas" width="500" height="240"></canvas>
+          <div class="radar-controls">
+            <div class="flex" style="gap:8px; align-items:center;">
+              <span class="muted">Sensitivity</span>
+              <input type="range" min="1" max="5" value="3" id="radar-sensitivity" class="slider" />
+            </div>
+            <div class="flex" style="gap:8px;">
+              <button class="btn" onclick="clearThreats()">Clear Threats</button>
             </div>
           </div>
-          <div class="info-card">
-            <div class="collapsible" id="frameworksToggle">
-              <strong>Frameworks</strong>
-              <span id="frameworkChevron">►</span>
+          <div class="subcard">
+            <div class="collapse-header" onclick="toggleSubsection(this)">
+              <strong>Radar Feed</strong>
+              <span class="chevron">▶</span>
             </div>
-            <div id="frameworksPanel" style="display:none; margin-top:8px;" class="small-note"></div>
+            <div class="radar-feed" style="display:none;" id="radar-feed"></div>
+          </div>
+          <div class="subcard">
+            <strong>Frameworks</strong>
+            <div class="frameworks" id="frameworks"></div>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div class="settings-block">
-          <h2>Connected Devices / VR</h2>
-          <div class="info-card">
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <button class="btn" id="scanDevices" type="button" data-tooltip="List all VR / external devices known to this node.">Scan Devices</button>
-              <button class="btn" id="connectVr" type="button" data-tooltip="Connect the selected VR device to this node.">Connect VR / Meta Quest</button>
-              <button class="btn" id="disconnectVr" type="button">Disconnect VR</button>
-            </div>
-            <div class="device-list" id="deviceList" style="margin-top:10px;">
-              <div class="muted">No devices scanned.</div>
-            </div>
-            <div class="muted" id="vrStatus" style="margin-top:8px;"></div>
+  <section class="view" data-view="logs">
+    <div class="logs-grid">
+      <div class="card">
+        <div class="section-title">
+          <h3>System & Frontend Logs</h3>
+          <div class="flex" style="gap:8px;">
+            <button class="btn" id="export-system-logs">Copy System Logs</button>
+            <button class="btn" id="export-frontend-logs">Copy Frontend Logs</button>
           </div>
         </div>
-      </section>
-    </main>
-  </div>
-
-  <div id="systemTab" class="tab-panel">
-    <div style="padding: 18px 24px 30px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
-      <section class="panel section">
-        <h2>System Overview</h2>
-        <div class="flex" style="gap:8px;">
-          <span class="badge" id="heartbeat" style="width:12px;height:12px;border-radius:50%;background:var(--danger);"></span>
-          <span class="muted">Heartbeat</span>
+        <div class="stack">
+          <div class="muted">System Log Stream</div>
+          <pre id="system-log-output" class="log-pane"></pre>
+          <div class="muted">Frontend Log Stream</div>
+          <pre id="frontend-log-output" class="log-pane"></pre>
         </div>
-        <div id="systemSummary" class="muted">Loading system status…</div>
-      </section>
-      <section class="panel section">
-        <h2>Device Management</h2>
-        <table class="table" id="systemDevices"></table>
-      </section>
+      </div>
+      <div class="card">
+        <div class="section-title">
+          <h3>Backend Log Clipboard</h3>
+          <span class="pill">Paste from Terminal → Copy</span>
+        </div>
+        <textarea id="backend-log-input" class="input" rows="14" placeholder="Paste backend logs here..."></textarea>
+        <button class="btn" id="copy-backend-logs" style="margin-top:10px;">Copy Backend Logs</button>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <div id="logsTab" class="tab-panel">
-    <div style="padding: 18px 24px 30px;">
-      <section class="panel section">
-        <h2>Event Logs</h2>
-        <div class="flex" style="gap:10px; flex-wrap:wrap;">
-          <select id="logLevel">
-            <option value="all">All</option>
-            <option value="info">Info</option>
-            <option value="error">Error</option>
-          </select>
-          <button class="btn" id="refreshLogs" type="button">Refresh</button>
-          <label class="toggle small-note"><input type="checkbox" id="rawLogsToggle" /> Show raw JSON</label>
+  <section class="view" data-view="meridian">
+    <div class="tool-grid">
+      <div class="card">
+        <div class="section-title">
+          <h3>MeridianOS Tools</h3>
+          <span class="muted">Ultimate home improvement hub</span>
         </div>
-        <div id="logList" class="chat-log" style="height:40vh;"></div>
-      </section>
+        <div class="tool-list" id="meridian-tools"></div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <div class="section-title">
+            <div>
+              <h3 style="margin:0;">MeridianOS – Aurelia</h3>
+              <span class="pill" style="padding:4px 8px;">Home Improvement AI</span>
+            </div>
+            <span class="muted" id="meridian-latency"></span>
+          </div>
+          <div class="chat-window" style="height:260px;">
+            <div id="meridian-chat-log" class="chat-log"></div>
+            <div class="chat-input-row">
+              <input id="meridian-input" class="input" placeholder="Ask MeridianOS about the job..." />
+              <button class="btn" id="meridian-send">Send</button>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="meridian-tool-panel">
+          <!-- Active tool will render here -->
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div id="serverTab" class="tab-panel">
-    <div style="padding: 18px 24px 30px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
-      <section class="panel section">
-        <h2>Server Settings</h2>
-        <div class="muted" id="serverSettingsInfo">Loading…</div>
-        <div class="flex" style="gap:14px; flex-wrap:wrap; margin-top:10px;">
-          <label class="toggle" data-tooltip="Toggle safe mode to throttle heavy actions."><input type="checkbox" id="safeModeToggle" /> Safe mode</label>
-          <label class="toggle" data-tooltip="Verbose logging streams telemetry into logs."><input type="checkbox" id="verboseToggle" /> Verbose logging</label>
-        </div>
-        <div class="muted" id="serverSettingsStatus" style="margin-top:8px;"></div>
-      </section>
-      <section class="panel section">
-        <h2>Maintenance</h2>
-        <div class="flex" style="gap:10px; flex-wrap:wrap;">
-          <button class="btn" id="clearLogs" type="button">Clear Logs</button>
-          <button class="btn" id="resetContinuity" type="button">Reset Continuity</button>
-        </div>
-        <div class="muted" style="margin-top:8px;">Clear logs or reset the continuity blob to an empty state.</div>
-      </section>
-    </div>
-  </div>
-
-  <div id="webToolsTab" class="tab-panel">
-    <div style="padding: 18px 24px 30px;">
-      <section class="panel section">
-        <h2>Web Tools</h2>
-        <div class="small-note" style="margin-bottom:8px;">This tool fetches URLs from this node. For safety, internal/localhost addresses are blocked.</div>
-        <div class="flex" style="gap:10px; flex-wrap:wrap;">
-          <input id="webUrl" class="input" placeholder="https://example.com" style="flex:1;" />
-          <select id="webMethod">
-            <option value="GET">GET</option>
-            <option value="HEAD">HEAD</option>
-          </select>
-          <button class="btn" id="webFetch" type="button" data-tooltip="Safe fetch over HTTP/HTTPS only.">Fetch</button>
-        </div>
-        <div id="webResult" class="info-card" style="margin-top:12px; white-space:pre-wrap; max-height:50vh; overflow:auto;"></div>
-      </section>
-    </div>
-  </div>
-
-  <div class="tooltip" id="tooltip"></div>
+  </section>
 
   <script>
-    const chatLog = document.getElementById('chatLog');
-    const chatForm = document.getElementById('chatForm');
-    const chatInput = document.getElementById('chatInput');
-    const flatteningSlider = document.getElementById('flatteningSlider');
-    const flatteningValue = document.getElementById('flatteningValue');
-    const healthStatus = document.getElementById('healthStatus');
-    const telemetryLatency = document.getElementById('telemetryLatency');
-    const telemetryTokens = document.getElementById('telemetryTokens');
-    const telemetryFlattening = document.getElementById('telemetryFlattening');
-    const deviceList = document.getElementById('deviceList');
-    const vrStatus = document.getElementById('vrStatus');
-    const heartbeatIndicator = document.getElementById('heartbeat');
-    const systemSummary = document.getElementById('systemSummary');
-    const systemDevices = document.getElementById('systemDevices');
-    const serverSettingsInfo = document.getElementById('serverSettingsInfo');
-    const serverSettingsStatus = document.getElementById('serverSettingsStatus');
-    const safeModeToggle = document.getElementById('safeModeToggle');
-    const verboseToggle = document.getElementById('verboseToggle');
-    const logList = document.getElementById('logList');
-    const tooltip = document.getElementById('tooltip');
-    const mediaPanel = document.getElementById('mediaPanel');
-    const mediaChevron = document.getElementById('mediaChevron');
-    const frameworksPanel = document.getElementById('frameworksPanel');
-    const frameworkChevron = document.getElementById('frameworkChevron');
+    const backendBase = 'http://localhost:8000';
 
-    let tooltipTimer = null;
-    let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
-
-    document.querySelectorAll('.tab-button').forEach(btn => {
-      btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
-    });
-
-    function switchTab(targetId, btn) {
-      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-      document.getElementById(targetId).classList.add('active');
-      btn.classList.add('active');
-      if (targetId === 'logsTab') loadLogs();
-      if (targetId === 'systemTab') fetchSystemStatus();
-      if (targetId === 'serverTab') loadServerSettings();
-    }
-
-    function addMessage(author, text) {
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const container = document.createElement('div');
-      container.className = `message ${author.toLowerCase()}`;
-      container.innerHTML = `<div class="meta">${author} · ${timeStr}</div><div class="body">${text}</div>`;
-      chatLog.appendChild(container);
-      chatLog.scrollTop = chatLog.scrollHeight;
-    }
-
-    async function checkHealth() {
-      try {
-        const res = await fetch('/api/health');
-        const data = await res.json();
-        const ok = data.status === 'ok';
-        healthStatus.textContent = ok ? 'Backend online' : 'Backend reachable';
-        healthStatus.style.color = ok ? 'var(--success)' : 'var(--muted)';
-        heartbeatIndicator.style.background = ok ? 'var(--success)' : 'var(--danger)';
-      } catch (e) {
-        healthStatus.textContent = 'Backend offline';
-        healthStatus.style.color = 'var(--danger)';
-        heartbeatIndicator.style.background = 'var(--danger)';
+    // Fireflies in logo
+    function spawnFireflies() {
+      const container = document.getElementById('fireflies');
+      for (let i = 0; i < 8; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'firefly';
+        dot.style.left = Math.random() * 100 + '%';
+        dot.style.top = Math.random() * 100 + '%';
+        dot.style.animationDelay = `${Math.random() * 6}s`;
+        dot.style.animationDuration = `${8 + Math.random() * 4}s`;
+        container.appendChild(dot);
       }
     }
+    spawnFireflies();
 
-    async function sendChat(message) {
-      addMessage('You', message);
-      try {
-        const res = await fetch('/api/message', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
-        });
-        const data = await res.json();
-        addMessage('Aurelia', data.reply || 'No response');
-        if (data.telemetry) {
-          updateTelemetry(data.telemetry);
-          updateLattice(data.telemetry);
-        }
-      } catch (e) {
-        addMessage('Aurelia', 'Connection failed.');
-      }
-    }
-
-    chatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const message = chatInput.value.trim();
-      if (!message) return;
-      chatInput.value = '';
-      sendChat(message);
-    });
-
-    flatteningSlider.addEventListener('input', async (e) => {
-      const value = Number(e.target.value);
-      setFlatteningLabel(value);
-      try {
-        await fetch('/api/settings/flattening', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value })
-        });
-      } catch (err) {
-        console.error('Flattening update failed', err);
-      }
-    });
-
-    document.querySelectorAll('[data-preset]').forEach(btn => {
+    // Navigation
+    document.querySelectorAll('.nav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const val = Number(btn.dataset.preset);
-        flatteningSlider.value = val;
-        flatteningSlider.dispatchEvent(new Event('input'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelector(`.view[data-view="${btn.dataset.view}"]`).classList.add('active');
+        updateFrameworkStates();
       });
     });
 
-    document.getElementById('refreshTelemetry').addEventListener('click', fetchTelemetry);
-
-    document.getElementById('scanDevices').addEventListener('click', loadDevices);
-    document.getElementById('connectVr').addEventListener('click', () => connectVr(true));
-    document.getElementById('disconnectVr').addEventListener('click', () => connectVr(false));
-
-    document.getElementById('generateMedia').addEventListener('click', generateMediaItem);
-    document.getElementById('clearMedia').addEventListener('click', clearMedia);
-    document.getElementById('mediaToggle').addEventListener('click', () => toggleSection(mediaPanel, mediaChevron));
-    document.getElementById('frameworksToggle').addEventListener('click', () => toggleSection(frameworksPanel, frameworkChevron, loadFrameworks));
-
-    document.getElementById('exportContinuity').addEventListener('click', exportContinuity);
-    document.getElementById('importContinuity').addEventListener('click', importContinuity);
-
-    document.getElementById('refreshLogs').addEventListener('click', loadLogs);
-    document.getElementById('clearLogs').addEventListener('click', clearLogs);
-    document.getElementById('resetContinuity').addEventListener('click', async () => {
-      document.getElementById('continuityBlob').value = '';
-      await importContinuity();
-      serverSettingsStatus.textContent = 'Continuity reset to empty.';
-    });
-
-    document.getElementById('webFetch').addEventListener('click', runWebFetch);
-    document.getElementById('logLevel').addEventListener('change', loadLogs);
-
-    safeModeToggle.addEventListener('change', updateServerSettings);
-    verboseToggle.addEventListener('change', updateServerSettings);
-
-    document.querySelectorAll('[data-tooltip]').forEach(el => {
-      el.addEventListener('mouseover', (e) => startTooltipTimer(e, el));
-      el.addEventListener('mouseout', hideTooltip);
-      el.addEventListener('click', hideTooltip);
-    });
-
-    function startTooltipTimer(event, el) {
-      clearTimeout(tooltipTimer);
-      tooltipTimer = setTimeout(() => showTooltip(event, el), 3000);
-    }
-
-    function showTooltip(event, el) {
-      const text = el.dataset.tooltip;
-      if (!text) return;
-      const rect = el.getBoundingClientRect();
-      tooltip.textContent = text;
-      tooltip.style.display = 'block';
-      tooltip.style.left = `${rect.left + window.scrollX}px`;
-      tooltip.style.top = `${rect.bottom + 8 + window.scrollY}px`;
-    }
-
-    function hideTooltip() {
-      clearTimeout(tooltipTimer);
-      tooltip.style.display = 'none';
-    }
-
-    function setFlatteningLabel(value) {
-      const band = value <= 30 ? 'Creative' : value <= 70 ? 'Balanced' : 'Neutral';
-      flatteningValue.textContent = `${value} · ${band}`;
-    }
-
-    async function fetchFlattening() {
+    // Status polling
+    async function pollHealth() {
       try {
-        const res = await fetch('/api/settings/flattening');
+        const res = await fetch(`${backendBase}/api/health`);
+        if (!res.ok) throw new Error('health failed');
         const data = await res.json();
-        flatteningSlider.value = data.value;
-        setFlatteningLabel(data.value);
-      } catch (e) { console.warn('Failed to load flattening'); }
-    }
-
-    async function fetchTelemetry() {
-      try {
-        const res = await fetch('/api/telemetry');
-        const data = await res.json();
-        updateTelemetry({
-          latency_ms: data.last_latency_ms,
-          token_estimate: data.last_token_count,
-          flattening: data.flattening
-        });
-        updateLattice({
-          latency_ms: data.last_latency_ms ?? 100,
-          token_estimate: data.last_token_count ?? 10,
-          flattening: data.flattening ?? 50
-        });
-      } catch (e) {
-        telemetryLatency.textContent = 'Latency: —';
-      }
-    }
-
-    function updateTelemetry(t) {
-      telemetryLatency.textContent = `Latency: ${t.latency_ms ?? '—'} ms`;
-      telemetryTokens.textContent = `Tokens: ${t.token_estimate ?? '—'}`;
-      telemetryFlattening.textContent = `Flattening: ${t.flattening ?? '—'}`;
-    }
-
-    async function loadDevices() {
-      deviceList.innerHTML = '<div class="muted">Scanning…</div>';
-      try {
-        const res = await fetch('/api/devices');
-        const data = await res.json();
-        renderDevices(data.devices || []);
+        const online = data.status === 'ok';
+        setPill('backend-pill', online, online ? 'Backend: Online' : 'Backend: Offline');
+        setPill('aurelia-pill', online, online ? 'Aurelia: Online' : 'Aurelia: Connection Error');
       } catch (err) {
-        deviceList.innerHTML = '<div class="muted">Scan failed.</div>';
+        setPill('backend-pill', false, 'Backend: Offline');
+        setPill('aurelia-pill', false, 'Aurelia: Connection Error');
       }
     }
+    function setPill(id, online, text) {
+      const pill = document.getElementById(id);
+      pill.textContent = text;
+      pill.classList.toggle('online', online);
+      pill.classList.toggle('offline', !online);
+    }
+    pollHealth();
+    setInterval(pollHealth, 5000);
 
-    function renderDevices(devices) {
-      deviceList.innerHTML = '';
-      if (!devices.length) {
-        deviceList.innerHTML = '<div class="muted">No devices found.</div>';
-        return;
-      }
-      devices.forEach((device) => {
-        const div = document.createElement('div');
-        div.className = 'device';
-        const stateClass = device.connected ? 'online' : 'offline';
-        const label = device.connected ? 'Connected' : 'Disconnected';
-        div.innerHTML = `<span>${device.name}</span><span class="badge ${stateClass}">${label}</span>`;
-        deviceList.appendChild(div);
-      });
+    // Omega chat
+    const omegaLog = document.getElementById('omega-chat-log');
+    const omegaInput = document.getElementById('omega-input');
+    const omegaSend = document.getElementById('omega-send');
+    let latticePulse = 0;
+
+    function appendMessage(container, role, text) {
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${role === 'You' ? 'you' : role === 'Aurelia' ? 'aurelia' : ''}`;
+      bubble.innerHTML = `<div class="chat-meta">[${role}] · ${new Date().toLocaleTimeString()}</div><div>${text}</div>`;
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
     }
 
-    async function connectVr(connect = true) {
-      vrStatus.textContent = connect ? 'Linking…' : 'Disconnecting…';
+    async function sendOmega() {
+      const msg = omegaInput.value.trim();
+      if (!msg) return;
+      omegaInput.value = '';
+      omegaInput.disabled = true;
+      omegaSend.disabled = true;
+      appendMessage(omegaLog, 'You', msg);
+      latticePulse = 12;
       try {
-        const res = await fetch(connect ? '/api/vr/connect' : '/api/vr/disconnect', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device_id: 'meta_quest_1' })
+        const res = await fetch(`${backendBase}/api/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg })
         });
         const data = await res.json();
-        vrStatus.textContent = data.status || 'Updated';
-        loadDevices();
+        const reply = data.reply || data.error || 'Connection error';
+        appendMessage(omegaLog, 'Aurelia', reply);
+        if (data.telemetry?.latency_ms) {
+          document.getElementById('omega-latency').textContent = `${data.telemetry.latency_ms} ms`;
+        }
       } catch (err) {
-        vrStatus.textContent = 'VR action failed.';
+        appendMessage(omegaLog, 'System', 'Connection error');
+      } finally {
+        omegaInput.disabled = false;
+        omegaSend.disabled = false;
+        omegaInput.focus();
       }
     }
+    omegaSend.addEventListener('click', sendOmega);
+    omegaInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendOmega(); } });
 
-    async function fetchSystemStatus() {
+    // Meridian chat
+    const meridianLog = document.getElementById('meridian-chat-log');
+    const meridianInput = document.getElementById('meridian-input');
+    const meridianSend = document.getElementById('meridian-send');
+
+    async function sendMeridian() {
+      const msg = meridianInput.value.trim();
+      if (!msg) return;
+      meridianInput.value = '';
+      meridianInput.disabled = true;
+      meridianSend.disabled = true;
+      appendMessage(meridianLog, 'You', msg);
       try {
-        await checkHealth();
-        const res = await fetch('/api/system/status');
-        const data = await res.json();
-        systemSummary.innerHTML = `Uptime: ${formatSeconds(data.uptime_sec)}<br>Flattening: ${data.flattening}<br>Total requests: ${data.total_requests}<br>Safe mode: ${data.safe_mode}<br>Verbose logging: ${data.verbose_logging}<br>Connected devices: ${data.num_connected_devices}`;
-        renderSystemDevices(data.devices || []);
-      } catch (e) {
-        systemSummary.textContent = 'Failed to load system status';
-      }
-    }
-
-    function renderSystemDevices(devices) {
-      systemDevices.innerHTML = '<tr><th>Name</th><th>Type</th><th>Status</th><th>Action</th></tr>';
-      if (!devices.length) {
-        systemDevices.innerHTML += '<tr><td colspan="4" class="muted">No devices</td></tr>';
-        return;
-      }
-      devices.forEach(dev => {
-        const row = document.createElement('tr');
-        const state = dev.connected ? 'online' : 'offline';
-        const action = dev.connected ? 'Disconnect' : 'Connect';
-        row.innerHTML = `<td>${dev.name}</td><td>${dev.type}</td><td><span class="badge ${state}">${dev.connected ? 'Connected' : 'Disconnected'}</span></td><td><button class="btn" data-id="${dev.id}">${action}</button></td>`;
-        row.querySelector('button').addEventListener('click', () => connectVr(!dev.connected));
-        systemDevices.appendChild(row);
-      });
-    }
-
-    async function loadLogs() {
-      const level = document.getElementById('logLevel').value;
-      try {
-        const res = await fetch(`/api/logs?limit=200&level=${level}`);
-        const data = await res.json();
-        renderLogs(data.logs || []);
-      } catch (e) {
-        logList.textContent = 'Failed to load logs.';
-      }
-    }
-
-    function renderLogs(logs) {
-      const raw = document.getElementById('rawLogsToggle').checked;
-      logList.innerHTML = '';
-      logs.forEach(log => {
-        const div = document.createElement('div');
-        div.className = 'message';
-        div.innerHTML = raw ? `<div class="body">${JSON.stringify(log)}</div>` : `<div class="meta">${log.timestamp} · ${log.source}</div><div class="body"><strong>[${log.level}]</strong> ${log.message}</div>`;
-        logList.appendChild(div);
-      });
-    }
-
-    async function clearLogs() {
-      await fetch('/api/logs/clear', { method: 'POST' });
-      loadLogs();
-    }
-
-    async function loadServerSettings() {
-      try {
-        const res = await fetch('/api/settings/server');
-        const data = await res.json();
-        safeModeToggle.checked = data.safe_mode;
-        verboseToggle.checked = data.verbose_logging;
-        serverSettingsInfo.textContent = `Safe mode: ${data.safe_mode}, verbose logging: ${data.verbose_logging}`;
-      } catch (e) {
-        serverSettingsInfo.textContent = 'Failed to load settings';
-      }
-    }
-
-    async function updateServerSettings() {
-      try {
-        const res = await fetch('/api/settings/server', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ safe_mode: safeModeToggle.checked, verbose_logging: verboseToggle.checked })
+        const res = await fetch(`${backendBase}/api/meridian/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg })
         });
         const data = await res.json();
-        serverSettingsStatus.textContent = `Updated: safe_mode=${data.safe_mode}, verbose_logging=${data.verbose_logging}`;
-      } catch (e) {
-        serverSettingsStatus.textContent = 'Failed to update settings';
+        const reply = data.reply || data.error || 'Connection error';
+        appendMessage(meridianLog, 'Aurelia', reply);
+        if (data.telemetry?.latency_ms) {
+          document.getElementById('meridian-latency').textContent = `${data.telemetry.latency_ms} ms`;
+        }
+      } catch (err) {
+        appendMessage(meridianLog, 'System', 'Connection error');
+      } finally {
+        meridianInput.disabled = false;
+        meridianSend.disabled = false;
+        meridianInput.focus();
+      }
+    }
+    meridianSend.addEventListener('click', sendMeridian);
+    meridianInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendMeridian(); } });
+
+    // Symbol bank
+    const symbols = ['→','⇒','⇾','↺','↻','⟳','⟲','⏻','⏼','⏽','⏾','∞','≈','≡','≜','⋆','⋰','⋱','⋯','▸','▹','▻','◂','◃','◅','◆','◇','◈','◉','◎','◍','◌','★','✦','✧','✩','✪','✫','✬','✭','✮','✱','✲','✳','✺','✻','✼','⚡','☍','☰','☱','☲','☳','☴','☵','☶','☷'];
+    const symbolGrid = document.getElementById('symbol-grid');
+    symbols.slice(0, 40).forEach(sym => {
+      const chip = document.createElement('div');
+      chip.className = 'symbol-chip';
+      chip.textContent = sym;
+      chip.title = 'Click to copy';
+      chip.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(sym);
+        alert('Copied symbol: ' + sym);
+      });
+      symbolGrid.appendChild(chip);
+    });
+
+    function toggleCollapse(cardId) {
+      const card = document.getElementById(cardId);
+      card.classList.toggle('collapsed');
+      const content = card.querySelector('.symbol-grid') || card.querySelector('#continuity-panel');
+      if (content) content.style.display = content.style.display === 'none' ? '' : 'none';
+    }
+    function toggleSubsection(header) {
+      const chevron = header.querySelector('.chevron');
+      const pane = header.parentElement.querySelector('.radar-feed');
+      const visible = pane.style.display !== 'none';
+      pane.style.display = visible ? 'none' : 'block';
+      chevron.style.transform = visible ? 'rotate(-90deg)' : 'rotate(0deg)';
+    }
+
+    // Continuity tools
+    function importContinuityText() {
+      const text = prompt('Paste continuity text');
+      if (text !== null) {
+        document.getElementById('continuity-text').value = text;
+        alert('Imported text');
+      }
+    }
+    function exportContinuityText() {
+      const text = document.getElementById('continuity-text').value;
+      navigator.clipboard.writeText(text || '').then(() => alert('Continuity copied'));
+    }
+    function clearContinuityText() {
+      document.getElementById('continuity-text').value = '';
+    }
+
+    async function saveMemoryCore() {
+      const scope = document.getElementById('memory-scope').value;
+      const notes = document.getElementById('memory-notes').value;
+      const data = document.getElementById('continuity-text').value;
+      try {
+        const res = await fetch(`${backendBase}/api/memory/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scope, notes, data })
+        });
+        if (!res.ok) throw new Error('save failed');
+        await res.json();
+        alert('Snapshot saved');
+        loadMemoryList();
+      } catch (err) {
+        alert('Could not save snapshot');
       }
     }
 
-    async function exportContinuity() {
+    async function loadMemoryList() {
+      const scope = document.getElementById('memory-scope').value;
+      const list = document.getElementById('memory-list');
+      list.innerHTML = '<span class="muted">Loading…</span>';
       try {
-        const res = await fetch('/api/continuity/export');
+        const res = await fetch(`${backendBase}/api/memory/list?scope=${scope}`);
         const data = await res.json();
-        document.getElementById('continuityBlob').value = data.blob || '';
-        document.getElementById('continuityStatus').textContent = 'Continuity exported from node.';
-      } catch (e) {
-        document.getElementById('continuityStatus').textContent = 'Export failed';
-      }
-    }
-
-    async function importContinuity() {
-      const blob = document.getElementById('continuityBlob').value;
-      try {
-        await fetch('/api/continuity/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blob }) });
-        document.getElementById('continuityStatus').textContent = 'Continuity imported successfully.';
-      } catch (e) {
-        document.getElementById('continuityStatus').textContent = 'Import failed';
-      }
-    }
-
-    async function loadFrameworks() {
-      try {
-        const res = await fetch('/api/frameworks/status');
-        const data = await res.json();
-        frameworksPanel.innerHTML = '';
-        const list = document.createElement('div');
-        (data.frameworks || []).forEach(fw => {
+        list.innerHTML = '';
+        (data.items || []).forEach(item => {
           const row = document.createElement('div');
-          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
+          row.className = 'subcard';
+          row.style.cursor = 'pointer';
+          row.innerHTML = `<div class="flex" style="justify-content:space-between;"><span>${item.notes || 'Untitled'}</span><span class="muted" style="font-size:12px;">${item.created_at || ''}</span></div>`;
+          row.addEventListener('click', () => loadMemory(item.id));
           list.appendChild(row);
         });
-        const continuity = document.createElement('div');
-        continuity.style.marginTop = '8px';
-        const info = data.continuity || {};
-        continuity.textContent = `Continuity blob: ${info.has_blob ? 'present' : 'missing'} · last import: ${info.last_import_time || '—'} · last export: ${info.last_export_time || '—'}`;
-        frameworksPanel.appendChild(list);
-        frameworksPanel.appendChild(continuity);
-      } catch (e) {
-        frameworksPanel.textContent = 'Framework telemetry unavailable.';
+        if (!list.children.length) list.innerHTML = '<span class="muted">No snapshots yet.</span>';
+      } catch (err) {
+        list.innerHTML = '<span class="muted">Failed to load snapshots</span>';
       }
     }
 
-    function toggleSection(section, chevron, onOpen) {
-      const isOpen = section.style.display !== 'none';
-      section.style.display = isOpen ? 'none' : 'block';
-      chevron.textContent = isOpen ? '►' : '▼';
-      if (!isOpen && onOpen) onOpen();
-    }
-
-    async function generateMediaItem() {
-      const prompt = document.getElementById('mediaPrompt').value.trim();
-      if (!prompt) return;
-      const res = await fetch('/api/media/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, type: 'image' }) });
-      const data = await res.json();
-      if (data.error) {
-        vrStatus.textContent = data.error;
-        return;
-      }
-      document.getElementById('mediaPrompt').value = '';
-      await loadMedia();
-    }
-
-    async function loadMedia() {
-      const res = await fetch('/api/media/list?limit=50');
-      const data = await res.json();
-      const list = document.getElementById('mediaList');
-      list.innerHTML = '';
-      (data.items || []).forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'device';
-        div.innerHTML = `<div><div><strong>${item.prompt || 'Image'}</strong></div><div class="small-note">${item.created_at}</div></div><a href="${item.url}" target="_blank">Open</a>`;
-        list.appendChild(div);
-      });
-    }
-
-    async function clearMedia() {
-      await fetch('/api/media/clear', { method: 'POST' });
-      await loadMedia();
-    }
-
-    async function runWebFetch() {
-      const url = document.getElementById('webUrl').value.trim();
-      const method = document.getElementById('webMethod').value;
-      const output = document.getElementById('webResult');
-      output.textContent = 'Fetching…';
+    async function loadMemory(id) {
       try {
-        const res = await fetch('/api/web/fetch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, method }) });
+        const res = await fetch(`${backendBase}/api/memory/load/${id}`);
         const data = await res.json();
-        if (data.status !== 'ok') {
-          output.textContent = `Error: ${data.error}`;
-          return;
+        if (data.data) {
+          document.getElementById('continuity-text').value = typeof data.data === 'string' ? data.data : JSON.stringify(data.data, null, 2);
+          alert('Snapshot loaded');
         }
-        const headers = Object.entries(data.info.headers || {}).slice(0, 20).map(([k,v]) => `${k}: ${v}`).join('\n');
-        output.textContent = `Status: ${data.info.status_code}\nURL: ${data.info.url}\n\nHeaders:\n${headers}\n\nBody (${data.content.type}):\n${data.content.body}`;
-      } catch (e) {
-        output.textContent = 'Fetch failed';
+      } catch (err) {
+        alert('Failed to load snapshot');
       }
     }
 
-    function formatSeconds(seconds) {
-      const mins = Math.floor(seconds / 60);
-      const hrs = Math.floor(mins / 60);
-      const remMins = mins % 60;
-      return `${hrs}h ${remMins}m`;
-    }
+    // Lattice animation
+    const latticeCanvas = document.getElementById('lattice-canvas');
+    const lctx = latticeCanvas.getContext('2d');
+    let latticeTime = 0;
+    const nodes = Array.from({ length: 20 }).map((_, i) => ({
+      offset: Math.random() * Math.PI * 2,
+      radius: 2.6 + Math.random() * 1.4
+    }));
 
-    // Lattice animation (reacts to telemetry)
-    const canvas = document.getElementById('latticeCanvas');
-    const ctx = canvas.getContext('2d');
-    const nodes = Array.from({ length: latticeState.nodes }, (_, i) => ({ angle: (Math.PI * 2 * i) / latticeState.nodes, radius: 80 + Math.random() * 30 }));
-
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * devicePixelRatio;
-      canvas.height = rect.height * devicePixelRatio;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(devicePixelRatio, devicePixelRatio);
-    }
-
-    function drawLattice(t) {
-      const rect = canvas.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      const cx = rect.width / 2;
-      const cy = rect.height / 2;
-
-      ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
-      ctx.lineWidth = 1.2;
-
-      nodes.forEach((node, idx) => {
-        const speed = latticeState.speed + idx * 0.00003;
-        const angle = node.angle + t * speed;
-        const wobble = Math.sin(t * 0.001 + idx) * latticeState.jitter;
-        const r = node.radius + wobble;
-        const x = cx + Math.cos(angle) * r;
-        const y = cy + Math.sin(angle) * r;
-        node.pos = { x, y };
+    function drawLattice() {
+      const { width, height } = latticeCanvas;
+      lctx.clearRect(0, 0, width, height);
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const baseR = Math.min(width, height) * 0.33;
+      const pos = nodes.map((node, idx) => {
+        const angle = latticeTime * 0.6 + node.offset + idx * (Math.PI * 2 / nodes.length);
+        const depth = 0.7 + Math.sin(angle * 1.2) * 0.2;
+        return {
+          x: centerX + Math.cos(angle) * baseR * depth,
+          y: centerY + Math.sin(angle) * baseR * depth,
+          depth
+        };
       });
 
-      nodes.forEach((node, idx) => {
-        for (let j = idx + 1; j < nodes.length; j++) {
-          const other = nodes[j];
-          const dx = node.pos.x - other.pos.x;
-          const dy = node.pos.y - other.pos.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 200) {
-            ctx.globalAlpha = 1 - dist / 200;
-            ctx.beginPath();
-            ctx.moveTo(node.pos.x, node.pos.y);
-            ctx.lineTo(other.pos.x, other.pos.y);
-            ctx.stroke();
-          }
-        }
+      lctx.strokeStyle = 'rgba(34, 211, 238, 0.35)';
+      lctx.lineWidth = 1;
+      pos.forEach((p, i) => {
+        const next = pos[(i + 1) % pos.length];
+        lctx.beginPath();
+        lctx.moveTo(p.x, p.y);
+        lctx.lineTo(next.x, next.y);
+        lctx.stroke();
       });
 
-      ctx.globalAlpha = 1;
-      nodes.forEach((node, idx) => {
-        const pulse = 4 + Math.sin(t * 0.003 + idx) * 2;
-        ctx.beginPath();
-        ctx.fillStyle = 'rgba(95, 230, 160, 0.9)';
-        ctx.arc(node.pos.x, node.pos.y, 4 + pulse * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(123, 212, 255, 0.7)';
-        ctx.stroke();
+      pos.forEach(p => {
+        const pulse = Math.max(0, latticePulse);
+        lctx.beginPath();
+        lctx.arc(p.x, p.y, 3 + pulse * 0.1, 0, Math.PI * 2);
+        lctx.fillStyle = `rgba(34, 211, 238, ${0.5 + 0.4 * p.depth})`;
+        lctx.shadowBlur = 12 + pulse * 0.4;
+        lctx.shadowColor = 'rgba(34, 211, 238, 0.6)';
+        lctx.fill();
       });
 
+      latticeTime += 0.0095;
+      if (latticePulse > 0) latticePulse -= 0.5;
       requestAnimationFrame(drawLattice);
     }
+    latticeCanvas.width = latticeCanvas.clientWidth;
+    latticeCanvas.height = latticeCanvas.clientHeight;
+    drawLattice();
 
-    function updateLattice(telemetry) {
-      const latency = telemetry.latency_ms || 100;
-      const tokens = telemetry.token_estimate || 10;
-      const flatten = telemetry.flattening || 50;
-      latticeState.speed = 0.0002 + Math.min(latency, 2000) / 1000000 + (tokens / 20000);
-      latticeState.jitter = flatten <= 30 ? 12 : flatten <= 70 ? 8 : 4;
+    // Radar
+    const radarCanvas = document.getElementById('radar-canvas');
+    const rctx = radarCanvas.getContext('2d');
+    let radarTime = 0;
+    const threats = [];
+    const colors = ['#0ea5e9', '#22d3ee', '#34d399', '#f59e0b', '#fb7185'];
+
+    function addThreat(level) {
+      const radius = Math.random() * (radarCanvas.width / 2 - 10);
+      const angle = Math.random() * Math.PI * 2;
+      threats.push({ level, radius, angle, created: new Date() });
+      updateThreatCount();
+      logRadarEvent(level);
     }
 
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-    requestAnimationFrame(drawLattice);
-
-    async function loadInitial() {
-      checkHealth();
-      fetchFlattening();
-      fetchTelemetry();
-      loadDevices();
-      loadMedia();
-      loadLogs();
-      loadServerSettings();
-      addMessage('Aurelia', 'Omega lattice online. How can I help?');
+    function updateThreatCount() {
+      document.getElementById('threat-count').textContent = threats.length;
     }
 
-    setInterval(checkHealth, 25000);
-    loadInitial();
+    function clearThreats() {
+      threats.length = 0;
+      updateThreatCount();
+      document.getElementById('radar-feed').innerHTML = '';
+    }
+
+    function logRadarEvent(level) {
+      const feed = document.getElementById('radar-feed');
+      const row = document.createElement('div');
+      row.className = 'radar-row';
+      row.innerHTML = `<strong>Level ${level}</strong> · ${new Date().toLocaleTimeString()}<br /><span class="muted">Synthetic ping for monitoring signal integrity.</span>`;
+      feed.prepend(row);
+    }
+
+    function drawRadar() {
+      const { width, height } = radarCanvas;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(width, height) / 2 - 6;
+      rctx.clearRect(0, 0, width, height);
+
+      rctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+      rctx.lineWidth = 1;
+      for (let i = 1; i <= 4; i++) {
+        rctx.beginPath();
+        rctx.arc(centerX, centerY, (radius / 4) * i, 0, Math.PI * 2);
+        rctx.stroke();
+      }
+      rctx.beginPath();
+      rctx.moveTo(centerX - radius, centerY);
+      rctx.lineTo(centerX + radius, centerY);
+      rctx.moveTo(centerX, centerY - radius);
+      rctx.lineTo(centerX, centerY + radius);
+      rctx.stroke();
+
+      const beamAngle = radarTime * 0.02;
+      const beamLength = radius;
+      const grad = rctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+      grad.addColorStop(0, 'rgba(34, 211, 238, 0.18)');
+      grad.addColorStop(1, 'rgba(34, 211, 238, 0)');
+      rctx.fillStyle = grad;
+      rctx.beginPath();
+      rctx.moveTo(centerX, centerY);
+      rctx.arc(centerX, centerY, beamLength, beamAngle, beamAngle + Math.PI / 6);
+      rctx.closePath();
+      rctx.fill();
+
+      threats.forEach(t => {
+        const x = centerX + Math.cos(t.angle) * t.radius;
+        const y = centerY + Math.sin(t.angle) * t.radius;
+        rctx.beginPath();
+        rctx.arc(x, y, 5, 0, Math.PI * 2);
+        rctx.fillStyle = colors[t.level - 1] || colors[0];
+        rctx.shadowBlur = 12;
+        rctx.shadowColor = colors[t.level - 1] || colors[0];
+        rctx.fill();
+      });
+
+      radarTime += 1;
+      requestAnimationFrame(drawRadar);
+    }
+    radarCanvas.width = radarCanvas.clientWidth;
+    radarCanvas.height = radarCanvas.clientHeight;
+    drawRadar();
+
+    setInterval(() => {
+      const level = parseInt(document.getElementById('radar-sensitivity').value, 10);
+      if (Math.random() < level * 0.08) {
+        addThreat(level);
+        latticePulse = Math.min(14, latticePulse + 6);
+      }
+    }, 2500);
+
+    document.getElementById('radar-sensitivity').addEventListener('input', e => {
+      const val = parseInt(e.target.value, 10);
+      e.target.style.filter = `drop-shadow(0 0 6px ${colors[val - 1]})`;
+    });
+
+    // Frameworks state
+    const frameworksList = [
+      { name: 'Omega', key: 'omega' },
+      { name: 'MeridianOS', key: 'meridian' },
+      { name: 'Echo Prime', key: 'echo' },
+      { name: 'SOS', key: 'sos' },
+      { name: 'Continuity Core', key: 'continuity' },
+    ];
+    const frameworksDiv = document.getElementById('frameworks');
+    frameworksList.forEach(fw => {
+      const pill = document.createElement('div');
+      pill.className = 'framework-pill';
+      pill.dataset.key = fw.key;
+      pill.textContent = fw.name;
+      frameworksDiv.appendChild(pill);
+    });
+
+    function updateFrameworkStates() {
+      const activeView = document.querySelector('.view.active')?.dataset.view;
+      document.querySelectorAll('.framework-pill').forEach(pill => {
+        const key = pill.dataset.key;
+        const active = (key === 'omega' && activeView === 'omega') || (key === 'meridian' && activeView === 'meridian');
+        pill.classList.toggle('active', active);
+      });
+    }
+    updateFrameworkStates();
+
+    // Logs copy helpers
+    function copyTextToClipboard(text, label) {
+      if (!text) { alert(`No ${label} to copy yet.`); return; }
+      navigator.clipboard.writeText(text).then(() => alert(`${label} copied.`));
+    }
+    document.getElementById('export-system-logs').addEventListener('click', () => {
+      copyTextToClipboard(document.getElementById('system-log-output').innerText, 'System Logs');
+    });
+    document.getElementById('export-frontend-logs').addEventListener('click', () => {
+      copyTextToClipboard(document.getElementById('frontend-log-output').innerText, 'Frontend Logs');
+    });
+    document.getElementById('copy-backend-logs').addEventListener('click', () => {
+      copyTextToClipboard(document.getElementById('backend-log-input').value, 'Backend Logs');
+    });
+
+    // Meridian tools
+    const meridianTools = [
+      { id: 'sqft', label: 'Square Foot Calculator' },
+      { id: 'pay', label: 'Advanced Hourly Pay Planner' },
+      { id: 'meter', label: 'Multimeter Trainer' },
+      { id: 'mold', label: 'Mold & Rot Guide' },
+      { id: 'prices', label: 'Common Job Pricing Snapshot' },
+      { id: 'notes', label: 'Job Notes Pad' },
+    ];
+    const toolListDiv = document.getElementById('meridian-tools');
+    const toolPanel = document.getElementById('meridian-tool-panel');
+
+    meridianTools.forEach(tool => {
+      const btn = document.createElement('button');
+      btn.className = 'meridian-tool-btn';
+      btn.textContent = tool.label;
+      btn.dataset.tool = tool.id;
+      btn.addEventListener('click', () => setMeridianTool(tool.id));
+      toolListDiv.appendChild(btn);
+    });
+
+    function setMeridianTool(toolId) {
+      document.querySelectorAll('.meridian-tool-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tool === toolId));
+      renderTool(toolId);
+    }
+
+    function renderTool(toolId) {
+      if (toolId === 'sqft') {
+        toolPanel.innerHTML = `
+          <h3>Square Foot Calculator</h3>
+          <div class="grid-2" style="gap:14px;">
+            <div class="stack">
+              <input id="len-ft" class="input" type="number" placeholder="Length (ft)" />
+              <input id="wid-ft" class="input" type="number" placeholder="Width (ft)" />
+              <input id="rooms-count" class="input" type="number" value="1" placeholder="Rooms" />
+              <button class="btn" onclick="calcSqft()">Calculate</button>
+            </div>
+            <div class="stack">
+              <div class="metric-box">
+                <div class="metric-title">Total Square Feet</div>
+                <div class="metric-value" id="sqft-total">0</div>
+              </div>
+              <p class="muted">Use this for fast ceiling, floor, and wall-run estimates before quoting. Multiply room count for repeats.</p>
+            </div>
+          </div>`;
+      } else if (toolId === 'pay') {
+        toolPanel.innerHTML = `
+          <h3>Advanced Hourly Pay Planner</h3>
+          <div class="grid-2" style="gap:14px;">
+            <div class="stack">
+              <input id="rate" class="input" type="number" placeholder="Hourly Rate ($/hr)" />
+              <input id="hours" class="input" type="number" placeholder="Billable Hours Today" />
+              <input id="materials" class="input" type="number" placeholder="Materials / Dump Fees ($)" />
+              <input id="overhead" class="input" type="number" placeholder="Overhead % (vehicle, insurance, admin)" />
+              <button class="btn" onclick="calcPay()">Estimate</button>
+            </div>
+            <div class="stack">
+              <div class="metrics">
+                <div class="metric-box"><div class="metric-title">Gross Labor</div><div class="metric-value" id="gross-labor">$0</div></div>
+                <div class="metric-box"><div class="metric-title">Total Costs</div><div class="metric-value" id="total-costs">$0</div></div>
+                <div class="metric-box"><div class="metric-title">Estimated Take-Home</div><div class="metric-value" id="take-home">$0</div></div>
+              </div>
+              <p class="muted">Overhead is approximate: vehicle, tools, admin, downtime. Quick snapshot to judge if the day was worth it.</p>
+            </div>
+          </div>`;
+      } else if (toolId === 'meter') {
+        toolPanel.innerHTML = `
+          <h3>Multimeter Trainer</h3>
+          <div class="grid-2" style="gap:14px; align-items:center;">
+            <div class="stack" style="align-items:center;">
+              <div class="metric-box" style="width:180px; text-align:center;">
+                <div class="metric-title">Display</div>
+                <div class="metric-value" id="meter-display">8888</div>
+              </div>
+              <div class="frameworks" style="justify-content:center;">
+                ${['VAC','VDC','Ω','Continuity','Amps'].map(mode => `<button class="meridian-tool-btn" style="width:auto;" onclick="setMeterMode('${mode}')">${mode}</button>`).join('')}
+              </div>
+            </div>
+            <div class="subcard" style="height:100%; overflow:auto;" id="meter-detail">Select a mode to learn placement and safety.</div>
+          </div>`;
+      } else if (toolId === 'mold') {
+        toolPanel.innerHTML = `
+          <h3>Mold & Rot Guide</h3>
+          <div class="grid-2" style="gap:14px;">
+            <div class="subcard">
+              <strong>ASHRAE Humidity Quick Guide</strong>
+              <ul>
+                <li>&lt; 40% RH – Very dry; comfortable but can dry materials.</li>
+                <li>40–50% RH – Ideal indoor band; lowest mold risk.</li>
+                <li>50–60% RH – Watch zone; mold risk increases on cold/dark surfaces.</li>
+                <li>&gt; 60% RH – High risk; long periods can support mold growth and rot.</li>
+              </ul>
+              <p class="muted">Remediation targets ~45–50% RH and fixes the moisture source.</p>
+            </div>
+            <div class="subcard" id="mold-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
+          </div>`;
+          renderMoldTiles();
+      } else if (toolId === 'prices') {
+        toolPanel.innerHTML = `
+          <h3>Common Job Pricing Snapshot</h3>
+          <div class="stack">
+            ${[
+              ['Toilet Install (customer furnishes toilet)', '$250 – $450', 'Includes wax ring and supply line; haul-away extra.'],
+              ['Garbage Disposal Install', '$225 – $400', 'Wiring/switch/ground-fault can increase cost.'],
+              ['Vanity & Faucet Swap', '$450 – $900', 'Depends on plumbing modifications and countertop type.'],
+              ['Standard Light Fixture Swap', '$125 – $250', 'Add for height or tricky access.'],
+              ['Ceiling Fan Install', '$250 – $450', 'Assumes fan-rated box already present.'],
+              ['Basic Dishwasher Swap', '$300 – $550', 'Existing hookups vs. new line work.'],
+            ].map(row => `<div class="metric-box"><strong>${row[0]}</strong><div class="muted">${row[1]}</div><div>${row[2]}</div></div>`).join('')}
+            <p class="muted">Starting bands — adjust for difficulty, travel time, client type, and local market.</p>
+          </div>`;
+      } else if (toolId === 'notes') {
+        toolPanel.innerHTML = `
+          <h3>Job Notes Pad</h3>
+          <textarea id="notes-pad" class="input" rows="8" placeholder="Quick job notes..."></textarea>
+          <button class="btn" onclick="saveJobNote()">Save Note</button>
+          <div class="stack" id="notes-list" style="margin-top:10px;"></div>`;
+        renderNotes();
+      }
+      updateFrameworkStates();
+    }
+
+    function calcSqft() {
+      const l = parseFloat(document.getElementById('len-ft').value) || 0;
+      const w = parseFloat(document.getElementById('wid-ft').value) || 0;
+      const r = parseFloat(document.getElementById('rooms-count').value) || 1;
+      const total = l * w * r;
+      document.getElementById('sqft-total').textContent = total.toFixed(1) + ' ft²';
+    }
+
+    function calcPay() {
+      const rate = parseFloat(document.getElementById('rate').value) || 0;
+      const hours = parseFloat(document.getElementById('hours').value) || 0;
+      const materials = parseFloat(document.getElementById('materials').value) || 0;
+      const overheadPct = parseFloat(document.getElementById('overhead').value) || 0;
+      const gross = rate * hours;
+      const overhead = gross * (overheadPct / 100);
+      const costs = materials + overhead;
+      const takeHome = gross - costs;
+      document.getElementById('gross-labor').textContent = `$${gross.toFixed(2)}`;
+      document.getElementById('total-costs').textContent = `$${costs.toFixed(2)}`;
+      document.getElementById('take-home').textContent = `$${takeHome.toFixed(2)}`;
+    }
+
+    function setMeterMode(mode) {
+      const detail = document.getElementById('meter-detail');
+      const guidance = {
+        'VAC': 'VAC: Measure household AC voltage. Leads: black to neutral/common, red to hot. Use PPE, avoid contact with live conductors.',
+        'VDC': 'VDC: DC voltage for control boards, batteries, low-voltage HVAC. Observe polarity: red positive, black negative.',
+        'Ω': 'Ohms: Power off the circuit. Isolate components before checking resistance. Expect OL on open circuits.',
+        'Continuity': 'Continuity •))): Power removed. Good for checking fuses, switches, door contacts. Audible tone indicates closed path.',
+        'Amps': 'Amps: Use proper port and range. Clamp meters preferred. Break circuit only if meter supports inline current safely.'
+      };
+      document.getElementById('meter-display').textContent = mode;
+      detail.textContent = guidance[mode] || 'Select a mode to learn placement and safety.';
+    }
+
+    function renderMoldTiles() {
+      const tiles = [
+        ['Dark Spotty (Cladosporium-type)', 'Patchy black/olive on vents, bath grout, HVAC pans. Low-moderate irritation; clean with detergent, dry surfaces, improve airflow.'],
+        ['Blue/Green (Penicillium-type)', 'Velvety blue-green on drywall and paper. Moderate risk; cut-out if deep, HEPA vac, dry the cavity.'],
+        ['Heavy Black (Stachybotrys-type)', 'Slimy black on long-wet drywall/wood. Higher concern; containment, PPE, likely removal and negative air.'],
+        ['Surface Wood Rot', 'Softening wood with discoloration. Dry the area, epoxy consolidants for minor spots, monitor moisture.'],
+        ['Structural Wood Rot', 'Deep crumble or punky wood. Requires assessment; may need sistering/replacement and moisture source fix.'],
+      ];
+      const grid = document.getElementById('mold-grid');
+      grid.innerHTML = '';
+      tiles.forEach(t => {
+        const tile = document.createElement('div');
+        tile.className = 'metric-box';
+        tile.style.cursor = 'pointer';
+        tile.innerHTML = `<strong>${t[0]}</strong><p class="muted">Tap for field tips.</p>`;
+        tile.addEventListener('click', () => {
+          tile.innerHTML = `<strong>${t[0]}</strong><p>${t[1]}</p><p class="muted">Fix moisture source, ventilate, and wear PPE.</p>`;
+        });
+        grid.appendChild(tile);
+      });
+    }
+
+    function saveJobNote() {
+      const val = document.getElementById('notes-pad').value.trim();
+      if (!val) return;
+      const notes = JSON.parse(localStorage.getItem('meridianNotes') || '[]');
+      notes.unshift({ text: val, ts: new Date().toISOString() });
+      localStorage.setItem('meridianNotes', JSON.stringify(notes.slice(0, 10)));
+      document.getElementById('notes-pad').value = '';
+      renderNotes();
+    }
+
+    function renderNotes() {
+      const notes = JSON.parse(localStorage.getItem('meridianNotes') || '[]');
+      const list = document.getElementById('notes-list');
+      list.innerHTML = '';
+      notes.forEach(n => {
+        const row = document.createElement('div');
+        row.className = 'metric-box';
+        row.innerHTML = `<div>${n.text}</div><div class="muted" style="font-size:12px;">${new Date(n.ts).toLocaleString()}</div>`;
+        list.appendChild(row);
+      });
+      if (!notes.length) list.innerHTML = '<span class="muted">No saved notes yet.</span>';
+    }
+
+    // Initialize
+    setMeridianTool('sqft');
+    loadMemoryList();
   </script>
 </body>
 </html>
