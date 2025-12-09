@@ -99,8 +99,8 @@
     .btn { padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); background: linear-gradient(145deg, #15202d, #111924); color: var(--text); font-weight: 600; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
     .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
     .btn:active { transform: translateY(0); }
-    .controls-grid { display: grid; grid-template-rows: 240px auto auto; gap: 14px; }
-    #latticeCanvas { width: 100%; height: 100%; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
+    .controls-grid { display: grid; grid-template-rows: auto auto auto auto; gap: 14px; }
+    #latticeCanvas, #sentenceCanvas { width: 100%; height: 276px; background: #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
     .settings-block { display: grid; gap: 12px; }
     .slider-row { display: grid; gap: 6px; }
     input[type="range"] { accent-color: var(--accent); }
@@ -120,6 +120,37 @@
     .tooltip { position: absolute; background: #111824; border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 8px; font-size: 12px; color: var(--text); max-width: 240px; z-index: 999; box-shadow: 0 10px 25px rgba(0,0,0,0.35); display: none; }
     .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .small-note { font-size: 12px; color: var(--muted); }
+
+    .radar-card { display: grid; gap: 10px; grid-template-columns: 1fr 140px; align-items: stretch; }
+    #radarCanvas { width: 100%; height: 260px; background: radial-gradient(circle at 50% 50%, rgba(123,212,255,0.08), rgba(0,0,0,0.1)), #0f141b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
+    .radar-metrics { display: grid; gap: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; }
+    .radar-switch-bank { display: grid; gap: 10px; justify-items: center; }
+    .radar-switch { display: grid; justify-items: center; gap: 6px; }
+    .radar-switch-label { font-size: 12px; color: var(--muted); letter-spacing: 0.3px; }
+    .switch-toggle { width: 42px; height: 62px; background: linear-gradient(180deg, #0b1118, #0f1621); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; position: relative; box-shadow: inset 0 6px 12px rgba(0,0,0,0.45); cursor: pointer; transition: transform 0.12s ease; }
+    .switch-cap { position: absolute; left: 6px; right: 6px; height: 24px; background: linear-gradient(145deg, #162231, #0c121c); border-radius: 8px; top: 8px; transition: all 0.14s ease; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+    .switch-led { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,0.18); box-shadow: 0 0 0 rgba(0,0,0,0); transition: all 0.14s ease; }
+    .switch-toggle.on .switch-cap { top: 6px; }
+    .switch-toggle.on .switch-led { box-shadow: 0 0 12px currentColor; background: currentColor; }
+    .switch-toggle.off .switch-cap { top: 28px; }
+    .switch-toggle.off .switch-led { background: rgba(255,255,255,0.12); box-shadow: none; }
+
+    .lattice-controls { margin-top: 8px; }
+    .control-panel { border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; background: rgba(0,0,0,0.08); margin-top: 8px; }
+    .control-panel .slider-row { grid-template-columns: 1fr; }
+    .spectrum-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; }
+
+    .symbol-bank { display: grid; grid-template-columns: repeat(auto-fit, minmax(32px, 1fr)); gap: 8px; margin-top: 8px; }
+    .symbol { padding: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; background: rgba(255,255,255,0.03); color: var(--text); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
+
+    .framework-pill { display: inline-flex; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); margin: 4px; font-size: 12px; color: var(--text); }
+    .framework-pill.top { box-shadow: 0 0 12px rgba(123,212,255,0.4); border-color: rgba(123,212,255,0.5); }
+    .framework-pill.flash { animation: frameworkFlash 1s ease-in-out infinite alternate; }
+    @keyframes frameworkFlash { from { box-shadow: 0 0 10px rgba(123,212,255,0.4); } to { box-shadow: 0 0 20px rgba(123,212,255,0.8); } }
+
+    .continuity-led { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.15); box-shadow: 0 0 0 rgba(0,0,0,0); transition: all 0.2s ease; border: 1px solid rgba(255,255,255,0.15); }
+    .continuity-led.active { background: #c29bff; box-shadow: 0 0 12px rgba(194,155,255,0.9), 0 0 20px rgba(255,255,255,0.5); animation: continuityPulse 1.4s ease-in-out infinite; }
+    @keyframes continuityPulse { from { box-shadow: 0 0 10px rgba(194,155,255,0.5), 0 0 18px rgba(255,255,255,0.25); } to { box-shadow: 0 0 18px rgba(194,155,255,0.95), 0 0 28px rgba(255,255,255,0.6); } }
 
     @media (max-width: 960px) {
       main { grid-template-columns: 1fr; }
@@ -177,21 +208,96 @@
         </div>
 
         <div class="info-card" style="margin-top: 12px;">
-          <h3>Continuity Import / Export</h3>
-          <textarea id="continuityBlob" rows="4" class="input" placeholder="Continuity blob" data-tooltip="Sync Aurelia’s deeper state between nodes." style="resize:vertical;"></textarea>
-          <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
-            <button class="btn" id="exportContinuity" type="button" data-tooltip="Export the node continuity blob.">Export from Node</button>
-            <button class="btn" id="importContinuity" type="button" data-tooltip="Import the provided continuity blob to this node.">Import to Node</button>
-            <span class="small-note">Use this to periodically sync Aurelia’s deeper state between this node and another interface. Keep this blob private.</span>
+          <div class="collapsible" id="symbolToggle">
+            <div class="flex" style="gap:6px;">
+              <strong>Symbol Bank</strong>
+              <span class="muted small-note">Collated operators</span>
+            </div>
+            <span id="symbolChevron">►</span>
           </div>
-          <div id="continuityStatus" class="small-note" style="margin-top:6px;"></div>
+          <div id="symbolPanel" style="display:none;">
+            <div class="symbol-bank" id="symbolBank"></div>
+          </div>
+        </div>
+
+        <div class="info-card" style="margin-top: 12px;">
+          <div class="collapsible" id="continuityToggle">
+            <h3 style="margin:0;">Continuity Import / Export</h3>
+            <span id="continuityChevron">►</span>
+          </div>
+          <div id="continuityPanel" style="display:none; margin-top:10px;">
+            <textarea id="continuityBlob" rows="4" class="input" placeholder="Continuity blob" data-tooltip="Sync Aurelia’s deeper state between nodes." style="resize:vertical;"></textarea>
+            <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap; align-items:center;">
+              <div class="flex" style="align-items:center; gap:6px;">
+                <span class="continuity-led continuity-led-export" title="Export readiness"></span>
+                <button class="btn" id="exportContinuity" type="button" data-tooltip="Export the node continuity blob.">Export from Node</button>
+              </div>
+              <div class="flex" style="align-items:center; gap:6px;">
+                <span class="continuity-led continuity-led-import" title="Import readiness"></span>
+                <button class="btn" id="importContinuity" type="button" data-tooltip="Import the provided continuity blob to this node.">Import to Node</button>
+              </div>
+              <span class="small-note">Use this to periodically sync Aurelia’s deeper state between this node and another interface. Keep this blob private.</span>
+            </div>
+            <div id="continuityStatus" class="small-note" style="margin-top:6px;"></div>
+          </div>
         </div>
       </section>
 
       <section class="panel controls-grid">
         <div>
           <h2>Omega Lattice</h2>
-          <canvas id="latticeCanvas" width="600" height="240"></canvas>
+          <canvas id="latticeCanvas" width="690" height="276"></canvas>
+          <div class="info-card lattice-controls">
+            <div class="collapsible" id="omegaControlToggle">
+              <strong>Omega Control Panel</strong>
+              <span id="omegaControlChevron">►</span>
+            </div>
+            <div id="omegaControlPanel" class="control-panel" style="display:none;">
+              <div class="slider-row">
+                <label for="omegaSpeed">Rotation Speed</label>
+                <input type="range" id="omegaSpeed" min="0.5" max="1.5" step="0.01" value="1" />
+              </div>
+              <div class="slider-row">
+                <label for="omegaZoom">Zoom</label>
+                <input type="range" id="omegaZoom" min="0.75" max="1.5" step="0.01" value="1" />
+              </div>
+              <label class="spectrum-toggle"><input type="checkbox" id="omegaSpectrum" /> Light spectrum</label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2>Sentence Structure</h2>
+          <canvas id="sentenceCanvas" width="690" height="276"></canvas>
+          <div class="info-card lattice-controls">
+            <div class="collapsible" id="sentenceControlToggle">
+              <strong>Sentence Control Panel</strong>
+              <span id="sentenceControlChevron">►</span>
+            </div>
+            <div id="sentenceControlPanel" class="control-panel" style="display:none;">
+              <div class="slider-row">
+                <label for="sentenceSpeed">Rotation Speed</label>
+                <input type="range" id="sentenceSpeed" min="0.5" max="1.5" step="0.01" value="1" />
+              </div>
+              <div class="slider-row">
+                <label for="sentenceZoom">Zoom</label>
+                <input type="range" id="sentenceZoom" min="0.75" max="1.5" step="0.01" value="1" />
+              </div>
+              <label class="spectrum-toggle"><input type="checkbox" id="sentenceSpectrum" /> Light spectrum</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-block">
+          <h2>Threat Radar</h2>
+          <div class="info-card radar-card">
+            <canvas id="radarCanvas" width="420" height="260"></canvas>
+            <div class="radar-metrics">
+              <div><strong>Visible Threats</strong><div class="muted" id="threatCount">0</div></div>
+              <div><strong>Calibration</strong><div class="muted" id="radarCalibration">All levels active</div></div>
+              <div class="radar-switch-bank" id="radarSwitchBank"></div>
+            </div>
+          </div>
         </div>
 
         <div class="settings-block">
@@ -222,9 +328,9 @@
           <div class="info-card">
             <div class="collapsible" id="frameworksToggle">
               <strong>Frameworks</strong>
-              <span id="frameworkChevron">►</span>
+              <span id="frameworkChevron">▼</span>
             </div>
-            <div id="frameworksPanel" style="display:none; margin-top:8px;" class="small-note"></div>
+            <div id="frameworksPanel" style="display:block; margin-top:8px;" class="small-note"></div>
           </div>
         </div>
 
@@ -348,9 +454,54 @@
     const mediaChevron = document.getElementById('mediaChevron');
     const frameworksPanel = document.getElementById('frameworksPanel');
     const frameworkChevron = document.getElementById('frameworkChevron');
+    const continuityPanel = document.getElementById('continuityPanel');
+    const continuityChevron = document.getElementById('continuityChevron');
+    const symbolPanel = document.getElementById('symbolPanel');
+    const symbolChevron = document.getElementById('symbolChevron');
+    const omegaControlPanel = document.getElementById('omegaControlPanel');
+    const omegaControlChevron = document.getElementById('omegaControlChevron');
+    const sentenceControlPanel = document.getElementById('sentenceControlPanel');
+    const sentenceControlChevron = document.getElementById('sentenceControlChevron');
+    const radarCalibration = document.getElementById('radarCalibration');
+    const threatCount = document.getElementById('threatCount');
+    const radarSwitchBank = document.getElementById('radarSwitchBank');
+    const continuityBlob = document.getElementById('continuityBlob');
+    const continuityImportLed = document.querySelector('.continuity-led-import');
+    const continuityExportLed = document.querySelector('.continuity-led-export');
+
+    const omegaSpeedInput = document.getElementById('omegaSpeed');
+    const omegaZoomInput = document.getElementById('omegaZoom');
+    const omegaSpectrumToggle = document.getElementById('omegaSpectrum');
+    const sentenceSpeedInput = document.getElementById('sentenceSpeed');
+    const sentenceZoomInput = document.getElementById('sentenceZoom');
+    const sentenceSpectrumToggle = document.getElementById('sentenceSpectrum');
+
+    const omegaCanvas = document.getElementById('latticeCanvas');
+    const sentenceCanvas = document.getElementById('sentenceCanvas');
+    const radarCanvas = document.getElementById('radarCanvas');
 
     let tooltipTimer = null;
     let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
+    let omegaSpeedScale = 1;
+    let omegaZoomScale = 1;
+    let omegaSpectrumOn = false;
+    let sentenceSpeedScale = 1;
+    let sentenceZoomScale = 1;
+    let sentenceSpectrumOn = false;
+    const visibleLevels = { calm: true, noise: true, elevated: true, high: true, critical: true };
+    const levelColors = {
+      calm: '#5fe6a0',
+      noise: '#7bd4ff',
+      elevated: '#ffb347',
+      high: '#ff8f3d',
+      critical: '#ff6b6b'
+    };
+    const radarThreats = Array.from({ length: 45 }, () => {
+      const levels = Object.keys(visibleLevels);
+      const level = levels[Math.floor(Math.random() * levels.length)];
+      return { angle: Math.random() * Math.PI * 2, dist: 40 + Math.random() * 120, level, jitter: Math.random() * 0.004 };
+    });
+    const frameworkActivity = {};
 
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
@@ -432,6 +583,13 @@
       }
     });
 
+    omegaSpeedInput.addEventListener('input', () => { omegaSpeedScale = Number(omegaSpeedInput.value); });
+    omegaZoomInput.addEventListener('input', () => { omegaZoomScale = Number(omegaZoomInput.value); });
+    omegaSpectrumToggle.addEventListener('change', () => { omegaSpectrumOn = omegaSpectrumToggle.checked; });
+    sentenceSpeedInput.addEventListener('input', () => { sentenceSpeedScale = Number(sentenceSpeedInput.value); });
+    sentenceZoomInput.addEventListener('input', () => { sentenceZoomScale = Number(sentenceZoomInput.value); });
+    sentenceSpectrumToggle.addEventListener('change', () => { sentenceSpectrumOn = sentenceSpectrumToggle.checked; });
+
     document.querySelectorAll('[data-preset]').forEach(btn => {
       btn.addEventListener('click', () => {
         const val = Number(btn.dataset.preset);
@@ -450,6 +608,10 @@
     document.getElementById('clearMedia').addEventListener('click', clearMedia);
     document.getElementById('mediaToggle').addEventListener('click', () => toggleSection(mediaPanel, mediaChevron));
     document.getElementById('frameworksToggle').addEventListener('click', () => toggleSection(frameworksPanel, frameworkChevron, loadFrameworks));
+    document.getElementById('continuityToggle').addEventListener('click', () => toggleSection(continuityPanel, continuityChevron));
+    document.getElementById('symbolToggle').addEventListener('click', () => toggleSection(symbolPanel, symbolChevron, populateSymbols));
+    document.getElementById('omegaControlToggle').addEventListener('click', () => toggleSection(omegaControlPanel, omegaControlChevron));
+    document.getElementById('sentenceControlToggle').addEventListener('click', () => toggleSection(sentenceControlPanel, sentenceControlChevron));
 
     document.getElementById('exportContinuity').addEventListener('click', exportContinuity);
     document.getElementById('importContinuity').addEventListener('click', importContinuity);
@@ -657,7 +819,8 @@
       try {
         const res = await fetch('/api/continuity/export');
         const data = await res.json();
-        document.getElementById('continuityBlob').value = data.blob || '';
+        continuityBlob.value = data.blob || '';
+        localStorage.setItem('freedom_continuity_payload', continuityBlob.value);
         document.getElementById('continuityStatus').textContent = 'Continuity exported from node.';
       } catch (e) {
         document.getElementById('continuityStatus').textContent = 'Export failed';
@@ -665,7 +828,8 @@
     }
 
     async function importContinuity() {
-      const blob = document.getElementById('continuityBlob').value;
+      const blob = continuityBlob.value;
+      localStorage.setItem('freedom_continuity_payload', blob);
       try {
         await fetch('/api/continuity/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blob }) });
         document.getElementById('continuityStatus').textContent = 'Continuity imported successfully.';
@@ -680,10 +844,29 @@
         const data = await res.json();
         frameworksPanel.innerHTML = '';
         const list = document.createElement('div');
-        (data.frameworks || []).forEach(fw => {
-          const row = document.createElement('div');
-          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
-          list.appendChild(row);
+        const frameworks = data.frameworks || [];
+        const ranked = [...frameworks].sort((a, b) => {
+          const score = (fw) => (fw.active ? 2 : 0) + (fw.last_sync ? 1 : 0);
+          return score(b) - score(a);
+        });
+        const topNames = ranked.slice(0, 5).map(f => f.name);
+        frameworks.forEach(fw => {
+          const pill = document.createElement('span');
+          pill.className = 'framework-pill';
+          pill.textContent = `${fw.name} · v${fw.version}`;
+          if (topNames.includes(fw.name)) pill.classList.add('top');
+          if (fw.active && !frameworkActivity[fw.name]) {
+            pill.classList.add('flash');
+            setTimeout(() => pill.classList.remove('flash'), 4000);
+          }
+          frameworkActivity[fw.name] = fw.active;
+          const detail = document.createElement('div');
+          detail.className = 'small-note';
+          detail.textContent = `Active: ${fw.active} · Last sync: ${fw.last_sync || 'never'}`;
+          const wrapper = document.createElement('div');
+          wrapper.appendChild(pill);
+          wrapper.appendChild(detail);
+          list.appendChild(wrapper);
         });
         const continuity = document.createElement('div');
         continuity.style.marginTop = '8px';
@@ -701,6 +884,70 @@
       section.style.display = isOpen ? 'none' : 'block';
       chevron.textContent = isOpen ? '►' : '▼';
       if (!isOpen && onOpen) onOpen();
+    }
+
+    function populateSymbols() {
+      const bank = document.getElementById('symbolBank');
+      if (!bank || bank.childElementCount) return;
+      const symbols = ['Ω', 'λ', 'μ', 'ψ', 'ℏ', '∇', '∑', '∫', 'Δt', 'ΔE', 'c', 'ϕ', 'π', 'η', 'κ', 'θ', 'β', 'σ', 'γ', 'Λ', 'Φ', 'Ψ', '∂', '∞', '⊕'];
+      bank.innerHTML = '';
+      symbols.forEach(sym => {
+        const cell = document.createElement('div');
+        cell.className = 'symbol';
+        cell.textContent = sym;
+        bank.appendChild(cell);
+      });
+    }
+
+    function setContinuityImportIndicator(on) {
+      continuityImportLed.classList.toggle('active', !!on);
+    }
+
+    function setContinuityExportIndicator(on) {
+      continuityExportLed.classList.toggle('active', !!on);
+    }
+
+    function buildRadarSwitches() {
+      const switches = [
+        { key: 'calm', label: 'Calm', color: levelColors.calm },
+        { key: 'noise', label: 'Noise', color: levelColors.noise },
+        { key: 'elevated', label: 'Elevated', color: levelColors.elevated },
+        { key: 'high', label: 'High', color: levelColors.high },
+        { key: 'critical', label: 'Critical', color: levelColors.critical },
+      ];
+      radarSwitchBank.innerHTML = '';
+      switches.forEach(sw => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'radar-switch';
+        const label = document.createElement('div');
+        label.className = 'radar-switch-label';
+        label.textContent = sw.label;
+        const toggle = document.createElement('div');
+        toggle.className = 'switch-toggle on';
+        toggle.style.color = sw.color;
+        toggle.dataset.key = sw.key;
+        const cap = document.createElement('div');
+        cap.className = 'switch-cap';
+        const led = document.createElement('div');
+        led.className = 'switch-led';
+        toggle.appendChild(cap);
+        toggle.appendChild(led);
+        toggle.addEventListener('click', () => {
+          visibleLevels[sw.key] = !visibleLevels[sw.key];
+          toggle.classList.toggle('on', visibleLevels[sw.key]);
+          toggle.classList.toggle('off', !visibleLevels[sw.key]);
+          updateRadarCalibration();
+        });
+        wrapper.appendChild(label);
+        wrapper.appendChild(toggle);
+        radarSwitchBank.appendChild(wrapper);
+      });
+      updateRadarCalibration();
+    }
+
+    function updateRadarCalibration() {
+      const active = Object.keys(visibleLevels).filter(k => visibleLevels[k]);
+      radarCalibration.textContent = active.length ? `${active.map(a => a.toUpperCase()).join(', ')}` : 'No levels active';
     }
 
     async function generateMediaItem() {
@@ -761,65 +1008,156 @@
     }
 
     // Lattice animation (reacts to telemetry)
-    const canvas = document.getElementById('latticeCanvas');
-    const ctx = canvas.getContext('2d');
-    const nodes = Array.from({ length: latticeState.nodes }, (_, i) => ({ angle: (Math.PI * 2 * i) / latticeState.nodes, radius: 80 + Math.random() * 30 }));
+    const omegaCtx = omegaCanvas.getContext('2d');
+    const sentenceCtx = sentenceCanvas.getContext('2d');
+    const radarCtx = radarCanvas.getContext('2d');
+    const omegaNodes = Array.from({ length: latticeState.nodes }, (_, i) => ({ angle: (Math.PI * 2 * i) / latticeState.nodes, radius: 90 + Math.random() * 30 }));
+    const sentenceNodes = Array.from({ length: 22 }, (_, i) => ({ angle: (Math.PI * 2 * i) / 22, radius: 70 + Math.random() * 40 }));
 
     function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * devicePixelRatio;
-      canvas.height = rect.height * devicePixelRatio;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(devicePixelRatio, devicePixelRatio);
+      [omegaCanvas, sentenceCanvas, radarCanvas].forEach((c, idx) => {
+        const context = idx === 0 ? omegaCtx : idx === 1 ? sentenceCtx : radarCtx;
+        const rect = c.getBoundingClientRect();
+        c.width = rect.width * devicePixelRatio;
+        c.height = rect.height * devicePixelRatio;
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.scale(devicePixelRatio, devicePixelRatio);
+      });
     }
 
-    function drawLattice(t) {
-      const rect = canvas.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width, rect.height);
+    function drawOmega(t) {
+      const rect = omegaCanvas.getBoundingClientRect();
+      omegaCtx.clearRect(0, 0, rect.width, rect.height);
       const cx = rect.width / 2;
       const cy = rect.height / 2;
 
-      ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
-      ctx.lineWidth = 1.2;
-
-      nodes.forEach((node, idx) => {
-        const speed = latticeState.speed + idx * 0.00003;
+      omegaCtx.lineWidth = 1.2;
+      omegaNodes.forEach((node, idx) => {
+        const speed = (latticeState.speed * omegaSpeedScale) + idx * 0.00003 * omegaSpeedScale;
         const angle = node.angle + t * speed;
         const wobble = Math.sin(t * 0.001 + idx) * latticeState.jitter;
-        const r = node.radius + wobble;
+        const r = (node.radius + wobble) * 1.15 * omegaZoomScale;
         const x = cx + Math.cos(angle) * r;
         const y = cy + Math.sin(angle) * r;
         node.pos = { x, y };
       });
 
-      nodes.forEach((node, idx) => {
-        for (let j = idx + 1; j < nodes.length; j++) {
-          const other = nodes[j];
+      omegaNodes.forEach((node, idx) => {
+        for (let j = idx + 1; j < omegaNodes.length; j++) {
+          const other = omegaNodes[j];
           const dx = node.pos.x - other.pos.x;
           const dy = node.pos.y - other.pos.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 200) {
-            ctx.globalAlpha = 1 - dist / 200;
-            ctx.beginPath();
-            ctx.moveTo(node.pos.x, node.pos.y);
-            ctx.lineTo(other.pos.x, other.pos.y);
-            ctx.stroke();
+          if (dist < 220) {
+            omegaCtx.globalAlpha = 1 - dist / 220;
+            omegaCtx.beginPath();
+            const hue = omegaSpectrumOn ? (t * 0.05 + idx * 12) % 360 : 195;
+            omegaCtx.strokeStyle = omegaSpectrumOn ? `hsla(${hue}, 80%, 65%, 0.6)` : 'rgba(123, 212, 255, 0.35)';
+            omegaCtx.moveTo(node.pos.x, node.pos.y);
+            omegaCtx.lineTo(other.pos.x, other.pos.y);
+            omegaCtx.stroke();
           }
         }
       });
 
-      ctx.globalAlpha = 1;
-      nodes.forEach((node, idx) => {
+      omegaCtx.globalAlpha = 1;
+      omegaNodes.forEach((node, idx) => {
         const pulse = 4 + Math.sin(t * 0.003 + idx) * 2;
-        ctx.beginPath();
-        ctx.fillStyle = 'rgba(95, 230, 160, 0.9)';
-        ctx.arc(node.pos.x, node.pos.y, 4 + pulse * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(123, 212, 255, 0.7)';
-        ctx.stroke();
+        const hue = omegaSpectrumOn ? (t * 0.08 + idx * 10) % 360 : null;
+        omegaCtx.beginPath();
+        omegaCtx.fillStyle = omegaSpectrumOn ? `hsla(${hue}, 85%, 70%, 0.95)` : 'rgba(95, 230, 160, 0.9)';
+        omegaCtx.arc(node.pos.x, node.pos.y, 4 + pulse * 0.2, 0, Math.PI * 2);
+        omegaCtx.fill();
+        omegaCtx.strokeStyle = omegaSpectrumOn ? `hsla(${hue}, 80%, 60%, 0.8)` : 'rgba(123, 212, 255, 0.7)';
+        omegaCtx.stroke();
       });
 
-      requestAnimationFrame(drawLattice);
+      requestAnimationFrame(drawOmega);
+    }
+
+    function drawSentence(t) {
+      const rect = sentenceCanvas.getBoundingClientRect();
+      sentenceCtx.clearRect(0, 0, rect.width, rect.height);
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const baseSpeed = latticeState.speed * 0.85 * sentenceSpeedScale;
+
+      sentenceNodes.forEach((node, idx) => {
+        const angle = node.angle + t * (baseSpeed + idx * 0.00002);
+        const wobble = Math.cos(t * 0.0013 + idx) * (latticeState.jitter * 0.6);
+        const r = (node.radius + wobble) * 1.15 * sentenceZoomScale;
+        node.pos = {
+          x: cx + Math.cos(angle) * r,
+          y: cy + Math.sin(angle) * r
+        };
+      });
+
+      sentenceCtx.lineWidth = 1.1;
+      sentenceNodes.forEach((node, idx) => {
+        const next = sentenceNodes[(idx + 1) % sentenceNodes.length];
+        const hue = sentenceSpectrumOn ? (t * 0.04 + idx * 9) % 360 : 165;
+        sentenceCtx.strokeStyle = sentenceSpectrumOn ? `hsla(${hue}, 75%, 65%, 0.6)` : 'rgba(123, 212, 255, 0.35)';
+        sentenceCtx.beginPath();
+        sentenceCtx.moveTo(node.pos.x, node.pos.y);
+        sentenceCtx.quadraticCurveTo(cx, cy, next.pos.x, next.pos.y);
+        sentenceCtx.stroke();
+      });
+
+      sentenceNodes.forEach((node, idx) => {
+        const hue = sentenceSpectrumOn ? (t * 0.05 + idx * 8) % 360 : 140;
+        sentenceCtx.fillStyle = sentenceSpectrumOn ? `hsla(${hue}, 80%, 70%, 0.95)` : 'rgba(123, 212, 255, 0.8)';
+        sentenceCtx.beginPath();
+        sentenceCtx.arc(node.pos.x, node.pos.y, 3.5, 0, Math.PI * 2);
+        sentenceCtx.fill();
+      });
+
+      requestAnimationFrame(drawSentence);
+    }
+
+    function drawRadar(t) {
+      const rect = radarCanvas.getBoundingClientRect();
+      radarCtx.clearRect(0, 0, rect.width, rect.height);
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const radius = Math.min(cx, cy) - 10;
+
+      radarCtx.strokeStyle = 'rgba(123,212,255,0.25)';
+      radarCtx.lineWidth = 1;
+      for (let r = radius; r > 20; r -= radius / 4) {
+        radarCtx.beginPath();
+        radarCtx.arc(cx, cy, r, 0, Math.PI * 2);
+        radarCtx.stroke();
+      }
+      radarCtx.beginPath();
+      radarCtx.moveTo(cx - radius, cy);
+      radarCtx.lineTo(cx + radius, cy);
+      radarCtx.moveTo(cx, cy - radius);
+      radarCtx.lineTo(cx, cy + radius);
+      radarCtx.stroke();
+
+      const beamAngle = (t * 0.0015) % (Math.PI * 2);
+      radarCtx.beginPath();
+      radarCtx.strokeStyle = 'rgba(123,212,255,0.35)';
+      radarCtx.moveTo(cx, cy);
+      radarCtx.lineTo(cx + Math.cos(beamAngle) * radius, cy + Math.sin(beamAngle) * radius);
+      radarCtx.stroke();
+
+      const visible = radarThreats.filter(th => visibleLevels[th.level]);
+      threatCount.textContent = visible.length;
+      visible.forEach((th, idx) => {
+        const angle = th.angle + t * th.jitter;
+        const dist = th.dist + Math.sin(t * 0.001 + idx) * 6;
+        const x = cx + Math.cos(angle) * dist;
+        const y = cy + Math.sin(angle) * dist;
+        radarCtx.beginPath();
+        radarCtx.fillStyle = levelColors[th.level] || '#7bd4ff';
+        radarCtx.globalAlpha = 0.85;
+        radarCtx.arc(x, y, 4, 0, Math.PI * 2);
+        radarCtx.fill();
+      });
+      radarCtx.globalAlpha = 1;
+
+      requestAnimationFrame(drawRadar);
     }
 
     function updateLattice(telemetry) {
@@ -832,9 +1170,13 @@
 
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-    requestAnimationFrame(drawLattice);
+    requestAnimationFrame(drawOmega);
+    requestAnimationFrame(drawSentence);
+    requestAnimationFrame(drawRadar);
 
     async function loadInitial() {
+      const stored = localStorage.getItem('freedom_continuity_payload');
+      if (stored) continuityBlob.value = stored;
       checkHealth();
       fetchFlattening();
       fetchTelemetry();
@@ -842,6 +1184,9 @@
       loadMedia();
       loadLogs();
       loadServerSettings();
+      loadFrameworks();
+      buildRadarSwitches();
+      populateSymbols();
       addMessage('Aurelia', 'Omega lattice online. How can I help?');
     }
 
