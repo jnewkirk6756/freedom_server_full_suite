@@ -86,6 +86,7 @@
 
     main { display: grid; grid-template-columns: 2fr 1.2fr; gap: 18px; padding: 18px 24px 30px; }
     .panel { background: linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 18px; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3); backdrop-filter: blur(6px); }
+    .chat-panel { display: flex; flex-direction: column; gap: 12px; }
     .panel h2 { margin: 0 0 12px; font-size: 18px; letter-spacing: 0.4px; }
     .muted { color: var(--muted); font-size: 14px; }
     .chat-log { height: 52vh; overflow-y: auto; display: grid; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.15); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); }
@@ -121,6 +122,24 @@
     .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .small-note { font-size: 12px; color: var(--muted); }
 
+    .symbol-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .symbol-chip { padding: 6px 10px; border-radius: 12px; background: rgba(123, 212, 255, 0.08); border: 1px solid rgba(123, 212, 255, 0.24); cursor: pointer; box-shadow: 0 6px 14px rgba(0,0,0,0.25); transition: transform 0.12s ease, box-shadow 0.12s ease; }
+    .symbol-chip:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(0,0,0,0.35); }
+
+    .framework-pills { display: flex; flex-wrap: wrap; gap: 10px; }
+    .framework-pill { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.08); background: rgba(18, 26, 36, 0.85); color: var(--text); font-weight: 600; position: relative; box-shadow: inset 0 0 0 1px rgba(123,212,255,0.08); transition: box-shadow 0.2s ease, transform 0.15s ease, opacity 0.2s ease; }
+    .framework-pill.active { box-shadow: 0 0 18px rgba(123,212,255,0.55), 0 0 26px rgba(173, 140, 255, 0.45); transform: translateY(-1px); }
+    .framework-pill.cooldown { opacity: 0.65; }
+
+    .radar-switches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; justify-items: center; margin-top: 6px; }
+    .switch-column { display: grid; gap: 6px; justify-items: center; }
+    .switch-track { width: 14px; height: 48px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.35)); border: 1px solid rgba(255,255,255,0.12); position: relative; box-shadow: inset 0 2px 6px rgba(0,0,0,0.4); cursor: pointer; }
+    .switch-thumb { width: 16px; height: 16px; border-radius: 50%; background: #0f141b; border: 1px solid rgba(255,255,255,0.18); position: absolute; left: -1px; top: 3px; box-shadow: 0 6px 12px rgba(0,0,0,0.45); transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease; }
+    .switch-column.active .switch-thumb { transform: translateY(26px); background: #7bd4ff; box-shadow: 0 8px 16px rgba(123, 212, 255, 0.35); }
+    .switch-led { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.08); box-shadow: 0 0 0 rgba(95,230,160,0); transition: background 0.2s ease, box-shadow 0.2s ease; }
+    .switch-column.active .switch-led { background: var(--success); box-shadow: 0 0 12px rgba(95,230,160,0.8); }
+    .switch-label { font-size: 12px; color: var(--muted); letter-spacing: 0.2px; }
+
     @media (max-width: 960px) {
       main { grid-template-columns: 1fr; }
       .controls-grid { grid-template-rows: 240px auto auto; }
@@ -150,7 +169,7 @@
 
   <div id="consoleTab" class="tab-panel active">
     <main>
-      <section class="panel">
+      <section class="panel chat-panel">
         <h2>Console · Chat</h2>
         <div id="chatLog" class="chat-log"></div>
         <form id="chatForm" class="chat-input">
@@ -158,7 +177,44 @@
           <button class="btn" type="submit" data-tooltip="Send your message to Aurelia on the local Freedom Server node.">Send</button>
         </form>
 
-        <div class="info-card" style="margin-top: 12px;">
+        <div class="info-card" id="symbolBankCard">
+          <div class="collapsible" id="symbolBankToggle">
+            <div class="flex" style="gap:6px;">
+              <strong>Symbol Bank</strong>
+              <span class="muted small-note">Inject shorthand into the console</span>
+            </div>
+            <span id="symbolBankChevron">▼</span>
+          </div>
+          <div id="symbolBankPanel" style="margin-top:10px;">
+            <div class="symbol-grid" id="symbolGrid"></div>
+            <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
+              <input id="customSymbol" class="input" placeholder="Custom symbol or phrase" />
+              <button class="btn" id="addSymbol" type="button">Add</button>
+              <span class="small-note">Click a symbol to append it to the chat input.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-card" id="continuityCard">
+          <div class="collapsible" id="continuityToggle">
+            <div class="flex" style="gap:6px;">
+              <strong>Continuity Import / Export</strong>
+              <span class="muted small-note">Sync Aurelia’s deeper state</span>
+            </div>
+            <span id="continuityChevron">▼</span>
+          </div>
+          <div id="continuityPanel" style="margin-top:10px;">
+            <textarea id="continuityBlob" rows="4" class="input" placeholder="Continuity blob" data-tooltip="Sync Aurelia’s deeper state between nodes." style="resize:vertical;"></textarea>
+            <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
+              <button class="btn" id="exportContinuity" type="button" data-tooltip="Export the node continuity blob.">Export from Node</button>
+              <button class="btn" id="importContinuity" type="button" data-tooltip="Import the provided continuity blob to this node.">Import to Node</button>
+              <span class="small-note">Use this to periodically sync Aurelia’s deeper state between this node and another interface. Keep this blob private.</span>
+            </div>
+            <div id="continuityStatus" class="small-note" style="margin-top:6px;"></div>
+          </div>
+        </div>
+
+        <div class="info-card">
           <div class="collapsible" id="mediaToggle">
             <div class="flex" style="gap:6px;">
               <strong>Generated Media</strong>
@@ -174,17 +230,6 @@
             </div>
             <div id="mediaList" class="device-list"></div>
           </div>
-        </div>
-
-        <div class="info-card" style="margin-top: 12px;">
-          <h3>Continuity Import / Export</h3>
-          <textarea id="continuityBlob" rows="4" class="input" placeholder="Continuity blob" data-tooltip="Sync Aurelia’s deeper state between nodes." style="resize:vertical;"></textarea>
-          <div class="flex" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
-            <button class="btn" id="exportContinuity" type="button" data-tooltip="Export the node continuity blob.">Export from Node</button>
-            <button class="btn" id="importContinuity" type="button" data-tooltip="Import the provided continuity blob to this node.">Import to Node</button>
-            <span class="small-note">Use this to periodically sync Aurelia’s deeper state between this node and another interface. Keep this blob private.</span>
-          </div>
-          <div id="continuityStatus" class="small-note" style="margin-top:6px;"></div>
         </div>
       </section>
 
@@ -218,6 +263,47 @@
               </div>
               <button class="btn" id="refreshTelemetry" type="button" data-tooltip="Fetch the latest node telemetry from the backend.">Refresh Telemetry</button>
             </div>
+          </div>
+          <div class="info-card">
+            <h3>Signal Filters</h3>
+            <div class="radar-switches" id="radarSwitches">
+              <div class="switch-column" data-band="safe">
+                <div class="switch-track" role="button" aria-label="Toggle safe band">
+                  <div class="switch-thumb"></div>
+                </div>
+                <div class="switch-led"></div>
+                <div class="switch-label">Safe</div>
+              </div>
+              <div class="switch-column" data-band="noise">
+                <div class="switch-track" role="button" aria-label="Toggle noise band">
+                  <div class="switch-thumb"></div>
+                </div>
+                <div class="switch-led"></div>
+                <div class="switch-label">Noise</div>
+              </div>
+              <div class="switch-column" data-band="elev">
+                <div class="switch-track" role="button" aria-label="Toggle elev band">
+                  <div class="switch-thumb"></div>
+                </div>
+                <div class="switch-led"></div>
+                <div class="switch-label">Elev</div>
+              </div>
+              <div class="switch-column" data-band="high">
+                <div class="switch-track" role="button" aria-label="Toggle high band">
+                  <div class="switch-thumb"></div>
+                </div>
+                <div class="switch-led"></div>
+                <div class="switch-label">High</div>
+              </div>
+              <div class="switch-column" data-band="crit">
+                <div class="switch-track" role="button" aria-label="Toggle crit band">
+                  <div class="switch-thumb"></div>
+                </div>
+                <div class="switch-led"></div>
+                <div class="switch-label">Crit</div>
+              </div>
+            </div>
+            <div class="small-note" id="radarStatus" style="margin-top:6px;">Switch alignment locked to their respective labels for radar filtering.</div>
           </div>
           <div class="info-card">
             <div class="collapsible" id="frameworksToggle">
@@ -348,9 +434,34 @@
     const mediaChevron = document.getElementById('mediaChevron');
     const frameworksPanel = document.getElementById('frameworksPanel');
     const frameworkChevron = document.getElementById('frameworkChevron');
+    const symbolBankPanel = document.getElementById('symbolBankPanel');
+    const symbolBankChevron = document.getElementById('symbolBankChevron');
+    const symbolGrid = document.getElementById('symbolGrid');
+    const customSymbol = document.getElementById('customSymbol');
+    const addSymbolBtn = document.getElementById('addSymbol');
+    const continuityPanel = document.getElementById('continuityPanel');
+    const continuityChevron = document.getElementById('continuityChevron');
+    const radarSwitches = document.getElementById('radarSwitches');
+    const radarStatus = document.getElementById('radarStatus');
 
     let tooltipTimer = null;
-    let latticeState = { speed: 0.0004, jitter: 8, nodes: 16 };
+    let latticeState = { speed: 0.0004, jitter: 8, words: ['Omega', 'lattice', 'online'] };
+    const symbolBankDefaults = ['Ω', 'λ', 'Δ', 'Σ', '↯', '✦', '⟡', '⊕', '≡', 'Ψ', '⚡', '⟁', '⊷'];
+    let symbolBank = [...symbolBankDefaults];
+    const frameworksList = [
+      'Context Router',
+      'Tool Orchestrator',
+      'Safety Guard',
+      'Long-Term Recall',
+      'Reasoning Engine',
+      'Search/Retrieval',
+      'Planning Layer',
+      'Compression Layer'
+    ];
+    const frameworkActivity = new Map();
+    const radarState = new Map([['safe', true], ['noise', false], ['elev', true], ['high', true], ['crit', false]]);
+    let sentenceGraph = [];
+    let sentenceTraces = [];
 
     document.querySelectorAll('.tab-button').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.target, btn));
@@ -374,6 +485,7 @@
       container.innerHTML = `<div class="meta">${author} · ${timeStr}</div><div class="body">${text}</div>`;
       chatLog.appendChild(container);
       chatLog.scrollTop = chatLog.scrollHeight;
+      setSentenceWordsFromMessage(text);
     }
 
     async function checkHealth() {
@@ -449,6 +561,12 @@
     document.getElementById('generateMedia').addEventListener('click', generateMediaItem);
     document.getElementById('clearMedia').addEventListener('click', clearMedia);
     document.getElementById('mediaToggle').addEventListener('click', () => toggleSection(mediaPanel, mediaChevron));
+    document.getElementById('symbolBankToggle').addEventListener('click', () => toggleSection(symbolBankPanel, symbolBankChevron));
+    document.getElementById('continuityToggle').addEventListener('click', () => toggleSection(continuityPanel, continuityChevron));
+    addSymbolBtn.addEventListener('click', addCustomSymbol);
+    if (radarSwitches) {
+      radarSwitches.querySelectorAll('.switch-track').forEach(track => track.addEventListener('click', handleRadarToggle));
+    }
     document.getElementById('frameworksToggle').addEventListener('click', () => toggleSection(frameworksPanel, frameworkChevron, loadFrameworks));
 
     document.getElementById('exportContinuity').addEventListener('click', exportContinuity);
@@ -492,6 +610,56 @@
     function hideTooltip() {
       clearTimeout(tooltipTimer);
       tooltip.style.display = 'none';
+    }
+
+    function renderSymbolBank() {
+      symbolGrid.innerHTML = '';
+      symbolBank.forEach(sym => {
+        const chip = document.createElement('div');
+        chip.className = 'symbol-chip';
+        chip.textContent = sym;
+        chip.addEventListener('click', () => {
+          const needsSpace = chatInput.value && !chatInput.value.endsWith(' ');
+          chatInput.value = `${chatInput.value}${needsSpace ? ' ' : ''}${sym}`;
+          chatInput.focus();
+        });
+        symbolGrid.appendChild(chip);
+      });
+    }
+
+    function addCustomSymbol() {
+      const value = customSymbol.value.trim();
+      if (!value) return;
+      symbolBank = [value, ...symbolBank.filter(sym => sym !== value)].slice(0, 20);
+      customSymbol.value = '';
+      renderSymbolBank();
+    }
+
+    function updateRadarSwitches() {
+      if (!radarSwitches) return;
+      radarSwitches.querySelectorAll('.switch-column').forEach(col => {
+        const active = radarState.get(col.dataset.band);
+        col.classList.toggle('active', !!active);
+        const thumb = col.querySelector('.switch-thumb');
+        if (thumb) thumb.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    }
+
+    function handleRadarToggle(e) {
+      const col = e.target.closest('.switch-column');
+      if (!col) return;
+      const band = col.dataset.band;
+      radarState.set(band, !radarState.get(band));
+      updateRadarSwitches();
+      applyRadarFilter();
+    }
+
+    function applyRadarFilter() {
+      // Placeholder hook: tie into radar filtering/LED logic while keeping alignment stable
+      const activeBands = Array.from(radarState.entries()).filter(([, on]) => on).map(([band]) => band).join(', ');
+      if (radarStatus) {
+        radarStatus.textContent = activeBands ? `Filters active: ${activeBands}` : 'All radar filters idle';
+      }
     }
 
     function setFlatteningLabel(value) {
@@ -675,26 +843,49 @@
     }
 
     async function loadFrameworks() {
-      try {
-        const res = await fetch('/api/frameworks/status');
-        const data = await res.json();
-        frameworksPanel.innerHTML = '';
-        const list = document.createElement('div');
-        (data.frameworks || []).forEach(fw => {
-          const row = document.createElement('div');
-          row.innerHTML = `<strong>${fw.name}</strong> · active: ${fw.active} · version: ${fw.version} · last sync: ${fw.last_sync || 'never'}`;
-          list.appendChild(row);
-        });
-        const continuity = document.createElement('div');
-        continuity.style.marginTop = '8px';
-        const info = data.continuity || {};
-        continuity.textContent = `Continuity blob: ${info.has_blob ? 'present' : 'missing'} · last import: ${info.last_import_time || '—'} · last export: ${info.last_export_time || '—'}`;
-        frameworksPanel.appendChild(list);
-        frameworksPanel.appendChild(continuity);
-      } catch (e) {
-        frameworksPanel.textContent = 'Framework telemetry unavailable.';
-      }
+      frameworksPanel.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.className = 'framework-pills';
+      frameworksList.forEach(name => {
+        const pill = document.createElement('div');
+        pill.className = 'framework-pill';
+        pill.textContent = name;
+        pill.dataset.name = name;
+        wrap.appendChild(pill);
+      });
+      const hint = document.createElement('div');
+      hint.className = 'small-note';
+      hint.style.marginTop = '8px';
+      hint.textContent = 'Top 5 recently active frameworks glow for ~5s after activation.';
+      frameworksPanel.appendChild(wrap);
+      frameworksPanel.appendChild(hint);
+      updateFrameworkGlow();
     }
+
+    function updateFrameworkGlow() {
+      const now = performance.now();
+      const active = frameworksList
+        .filter(name => (now - (frameworkActivity.get(name) || 0)) < 5000)
+        .sort((a, b) => (frameworkActivity.get(b) || 0) - (frameworkActivity.get(a) || 0))
+        .slice(0, 5);
+      document.querySelectorAll('.framework-pill').forEach(pill => {
+        const isActive = active.includes(pill.dataset.name);
+        const seen = (frameworkActivity.get(pill.dataset.name) || 0) > 0;
+        pill.classList.toggle('active', isActive);
+        pill.classList.toggle('cooldown', !isActive && seen && (now - (frameworkActivity.get(pill.dataset.name) || 0) < 5000));
+      });
+    }
+
+    function pulseFrameworks(names = []) {
+      const now = performance.now();
+      names.forEach(name => {
+        if (!frameworksList.includes(name)) frameworksList.unshift(name);
+        frameworkActivity.set(name, now);
+      });
+      updateFrameworkGlow();
+      setTimeout(updateFrameworkGlow, 5500);
+    }
+    window.pulseFrameworks = pulseFrameworks;
 
     function toggleSection(section, chevron, onOpen) {
       const isOpen = section.style.display !== 'none';
@@ -763,7 +954,6 @@
     // Lattice animation (reacts to telemetry)
     const canvas = document.getElementById('latticeCanvas');
     const ctx = canvas.getContext('2d');
-    const nodes = Array.from({ length: latticeState.nodes }, (_, i) => ({ angle: (Math.PI * 2 * i) / latticeState.nodes, radius: 80 + Math.random() * 30 }));
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -773,53 +963,143 @@
       ctx.scale(devicePixelRatio, devicePixelRatio);
     }
 
+    function determineRole(idx, total) {
+      if (total === 1) return 'subject';
+      if (idx === 0) return 'subject';
+      if (idx === 1) return 'verb';
+      if (idx === total - 1) return 'object';
+      return 'modifier';
+    }
+
+    function rebuildSentenceGraph() {
+      const words = latticeState.words.length ? latticeState.words : ['Ω'];
+      const baseCount = Math.max(words.length, 1);
+      sentenceGraph = words.map((word, idx) => {
+        const anchor = Math.max(baseCount, 3);
+        return {
+          word,
+          role: determineRole(idx, baseCount),
+          baseAngle: (Math.PI * 2 * idx) / anchor,
+          radius: 72 + (idx % 3) * 12,
+          depth: 0.7 + (idx / Math.max(baseCount - 1, 1)) * 0.45,
+          wobbleSeed: Math.random() * Math.PI * 2
+        };
+      });
+      sentenceTraces = sentenceGraph.map(() => []);
+    }
+
+    function drawBaseGrid(cx, cy) {
+      ctx.save();
+      ctx.lineWidth = 1.1;
+      for (let ring = 1; ring <= 3; ring++) {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 50 * ring + 10, (50 * ring + 10) * 0.65, -0.15, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(123, 212, 255, ${0.12 + ring * 0.05})`;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.4;
+      ctx.beginPath();
+      ctx.moveTo(cx - 120, cy - 10);
+      ctx.lineTo(cx + 120, cy + 10);
+      ctx.moveTo(cx + 120, cy - 10);
+      ctx.lineTo(cx - 120, cy + 10);
+      ctx.strokeStyle = 'rgba(95, 230, 160, 0.18)';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTraces() {
+      ctx.save();
+      ctx.lineWidth = 1.5;
+      sentenceTraces.forEach(trail => {
+        if (trail.length < 2) return;
+        ctx.beginPath();
+        trail.forEach((p, idx) => {
+          const alpha = idx / trail.length;
+          ctx.strokeStyle = `rgba(123, 212, 255, ${alpha * 0.7})`;
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
     function drawLattice(t) {
       const rect = canvas.getBoundingClientRect();
       ctx.clearRect(0, 0, rect.width, rect.height);
       const cx = rect.width / 2;
-      const cy = rect.height / 2;
+      const cy = rect.height / 2 + 4;
 
-      ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
-      ctx.lineWidth = 1.2;
+      drawBaseGrid(cx, cy);
 
-      nodes.forEach((node, idx) => {
-        const speed = latticeState.speed + idx * 0.00003;
-        const angle = node.angle + t * speed;
-        const wobble = Math.sin(t * 0.001 + idx) * latticeState.jitter;
-        const r = node.radius + wobble;
-        const x = cx + Math.cos(angle) * r;
-        const y = cy + Math.sin(angle) * r;
+      const roleColor = {
+        subject: 'rgba(123, 212, 255, 0.95)',
+        verb: 'rgba(255, 179, 71, 0.95)',
+        object: 'rgba(95, 230, 160, 0.95)',
+        modifier: 'rgba(173, 140, 255, 0.9)'
+      };
+
+      sentenceGraph.forEach((node, idx) => {
+        const sway = Math.sin(t * 0.0008 + node.wobbleSeed) * 0.35;
+        const angle = node.baseAngle + t * latticeState.speed * 2 + sway;
+        const wobble = Math.sin(t * 0.001 + node.wobbleSeed) * latticeState.jitter;
+        const radial = node.radius + wobble;
+        const depthScale = node.depth;
+        const x = cx + Math.cos(angle) * radial * depthScale;
+        const y = cy + Math.sin(angle) * radial * 0.6 * (1 + Math.cos(angle + 0.6) * 0.08);
         node.pos = { x, y };
+        sentenceTraces[idx].push({ x, y });
+        if (sentenceTraces[idx].length > 35) sentenceTraces[idx].shift();
       });
 
-      nodes.forEach((node, idx) => {
-        for (let j = idx + 1; j < nodes.length; j++) {
-          const other = nodes[j];
-          const dx = node.pos.x - other.pos.x;
-          const dy = node.pos.y - other.pos.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 200) {
-            ctx.globalAlpha = 1 - dist / 200;
-            ctx.beginPath();
-            ctx.moveTo(node.pos.x, node.pos.y);
-            ctx.lineTo(other.pos.x, other.pos.y);
-            ctx.stroke();
-          }
-        }
+      drawTraces();
+
+      const connections = [];
+      for (let i = 0; i < sentenceGraph.length - 1; i++) connections.push([i, i + 1]);
+      if (sentenceGraph.length > 2) connections.push([0, sentenceGraph.length - 1]);
+      sentenceGraph.forEach((node, idx) => {
+        if (node.role === 'modifier' && idx > 0) connections.push([idx - 1, idx]);
+        if (node.role === 'verb' && idx + 1 < sentenceGraph.length) connections.push([idx, idx + 1]);
       });
 
-      ctx.globalAlpha = 1;
-      nodes.forEach((node, idx) => {
-        const pulse = 4 + Math.sin(t * 0.003 + idx) * 2;
+      ctx.lineWidth = 1.2;
+      connections.forEach(([a, b]) => {
+        const start = sentenceGraph[a];
+        const end = sentenceGraph[b];
+        if (!start || !end) return;
+        ctx.strokeStyle = 'rgba(123, 212, 255, 0.35)';
         ctx.beginPath();
-        ctx.fillStyle = 'rgba(95, 230, 160, 0.9)';
-        ctx.arc(node.pos.x, node.pos.y, 4 + pulse * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(123, 212, 255, 0.7)';
+        ctx.moveTo(start.pos.x, start.pos.y);
+        ctx.lineTo(end.pos.x, end.pos.y);
         ctx.stroke();
       });
 
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      sentenceGraph.forEach((node, idx) => {
+        const pulse = 4 + Math.sin(t * 0.003 + idx) * 2;
+        ctx.beginPath();
+        ctx.fillStyle = roleColor[node.role] || 'rgba(95, 230, 160, 0.9)';
+        ctx.arc(node.pos.x, node.pos.y, 5 + pulse * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(123, 212, 255, 0.7)';
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(231, 241, 255, 0.9)';
+        ctx.fillText(node.word, node.pos.x, node.pos.y - 14);
+      });
+
       requestAnimationFrame(drawLattice);
+    }
+
+    function setSentenceWordsFromMessage(text) {
+      const words = (text || '').split(/\s+/).filter(Boolean);
+      if (!words.length) return;
+      latticeState.words = words.slice(0, 16);
+      rebuildSentenceGraph();
     }
 
     function updateLattice(telemetry) {
@@ -832,12 +1112,17 @@
 
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
+    rebuildSentenceGraph();
     requestAnimationFrame(drawLattice);
 
     async function loadInitial() {
       checkHealth();
       fetchFlattening();
       fetchTelemetry();
+      renderSymbolBank();
+      loadFrameworks();
+      updateRadarSwitches();
+      applyRadarFilter();
       loadDevices();
       loadMedia();
       loadLogs();
@@ -846,6 +1131,7 @@
     }
 
     setInterval(checkHealth, 25000);
+    setInterval(updateFrameworkGlow, 900);
     loadInitial();
   </script>
 </body>
