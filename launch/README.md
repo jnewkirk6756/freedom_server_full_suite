@@ -1,11 +1,15 @@
-# Aurelia 0.13 read-only staging
+# Aurelia 0.18 — Stability and Loop Deck
 
-The Render preview serves the existing device-local application plus explicit launch status, personal-device backup controls and 0.13 polish. It NEVER opens the private account store, reads an OpenAI credential, or makes an AI request. All account/photo/AI write APIs remain closed.
+Run `node launch/server.mjs`. This is the read-only staging host, not the private account backend.
 
-0.13 adds local About You text autosave, older local-media lookup, mobile/desktop navigation fixes, keyboard focus, and explicit AI-unconnected wording. Consent switches still require Save. The original preview and Freedom main branches remain unchanged.
+- `/app/`: existing Studio with guarded startup, draft autosave and recovery controls.
+- `/player/`: dedicated reviewed-loop player, camera-view/pose routing and optional WebXR flat-video theater.
+- `/launch-status.json`: factual host status; live AI and account sync remain false.
 
-Render service: aurelia-staging, free plan, Virginia, manual deploy. Start `node launch/server.mjs`. The hosting URL is https://aurelia-staging.onrender.com . Render deploy state must be checked separately from browser functionality.
+The player reads existing device-local character IDs and media stores. It starts paused, requires human clip review, scopes footage to the selected character, avoids recent compatible variants and reports only successful playback. Corrupt metadata opens a recovery screen without automatically deleting it. Missing media can be reattached by checksum. Personal recovery exports are not encrypted; keep them private.
 
-The PRIVATE backend candidate is a different build: `/Aurelia_Platform/01_SOURCE/AURELIA_V0.13_PILOT_CANDIDATE_SOURCE.zip` in the owner's Library. It adds explicit per-message photo selection, context preview, repeat-request receipts, owned session controls and profile revision checks. It is not deployed by this staging service. Do not mark live AI or account sync ready based on this preview.
+The WebXR prototype renders a flat video panel. It is not a volumetric or fully 3D avatar. Physical iPhone/Quest testing is not completed. Local browser navigation is restricted in the development environment; offline component tests used synthetic storage and real Chromium video decoding, with all network requests blocked. Local HTTP and domain tests are separate evidence.
 
-Device backups contain private data, are NOT encrypted, and must not be committed or uploaded publicly. Restores require an empty browser. The local HTTP staging test checks route contracts with an HTML fixture; browser automation and physical phone/Quest validation are separate, not passing by implication.
+No model credentials, live API calls, paid infrastructure, payment activation or cloud account writes are included in this deployment. Private Venice V0.17 candidate code is carried separately in the owner's full source/recovery archive, not exposed by this host. Freedom main and the old raw.githack preview branch are unchanged.
+
+Rollback source branch: `aurelia-rollback-v014-before-v018` at `78f04212cc7610f004b78923952d94704d545e5d`.

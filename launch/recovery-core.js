@@ -2,7 +2,7 @@
 export const BACKUP_VERSION = 'aurelia-device-v1';
 export const MAX_BACKUP_BYTES = 64 * 1024 * 1024;
 export const MAX_BINARY_BYTES = 36 * 1024 * 1024;
-export const KEYS = ['account','avatar','avatars','creator','messages','memories','media','about','aboutPhotos','speak','threads','memoryByAvatar','legacyUnassigned'].map(k=>'aurelia.preview.'+k);
+export const KEYS = ['account','avatar','avatars','creator','messages','memories','media','about','aboutPhotos','speak','threads','memoryByAvatar','legacyUnassigned','playerCheckpoint','playerSettings'].map(k=>'aurelia.preview.'+k);
 export const DBS = {'aurelia-preview-media-v08':['clips'],'aurelia-preview-media-v010':['clips','photos']};
 export async function digest(bytes) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join(''); }
 const encoded = value => new TextEncoder().encode(JSON.stringify(value));
