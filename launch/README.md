@@ -1,15 +1,17 @@
-# Aurelia 0.18 — Stability and Loop Deck
+# Aurelia 0.19 — Spatial Rooms
 
-Run `node launch/server.mjs`. This is the read-only staging host, not the private account backend.
+Run `node launch/server.mjs`. Existing free read-only staging host; private account writes and live AI remain disabled.
 
-- `/app/`: existing Studio with guarded startup, draft autosave and recovery controls.
-- `/player/`: dedicated reviewed-loop player, camera-view/pose routing and optional WebXR flat-video theater.
-- `/launch-status.json`: factual host status; live AI and account sync remain false.
+- `/world/`: actual procedural 3D bedroom, bathroom and living room, with controller-ray menus and a keyboard inside immersive WebXR.
+- `/app/`: existing Studio with guided appearance dropdowns and one-character new free-plan limit.
+- `/player/`: reviewed local video player retained from 0.18.
 
-The player reads existing device-local character IDs and media stores. It starts paused, requires human clip review, scopes footage to the selected character, avoids recent compatible variants and reports only successful playback. Corrupt metadata opens a recovery screen without automatically deleting it. Missing media can be reattached by checksum. Personal recovery exports are not encrypted; keep them private.
+Inside spatial mode: switch rooms, light mood, create/rename a character, select appearance traits, edit selected About You fields, save/load loop-generation drafts, select/review/play saved local clips, recenter controls, and end VR. File picking/export exits immersive mode for system dialogs. Not every production application feature exists: live AI, actual generation and account sync are still unconnected.
 
-The WebXR prototype renders a flat video panel. It is not a volumetric or fully 3D avatar. Physical iPhone/Quest testing is not completed. Local browser navigation is restricted in the development environment; offline component tests used synthetic storage and real Chromium video decoding, with all network requests blocked. Local HTTP and domain tests are separate evidence.
+Rooms use genuine meshes, approximate shading and procedural surfaces. Optional 4096-by-4096 surface texture is real; it is NOT a photoreal 4K room pack or a promise of 4K per-eye rendering. This is the first functional room-art pass. Physical Quest/controller testing remains outstanding. Browser tests use real WebGL with synthetic storage and synthetic XR events; network blocked.
 
-No model credentials, live API calls, paid infrastructure, payment activation or cloud account writes are included in this deployment. Private Venice V0.17 candidate code is carried separately in the owner's full source/recovery archive, not exposed by this host. Freedom main and the old raw.githack preview branch are unchanged.
+New free character creation is capped at one. Existing multiple beta characters remain accessible. No payments, provider calls, credentials or recurring infrastructure were activated.
 
-Rollback source branch: `aurelia-rollback-v014-before-v018` at `78f04212cc7610f004b78923952d94704d545e5d`.
+Loop recipes are saved as DRAFT_NOT_SUBMITTED, never passed off as completed videos. No avatar footage is prepopulated. Device data stays private to the browser and independent backups remain necessary.
+
+Rollback: aurelia-rollback-v018-before-spatial at e1117fe154d0fa9b22d870238888e35c9dbc7837. Mac Freedom/Omega, repo main and original raw.githack preview remain unchanged.

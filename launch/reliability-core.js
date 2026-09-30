@@ -5,7 +5,7 @@ export const STATES=['idle_neutral','listen_engaged','speak_calm','think_reflect
 export const FRAMES=['portrait','full-body','wide'];
 export const POSES=['center','seated','standing'];
 export const IDB_NAMES=['aurelia-preview-media-v010','aurelia-preview-media-v08'];
-export const EMPTY={account:null,avatar:null,avatars:[],creator:null,messages:[],memories:[],media:[],about:null,aboutPhotos:[],threads:{},memoryByAvatar:{},playerCheckpoint:null,playerSettings:{}};
+export const EMPTY={account:null,avatar:null,avatars:[],creator:null,messages:[],memories:[],media:[],about:null,aboutPhotos:[],threads:{},memoryByAvatar:{},playerCheckpoint:null,playerSettings:{},world:{}};
 export function safeParse(text){return JSON.parse(text,(key,value)=>{if(['__proto__','prototype','constructor'].includes(key))throw Error('UNSAFE_KEY');return value;});}
 export function validValue(key,v){
  const field=key.replace(PREFIX,'');
@@ -15,7 +15,7 @@ export function validValue(key,v){
   if(field==='media')return v.every(a=>a&&typeof a.id==='string');
   return true;
  }
- if(['threads','memoryByAvatar','playerSettings'].includes(field))return v!==null&&typeof v==='object'&&!Array.isArray(v);
+ if(['threads','memoryByAvatar','playerSettings','world'].includes(field))return v!==null&&typeof v==='object'&&!Array.isArray(v);
  if(['avatar','account','creator','about','playerCheckpoint'].includes(field))return v===null||(typeof v==='object'&&!Array.isArray(v));
  return true;
 }

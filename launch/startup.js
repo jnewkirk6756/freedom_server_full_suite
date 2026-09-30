@@ -22,7 +22,7 @@
   // Keep one bounded metadata checkpoint, not copies of large media blobs.
   try{const snap=JSON.stringify(core.previewSnapshot(storage));if(snap.length<1500000)storage.setItem('aurelia.recovery.good',snap);}catch{}
   const template=document.querySelector('#aurelia-core');
-  if(template){const classic=document.createElement('script');classic.textContent=template.textContent;document.body.append(classic);await import('/studio.js');await import('/stability.js');}
+  if(template){const classic=document.createElement('script');classic.textContent=template.textContent;document.body.append(classic);await import('/studio.js');await import('/stability.js');await import('/spatial-upgrade.js');}
   else await import('/player.js');
  }catch{recover([],'The app could not finish starting. Your saved data has not been cleared. Reload once or export a recovery copy.');}
 })();
