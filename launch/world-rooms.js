@@ -1,12 +1,12 @@
 import {MeshBuilder} from './world-graphics.js';
 /** Designed room meshes in metres. Procedural material art; no purchased packs or panoramas. */
-export function buildRoom(id){
+export function buildRoom(id,{openFront=false}={}){
  const b=new MeshBuilder(),box=(...x)=>b.box(...x),ball=(...x)=>b.ellipsoid(...x),cyl=(...x)=>b.cylinder(...x);
  const soft=(x,y,z,rx,ry,rz,color,kind=2,yaw=0)=>b.rounded(x,y,z,rx*2,ry*2,rz*2,color,kind,yaw,Math.min(rx,ry,rz)*.60);
  const walnut=0x513a2e,brass=0xb3935b,stone=0xb8b0a1,cream=0xd4c9b8,ink=0x292b33,plum=0x68546c;
  box(0,-.09,0,8,.18,8,id==='bathroom'?0xc4beb2:0xc4a783,1);
- box(0,3.35,0,8,.14,8,0xc6c1b6);box(0,1.65,-4,8,3.3,.14,id==='bathroom'?stone:0xb7b0a3);box(-4,1.65,0,.14,3.3,8,0x99978e);box(4,1.65,0,.14,3.3,8,0xaaa49a);box(0,1.65,4,8,3.3,.14,0xaaa49a);
- for(const z of [-3.86,3.86]){box(0,.11,z,7.8,.16,.06,walnut);box(0,3.16,z,7.8,.05,.09,brass,3);box(0,3.21,z,7.7,.024,.06,0xc9ac7e,7);}for(const x of [-3.87,3.87]){box(x,.11,0,.05,.16,7.8,walnut);box(x,3.2,0,.04,.03,7.7,0xbdaa8c,7);}
+ box(0,3.35,0,8,.14,8,0xc6c1b6);box(0,1.65,-4,8,3.3,.14,id==='bathroom'?stone:0xb7b0a3);box(-4,1.65,0,.14,3.3,8,0x99978e);box(4,1.65,0,.14,3.3,8,0xaaa49a);if(openFront){box(-2.55,1.65,4,2.9,3.3,.14,0xaaa49a);box(2.55,1.65,4,2.9,3.3,.14,0xaaa49a);box(0,2.96,4,2.2,.78,.14,0xaaa49a);}else box(0,1.65,4,8,3.3,.14,0xaaa49a);
+ for(const z of [-3.86,3.86]){if(!openFront||z<0)box(0,.11,z,7.8,.16,.06,walnut);box(0,3.16,z,7.8,.05,.09,brass,3);box(0,3.21,z,7.7,.024,.06,0xc9ac7e,7);}for(const x of [-3.87,3.87]){box(x,.11,0,.05,.16,7.8,walnut);box(x,3.2,0,.04,.03,7.7,0xbdaa8c,7);}
  // Tall windows with a modelled distant skyline, framed in bronze.
  box(3.90,1.82,.6,.035,2.65,4.4,0x99aabc,4);for(const z of [-1.62,-.16,1.31,2.81])box(3.84,1.82,z,.065,2.78,.045,ink,3);for(const y of [.45,3.2])box(3.84,y,.6,.075,.045,4.5,brass,3);
  for(let i=0;i<25;i++){const z=-1.6+i*.174,h=.1+Math.sin(i*8.4)**2*.65;box(3.83,.5+h/2,z,.025,h,.14,0x343e50);for(let j=0;j<3;j++)box(3.811,.57+j*.11,z,.009,.026,.035,0xa09471,7);}
