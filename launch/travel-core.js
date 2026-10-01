@@ -1,5 +1,5 @@
 /** Aurelia Residence topology. Scene settings are design telemetry, NOT biological readings. */
-export const VERSION='0.20.0', TRAVEL_KEY='aurelia.preview.travel', FLOOR_HEIGHT=3.6;
+export const VERSION='0.21.0', TRAVEL_KEY='aurelia.preview.travel', FLOOR_HEIGHT=3.6;
 export const AI_DISCLOSURE='Fictional AI character · non-biological · not a human participant';
 export const ROOMS=[
  {id:'living',name:'Living room',floor:0,x:-6,z:-5,yaw:Math.PI/2,art:'living',mood:'social',energy:58,tone:'warm',pace:1,light:1.0,tint:[1,.96,1]},

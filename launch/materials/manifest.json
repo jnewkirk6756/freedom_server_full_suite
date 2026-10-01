@@ -1,0 +1,156 @@
+{
+  "version": "0.21.0",
+  "origin": "Generated for this project; converted from original PNGs. Not product photographs.",
+  "materials": [
+    {
+      "id": "ivory",
+      "label": "Ivory limewash",
+      "url": "/materials/ivory.webp",
+      "width": 512,
+      "height": 512,
+      "bytes": 1750,
+      "sha256": "e5f15016f546ad7792dea65518c00b8500299ed30995140f8d82619cc88ccd29",
+      "sourceName": "warm_ivory_plaster_texture.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "sourceSha256": "18492d5ec29d1bb89b935ecd9c470f29c3c1668e1abe1658b196920369a97a6b"
+    },
+    {
+      "id": "greige",
+      "label": "Greige microcement",
+      "url": "/materials/greige.webp",
+      "width": 512,
+      "height": 512,
+      "bytes": 1814,
+      "sha256": "6ebd23501d6dd08ef369f1ff91bda99ea15528041fa0e6bfd81ac04258b02bc2",
+      "sourceName": "seamless_warm_greige_microcement_texture.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "sourceSha256": "9035456c22be4dbcd1c019d2d49fa6bd945c9c556f68c74a56ab245174657c79"
+    },
+    {
+      "id": "ceiling",
+      "label": "Matte ceiling",
+      "url": "/materials/ceiling.webp",
+      "width": 512,
+      "height": 512,
+      "bytes": 11292,
+      "sha256": "8e410018243436b88c17268d44d5f6cba67ca5bfb90c2988ad8091884e44d4e5",
+      "sourceName": "seamless_warm_white_ceiling_texture.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "sourceSha256": "feff28e8ba575dc31a86d33aab3082b95a5f737fd8c798644bf82a2b441c6a00"
+    },
+    {
+      "id": "oak",
+      "label": "Natural oak",
+      "url": "/materials/oak.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 1970,
+      "sha256": "6993dbea0fbed128c81cd172f866c0af2fb3de8908396dd279f3b54df4c8df96",
+      "sourceName": "seamless_honey_oak_wood_flooring_texture.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "sourceSha256": "dbf084730625c7843e0f7748e67961367993e0343ef541d6d6e649e06af666da"
+    },
+    {
+      "id": "stone",
+      "label": "Stone pavers",
+      "url": "/materials/stone.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 5200,
+      "sha256": "ea7f7b49aabbe6736dc094a319f4451326248d078d40a1459644d6fa2e392731",
+      "sourceName": "seamless_warm_gray_stone_pavers.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "sourceSha256": "f11c95ab839a4d624aec4f461e67349abed6ebe6f60aade112c4df8b763b8cee"
+    },
+    {
+      "id": "walnut",
+      "label": "Walnut furniture",
+      "url": "/materials/walnut.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 1802,
+      "sha256": "9965663db6b825891c581dc7f6ba00881982cdb4e4f4f5d7b0cafcd79ed0b804",
+      "sourceName": "rich_walnut_wood_grain_texture.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "sourceSha256": "cb4d57b4e3255597e7540cd27b34de3c75ed50a699dbdfbfebf94ca57589a090"
+    },
+    {
+      "id": "fabric",
+      "label": "Cream boucle",
+      "url": "/materials/fabric.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 9054,
+      "sha256": "39b1e5edc04da25b6791883ca8270e49b93500ddd73a9b8e460785600ad497a6",
+      "sourceName": "cream_boucl\u00e9_fabric_texture.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "sourceSha256": "7664819f596b4d09ebb465eabb2d4794485206faf420dce30d112fb03e372d4e"
+    },
+    {
+      "id": "leather",
+      "label": "Cognac leather",
+      "url": "/materials/leather.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 1804,
+      "sha256": "e791158a91a95fe7542e3804a005dc4008018f3bde0cca85e3df1445d4981709",
+      "sourceName": "warm_cognac_leather_grain_texture.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "sourceSha256": "6ee4e75bfa2b11d7081854f301be5da03aa7b3f08ef65ed042fed89fade1b337"
+    },
+    {
+      "id": "brass",
+      "label": "Brushed brass",
+      "url": "/materials/brass.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 2086,
+      "sha256": "e54bf4112c4b72d4761591334ed76bf9d21dbcedda3353a317c603377977805b",
+      "sourceName": "brushed_gold_metal_texture.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "sourceSha256": "d7cb335e88e46bac4f0c2b563acf43d6c09bd05a4089e8daca22a7595fa6a79e"
+    },
+    {
+      "id": "garden",
+      "label": "Garden window view",
+      "url": "/materials/garden.webp",
+      "width": 512,
+      "height": 288,
+      "bytes": 10242,
+      "sha256": "7cfeef9b9f25763bc7baa3577680a654473226658958280bb05e759991e789c3",
+      "sourceName": "lakeside_patio_retreat_with_fire_table.png",
+      "sourceDimensions": [
+        1672,
+        941
+      ],
+      "sourceSha256": "4ad7c04a6a68b8d42630a6e4eee55efa86e94d8669f42c744ab11739e8f0bc40"
+    }
+  ]
+}

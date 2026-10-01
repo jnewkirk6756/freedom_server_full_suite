@@ -1,11 +1,11 @@
 /** Shared flat-screen / spatial UI model. All writes are device-local; no model requests here. */
-export const WORLD_VERSION='0.19.0';
+export const WORLD_VERSION='0.21.0';
 export const WORLD_KEY='aurelia.preview.world';
 export const FREE_AVATARS=1;
 export const ROOMS=[{id:'bedroom',name:'The Suite',kind:'Bedroom',subtitle:'Warm walnut · layered linen · dusk'},{id:'bathroom',name:'The Retreat',kind:'Bathroom',subtitle:'Travertine · brass · sculptural bath'},{id:'living',name:'The Residence',kind:'Living room',subtitle:'Soft seating · gallery wall · city view'}];
 export const LOOKS={presentation:['Realistic','Cinematic','Stylized'],hairColor:['Black','Dark brown','Light brown','Blonde','Red','Silver','Violet'],hairStyle:['Long waves','Straight','Curly','Short','Braided','Tied back','Bald'],eyes:['Brown','Hazel','Green','Blue','Gray'],skinTone:['Deep','Rich brown','Golden brown','Tan','Olive','Light','Fair'],build:['Lean','Athletic','Average','Curvy','Broad'],wardrobe:['Casual','Tailored','Athleisure','Evening wear','Minimalist'],mood:['Calm','Warm','Confident','Playful','Reserved'],voice:['Warm','Measured','Bright','Soft'],age:[21,25,28,30,35,40,50,60]};
 export const LABELS={presentation:'Visual style',hairColor:'Hair color',hairStyle:'Hair style',eyes:'Eye color',skinTone:'Skin tone',build:'Build',wardrobe:'Wardrobe',mood:'Personality',voice:'Voice direction',age:'Adult age'};
-export const TABS=['Rooms','Character','Looks','Loops','About You','Settings'];
+export const TABS=['Rooms','Character','Looks','Materials','Loops','About You','Settings'];
 export const INITIAL={version:1,scene:'living',quality:1024,mood:'dusk',tab:'Rooms',yaw:0,recipe:{state:'idle_neutral',frame:'portrait',pose:'center',duration:5,variants:3},recipes:[],settings:{captions:true,reduceMotion:false},draft:{name:'',age:28,looks:{presentation:'Realistic',hairColor:'Dark brown',hairStyle:'Long waves',eyes:'Hazel',skinTone:'Golden brown',build:'Athletic',wardrobe:'Casual',mood:'Warm',voice:'Warm',age:28}}};
 const own=(x,k)=>Object.prototype.hasOwnProperty.call(x,k);
 export function parse(text){return JSON.parse(text,(k,v)=>{if(['__proto__','constructor','prototype'].includes(k))throw Error('Unsafe saved data');return v;});}
