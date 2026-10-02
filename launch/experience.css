@@ -124,3 +124,18 @@ body.xr-active{height:100%;overflow:hidden}
  #pattern-dialog menu{position:sticky;bottom:-1px;margin:8px -8px -8px;padding:10px 8px;background:#08050dcc;border-top:1px solid #281c30;backdrop-filter:blur(12px)}
  #pattern-dialog menu button{min-height:42px}
 }
+
+/* 0.54 interaction stabilization */
+#heat-meter{position:absolute;z-index:7;left:50%;top:52px;transform:translateX(-50%);width:min(76%,560px);display:grid;grid-template-columns:auto 1fr 24px;align-items:center;gap:7px;font:5.5px ui-monospace;color:#776a80;pointer-events:none}
+#heat-meter>div{position:relative;height:5px;border-radius:99px;background:linear-gradient(90deg,#132e45,#422457,#70402a,#6c1717);box-shadow:inset 0 0 0 1px #ffffff0d}
+#heat-fill{display:block;height:100%;width:40%;border-radius:99px;background:linear-gradient(90deg,#4fc7ff,#bd7cff,#ff9d4d,#ff493f);transition:width .12s linear}
+#heat-marker{position:absolute;left:40%;top:50%;width:9px;height:9px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 9px #fff}
+#heat-value{font-size:7px;color:#cdbbdc;text-align:right}
+#pattern-pad{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;overscroll-behavior:contain}
+@media(max-width:520px){
+ #heat-meter{top:52px;width:calc(100% - 42px)}
+ #waveform{top:70px;height:calc(100% - 120px)}
+ #change-toast{top:72px}
+ #pattern-dialog{overscroll-behavior:contain}
+ #pattern-pad{height:220px}
+}
