@@ -59,3 +59,22 @@ header{padding-left:max(15px,env(safe-area-inset-left));padding-right:max(15px,e
  #wave-readout span{padding:3px 4px}
  #conversation{padding-left:8px;padding-right:8px}
 }
+
+/* Nocturne 0.53 chart engine + darker intimate control deck */
+#chart-strip,#control-rail{display:flex;align-items:center;justify-content:center;gap:7px}
+#chart-strip{font:7px ui-monospace;color:#75677f}#chart-strip span{padding:5px 8px;border:1px solid #211727;border-radius:999px;background:#060409}#chart-strip b{color:#d9c5e8}
+#control-rail{margin:5px auto;max-width:720px}#control-rail button{font-size:6px;min-height:32px;background:#0c0811;border-color:#30213a}#auto-mode{border-color:#754d91!important}#auto-mode:not(:empty){color:#d9b5f5}
+#pattern-pad{display:block;width:100%;height:210px;touch-action:none;border:1px solid #3a2945;border-radius:14px;background:#07040b}
+#pattern-meta{font:8px ui-monospace;color:#8d7d98;margin-top:7px}
+#pattern-dialog{width:min(620px,calc(100% - 20px));background:linear-gradient(180deg,#100817,#07040b);border-color:#4a3159}
+#pattern-dialog h2{margin:0 0 5px}#pattern-dialog p{font-size:9px;color:#9c8aa8;line-height:1.5}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 38%,#4b176512,transparent 42%),linear-gradient(180deg,#0000 45%,#050207aa)}
+@media(max-width:520px){
+ main{grid-template-rows:34px minmax(180px,1fr) 270px}
+ #conversation{height:270px;grid-template-rows:18px 44px 32px 24px 34px 34px 44px}
+ #chart-strip{height:24px;gap:3px}#chart-strip span{padding:4px 6px;font-size:5.5px}
+ #control-rail{height:34px;margin:0;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+ #control-rail button{height:34px;min-height:34px;padding:4px 2px;font-size:5.2px}
+ .actions #custom-telemetry{display:none}
+ #pattern-pad{height:180px}
+}
