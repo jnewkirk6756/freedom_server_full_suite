@@ -7,13 +7,15 @@ export function attachGeometry(live) {
 }
 export function installGeometry(live) {
   const root=document.getElementById('trajectory'),oldWave=document.getElementById('waveform');
-  if(!root||root.querySelector('.device-geometry')||!oldWave)return;
+  if(!root||document.getElementById('device-trajectory')||!oldWave)return;
   const css=document.createElement('link');css.rel='stylesheet';css.href='/devices.css?v=0600';document.head.append(css);
   // Preserve legacy nodes used by the session module, but remove their decorative display.
   for(const child of [...root.children]){child.hidden=true;child.style.setProperty('display','none','important');}
   oldWave.hidden=true;oldWave.style.setProperty('display','none','important');
   const wave=document.createElement('canvas');wave.id='device-waveform';wave.style.cssText='display:block;width:100%;height:170px';wave.setAttribute('role','img');wave.setAttribute('aria-label','Calculated displacement and current phase');oldWave.after(wave);
-  const target=document.createElement('div');root.append(target);root.style.height='auto';
+  root.style.setProperty('display','none','important');
+  const target=document.createElement('section');target.id='device-trajectory';root.before(target);
+  const legacyVisibility=document.getElementById('setup-trajectory')?.closest('label');if(legacyVisibility){legacyVisibility.hidden=true;legacyVisibility.style.display='none';}
   let started=live.phase>0||live.cycle>0,custom=[],yaw=0,stopped=false,previousPhase=live.phase,previousTime=null,observedPeriod=null;
   try{yaw=clamp(JSON.parse(sessionStorage.getItem('nocturne.geometry.v1')||'{}').yaw??0,-60,60);}catch{}
   const halt=()=>{if(live.running)document.getElementById('live-start')?.click();try{navigator.vibrate?.(0);}catch{};};
