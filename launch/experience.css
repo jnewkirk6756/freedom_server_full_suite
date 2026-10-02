@@ -106,3 +106,21 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;back
  #telemetry-dialog,#pattern-dialog{max-height:86dvh;overflow-y:auto}
 }
 body.xr-active{height:100%;overflow:hidden}
+
+/* Nocturne V0.54 interaction hardening */
+#heat-meter{position:absolute;z-index:7;right:14px;top:58px;width:132px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:5px;font:5.5px ui-monospace;color:#71667a}
+#heat-meter>i{position:relative;display:block;height:6px;border-radius:99px;background:linear-gradient(90deg,#58c8ff22,#bd86ff22,#ffb45d22,#ff514822);border:1px solid #2d2234}
+#heat-fill{display:block;height:100%;width:40%;border-radius:99px;background:linear-gradient(90deg,#58c8ff,#bd86ff 45%,#ffb45d 72%,#ff5148)}
+#heat-marker{position:absolute;left:40%;top:50%;width:8px;height:8px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 8px #fff}
+#heat-label{font-size:5.5px;color:#a99ab2}
+#pattern-pad{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;overscroll-behavior:contain}
+#pattern-dialog{overscroll-behavior:contain}
+.telemetry-grid input[type=range]{min-height:30px}
+@media(max-width:520px){
+ #heat-meter{top:84px;right:18px;width:118px}
+ #waveform{top:62px;height:calc(100% - 112px)}
+ #pattern-dialog{width:calc(100% - 12px);max-height:92dvh}
+ #pattern-pad{height:240px}
+ #pattern-dialog menu{position:sticky;bottom:-1px;margin:8px -8px -8px;padding:10px 8px;background:#08050dcc;border-top:1px solid #281c30;backdrop-filter:blur(12px)}
+ #pattern-dialog menu button{min-height:42px}
+}
