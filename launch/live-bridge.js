@@ -1,0 +1,6 @@
+const clamp=v=>Math.max(0,Math.min(1,Number(v)||0));
+export const BRIDGE_VERSION='NOCTURNE-LIVE-BRIDGE-0.59';
+export function loadAnnaState(){let psyche={},memory={};try{psyche=JSON.parse(localStorage.getItem('nocturne.anna.psyche.v056')||'{}')}catch{}try{memory=JSON.parse(localStorage.getItem('nocturne.anna.memory.v057')||'{}')}catch{}return{psyche,memory}}
+export function livePermission(){const{psyche}=loadAnnaState(),r=psyche.relationship||{},m=psyche.mood||{};const willingness=clamp(r.willingness??0);return{allowed:willingness>=.52,willingness,irritation:clamp(m.irritation),heat:clamp(r.heat),trust:clamp(r.trust),comfort:clamp(r.comfort)}}
+export function directorBias(){const s=livePermission();return{initiative:clamp(.28+s.willingness*.48-s.irritation*.3),intensityCeiling:clamp(.35+s.willingness*.45+s.heat*.2),hapticScale:clamp(.35+s.comfort*.3+s.willingness*.35),allowed:s.allowed}}
+export function publishBridge(telemetry={}){const b={...directorBias(),telemetry,at:Date.now()};localStorage.setItem('nocturne.live.bridge.v059',JSON.stringify(b));return b}
