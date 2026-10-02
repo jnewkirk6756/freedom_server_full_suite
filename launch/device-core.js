@@ -1,5 +1,5 @@
 /** Nocturne device geometry. Physical descriptions, never physiological predictions. */
-export const DEVICE_VERSION = '0.60.0';
+export const DEVICE_VERSION = '0.60.1';
 export const DEVICE_KEY = 'nocturne.devices.v1';
 export const MATERIALS = ['Silicone','TPE','TPR','TPU','Natural rubber','Synthetic rubber','ABS plastic','Polycarbonate','Acrylic','Glass','Stainless steel','Aluminum','Ceramic','Hybrid','Other / unspecified'];
 export const TEXTURES = ['Smooth','Ridged','Ribbed','Spiral','Dimpled','Textured','Custom'];
@@ -20,13 +20,16 @@ export function validateDevice(input, now=Date.now()) {
   const id=typeof input.id==='string' && /^[a-z0-9_-]{1,80}$/i.test(input.id) ? input.id : newId();
   return {id,name,lengthMm,widthMm,travelMm,color:input.color.toLowerCase(),material:choice(input.material,MATERIALS,'material'),texture:choice(input.texture,TEXTURES,'texture'),shape:choice(input.shape||'Cylinder',SHAPES,'shape'),finish:choice(input.finish||'Matte',FINISHES,'finish'),notes:String(input.notes||'').slice(0,300),createdAt:Number.isFinite(input.createdAt)?input.createdAt:now,updatedAt:now};
 }
-export const emptyLibrary = () => ({schema:1,revision:0,activeId:null,unit:'mm',devices:[]});
+export const emptyLibrary = () => ({schema:1,revision:0,activeId:null,unit:'in',displayUnitsVersion:1,devices:[]});
 export function parseLibrary(text) {
   if(typeof text!=='string' || text.length>100000) throw Error('Device file exceeds 100 KB.');
   const p=JSON.parse(text); if(p?.schema!==1 || !Array.isArray(p.devices) || p.devices.length>100) throw Error('Unsupported device library; maximum 100 profiles.');
   const devices=p.devices.map(d=>validateDevice(d,Number.isFinite(d.updatedAt)?d.updatedAt:Date.now()));
   if(new Set(devices.map(d=>d.id)).size!==devices.length) throw Error('Duplicate profile IDs.');
-  return {schema:1,revision:Number.isSafeInteger(p.revision)&&p.revision>=0?p.revision:0,activeId:devices.some(d=>d.id===p.activeId)?p.activeId:null,unit:p.unit==='in'?'in':'mm',devices};
+  // Migrate only display units from the old metric default. Stored dimensions stay mm.
+  // Once the user explicitly changes units in this version, keep that choice.
+  const unit=p.displayUnitsVersion===1&&p.unit==='mm'?'mm':'in';
+  return {schema:1,revision:Number.isSafeInteger(p.revision)&&p.revision>=0?p.revision:0,activeId:devices.some(d=>d.id===p.activeId)?p.activeId:null,unit,displayUnitsVersion:1,devices};
 }
 export function readLibrary(storage=globalThis.localStorage) {
   const raw=storage.getItem(DEVICE_KEY); return raw ? parseLibrary(raw) : emptyLibrary();
