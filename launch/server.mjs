@@ -43,7 +43,8 @@ export const server=http.createServer(async(req,res)=>{
   if(u.pathname==='/nps'||u.pathname==='/nps/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'nps.html')));
   if(u.pathname==='/commission'||u.pathname==='/commission/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'commission.html')));
   if(u.pathname==='/director'||u.pathname==='/director/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'director.html')));
-  if(u.pathname==='/experience'||u.pathname==='/experience/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'experience.html')));\n  if(u.pathname==='/vr'||u.pathname==='/vr/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'vr.html')));
+  if(u.pathname==='/experience'||u.pathname==='/experience/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'experience.html')));
+  if(u.pathname==='/vr'||u.pathname==='/vr/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'vr.html')));
   if(u.pathname==='/app'||u.pathname==='/app/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'official.html')));
   if(u.pathname==='/world'||u.pathname==='/world/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'world.html')));
   if(u.pathname==='/player'||u.pathname==='/player/')return reply(200,'text/html; charset=utf-8',fs.readFileSync(path.join(here,'player.html')));
