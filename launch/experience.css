@@ -169,3 +169,36 @@ body.xr-active{height:100%;overflow:hidden}
   #next-chart{grid-column:2/4}
   #conversation{gap:8px}
 }
+
+/* Nocturne V0.64 — clean Live stack */
+#wave{box-sizing:border-box;min-height:276px;height:276px;padding:86px 14px 58px;border:1px solid #201529;border-radius:18px;background:linear-gradient(180deg,#08050d,#030207);overflow:hidden}
+#waveform{position:absolute!important;left:14px!important;right:14px!important;top:86px!important;bottom:58px!important;width:calc(100% - 28px)!important;height:auto!important;border-radius:12px;background:#050309}
+#climax{top:10px!important}
+#wave-readout{top:38px!important;z-index:8}
+#heat-meter{top:62px!important;z-index:8}
+#pattern-bar{left:14px!important;right:14px!important;bottom:10px!important;transform:none!important;width:auto!important;max-width:none!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;overflow:visible!important;z-index:9}
+#pattern-bar button{min-width:0!important;min-height:34px!important;font-size:7px!important;padding:6px 4px!important}
+#mapping{display:none!important}
+#control-rail{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;width:min(96vw,760px);margin:6px auto}
+#control-rail button{min-height:40px!important;font-size:7px!important;padding:6px 4px!important}
+#pattern-play:disabled{opacity:.36}
+#trajectory{height:82px}
+.trajectory-lane{height:48px}
+.trajectory-lane::after{content:"ENTRY";position:absolute;left:8%;top:2px;bottom:2px;border-left:2px dashed #c997f2;color:#c997f2;font:6px system-ui;letter-spacing:.08em;padding-left:4px;pointer-events:none}
+#trajectory .tool{border-radius:999px!important;box-shadow:inset 0 1px 2px #ffffff55,0 0 10px #0008}
+#trajectory .tool::before{content:"";position:absolute;left:-7px;top:50%;width:9px;height:155%;transform:translateY(-50%);border-radius:4px;background:inherit;border:1px solid #ffffff66}
+#trajectory .tool::after{content:"";position:absolute;right:2px;top:15%;width:30%;height:25%;border-radius:999px;background:#ffffff38}
+@media(min-width:700px){
+  main{display:flex!important;flex-direction:column!important;align-items:center!important;gap:16px!important}
+  #avatar{flex:0 0 min(42vh,430px);height:min(42vh,430px)}
+  #wave{flex:0 0 276px;width:min(96vw,1180px)!important}
+  #conversation{width:min(94vw,820px)!important;padding:0 8px 36px!important}
+}
+@media(max-width:699px){
+  #wave{order:2!important;flex:0 0 276px!important;height:276px!important;min-height:276px!important;padding:86px 10px 58px!important}
+  #waveform{left:10px!important;right:10px!important;width:calc(100% - 20px)!important}
+  #conversation{order:3!important;display:flex!important;flex-direction:column!important;height:auto!important;min-height:0!important;gap:7px!important}
+  #control-rail{grid-template-columns:repeat(3,minmax(0,1fr))!important;height:auto!important}
+  #control-rail button{height:40px!important}
+  .actions{height:auto!important;min-height:48px}
+}
