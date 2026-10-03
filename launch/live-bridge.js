@@ -44,7 +44,7 @@ export function testControlCommand(text,telemetry={}){
   else if(/^(more|increase intensity)$/.test(t)){key='intensity';delta=.05;}
   else if(/^(ease|ease the intensity|reduce intensity)$/.test(t)){key='intensity';delta=-.05;}
   if(key){out[key]=clamp(clamp(out[key])+delta);return{telemetry:out,changed:true,message:'Test '+(key==='pace'?'speed setting':'energy setting')+': '+Math.round(out[key]*100)+'%. Use Start Live to run; Hold to pause.'};}
-  return{telemetry:out,changed:false,message:'Controls-only test. Use Start Live, Hold, Advanced and pattern buttons. Anna chat is available on Home.'};
+  return{telemetry:out,changed:false,message:'Controls-only test. Use Start Live, Hold, Advanced and pattern buttons. Anna chat remains available here; Test Mode only intercepts deterministic control commands.'};
 }
 export function installLiveTestMode(live){
   if(typeof document==='undefined'||!liveTestState().available||document.getElementById('live-test-controls'))return;
@@ -81,13 +81,13 @@ export function installLiveTestMode(live){
   }
   function intercept(e){
     if(!testOutputSuppressed())return;
-    const target=e.target?.closest?.('#send,[data-command],#change');if(!target)return;
+    const target=e.target?.closest?.('[data-command],#change');if(!target)return;
     e.preventDefault();e.stopImmediatePropagation();
     localCommand(target.dataset.command||($('message')?.value||''));
   }
   document.addEventListener('click',intercept,{capture:true});
   document.addEventListener('touchend',intercept,{capture:true,passive:false});
-  document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.id==='message'&&testOutputSuppressed()){e.preventDefault();e.stopImmediatePropagation();localCommand(e.target.value);}},{capture:true});
+  
   if(wasActive){halt();if($('setup')?.open)$('setup').close();line('Controls test restored, paused. Tap Start Live when ready.');}
   render();
   const timer=setInterval(()=>{const active=isLiveTestMode();if(wasActive&&!active)halt();wasActive=active;render();},1000);
