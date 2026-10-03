@@ -1,5 +1,5 @@
 /** Nocturne V0.67 video-state library. Local IndexedDB + shared staging sync cache. */
-export const VIDEO_STATE_VERSION='0.67.3';
+export const VIDEO_STATE_VERSION='0.67.4';
 export const VIDEO_DB_NAME='nocturne-video-states-v1';
 export const VIDEO_DB_STORE='clips';
 export const VIDEO_ANCHOR_SECONDS=.7;
@@ -33,7 +33,9 @@ VIDEO_STATES.push(
   {id:'A18C',name:'PEAK EXTREME ALT',duration:8,category:'peak-alt',description:'Highest-amplitude alternate peak; route into A19 recovery.',baseId:'A18',transitionProfile:'burst-extreme'},
   {id:'A18D',name:'PEAK CONTROLLED ALT',duration:8,category:'peak-alt',description:'Controlled alternate peak with a cleaner return toward neutral.',baseId:'A18',transitionProfile:'burst-controlled'},
   {id:'A18E',name:'PEAK EXTREME OPEN ALT',duration:8,category:'peak-alt',description:'High-amplitude open-mouth peak; use sparingly and route into recovery.',baseId:'A18',transitionProfile:'burst-extreme-open'},
-  {id:'A19B',name:'RECOVERY SETTLE ALT',duration:8,category:'recovery-alt',description:'Alternate recovery state with closed-eye release and warmer finish.',baseId:'A19',transitionProfile:'recovery'}
+  {id:'A19B',name:'RECOVERY SETTLE ALT',duration:8,category:'recovery-alt',description:'Alternate recovery state with closed-eye release and warmer finish.',baseId:'A19',transitionProfile:'recovery'},
+  {id:'A18F',name:'PEAK MAX INTENSITY ALT',duration:8,category:'peak-alt',description:'Maximum-amplitude alternate peak; route directly into recovery.',baseId:'A18',transitionProfile:'burst-max'},
+  {id:'A19C',name:'RECOVERY NEUTRAL ALT',duration:8,category:'recovery-alt',description:'Calmer recovery variant that settles from closed eyes into direct neutral eye contact.',baseId:'A19',transitionProfile:'recovery-neutral'}
 );
 
 export const VIDEO_STATE_IDS=VIDEO_STATES.map(s=>s.id);
