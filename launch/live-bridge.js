@@ -1,6 +1,6 @@
 /** Staging controls test is a preview permission, never a change to Anna's state. */
 const clamp=v=>Math.max(0,Math.min(1,Number.isFinite(Number(v))?Number(v):0));
-export const BRIDGE_VERSION='NOCTURNE-LIVE-BRIDGE-0.60.1';
+export const BRIDGE_VERSION='NOCTURNE-LIVE-BRIDGE-0.64.1';
 export const LIVE_TEST_KEY='nocturne.live.controls-test.v1';
 const TEST_TTL=2*60*60*1000;
 const TEST_HOSTS=new Set(['aurelia-staging.onrender.com','localhost','127.0.0.1','[::1]']);
@@ -59,7 +59,7 @@ export function installLiveTestMode(live){
   const line=text=>{if($('last-line'))$('last-line').textContent=text;};
   const halt=()=>{if(live.running)$('live-start')?.click();live.running=false;try{navigator.vibrate?.(0);}catch{}};
   let wasActive=isLiveTestMode();
-  function render(){const s=liveTestState();toggle.textContent=s.requested?'Exit Test Mode':'Enable Test Mode';toggle.setAttribute('aria-pressed',String(s.active));detail.textContent=s.active?'TEST MODE ON · Relationship lock bypassed for this preview only. Anna’s saved state is unchanged. AI requests and hardware output are off. Start remains manual.':s.requested?'Test expired or unavailable. Motion is paused. Exit Test Mode, then enable it again to continue.':'Test the Live controls without building relationship scores first. Test Mode does not alter Anna or start motion automatically.';panel.dataset.active=String(s.active);}
+  function render(){const s=liveTestState();toggle.textContent=s.requested?'Exit Test Mode':'Enable Test Mode';toggle.setAttribute('aria-pressed',String(s.active));detail.textContent=s.active?'TEST MODE ON · Relationship lock bypassed for this preview only. Anna’s saved state is unchanged. Control-output automation and hardware output are off; normal Anna chat remains available. Start remains manual.':s.requested?'Test expired or unavailable. Motion is paused. Exit Test Mode, then enable it again to continue.':'Test the Live controls without building relationship scores first. Test Mode does not alter Anna or start motion automatically.';panel.dataset.active=String(s.active);}
   function change(){
     if($('send')?.disabled){line('Wait for the current request to finish before changing test mode.');return;}
     halt();const enable=!liveTestState().requested;
@@ -70,7 +70,7 @@ export function installLiveTestMode(live){
     line(enable?'Controls test ready. Tap Start Live. Anna’s relationship state has not been changed.':'Test Mode off. Live is paused; normal relationship rules are restored.');
   }
   toggle.addEventListener('click',change);
-  $('live-start')?.addEventListener('click',()=>queueMicrotask(()=>{if(isLiveTestMode())line(live.running?'Live controls test running. AI and hardware output are off.':'Live controls test paused. Use Start Live to resume.');}));
+  $('live-start')?.addEventListener('click',()=>queueMicrotask(()=>{if(isLiveTestMode())line(live.running?'Live controls test running. Hardware output is off; Anna chat remains available.':'Live controls test paused. Use Start Live to resume.');}));
   const setupForm=$('setup')?.querySelector('form');
   if(setupForm){const entry=document.createElement('button');entry.type='button';entry.id='setup-controls-test';entry.textContent='Use Live controls test';entry.style.cssText=toggle.style.cssText;entry.style.marginTop='12px';entry.addEventListener('click',()=>{if(isLiveTestMode())$('setup').close();else change();});setupForm.prepend(entry);}
   function localCommand(text){
