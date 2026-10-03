@@ -1,8 +1,8 @@
 /** Shared, server-rendered navigation, independent of individual screen runtimes. */
-export const NAVIGATION_VERSION = '0.65.1';
+export const NAVIGATION_VERSION = '0.66.0';
 const homePaths = new Set(['/', '/experience']);
 const tools = [
-  ['/world/', 'Spatial world'], ['/player/', 'Media player'],
+  ['/video-states/', 'Video states'], ['/world/', 'Spatial world'], ['/player/', 'Media player'],
   ['/matrix/', 'Master Chart'], ['/nps/', 'Character lab'],
   ['/commission/', 'Character studio'], ['/director/', 'Director diagnostics'],
   ['/video-router/', 'Video tools'], ['/photo-space/', 'Photo environments'],
@@ -33,6 +33,6 @@ ${tab('home', '/', 'Home')}${tab('live', '/live/', 'Live')}${tab('devices', '/de
 <button id="nocturne-edit-setup" type="button">Session setup<span aria-hidden="true">&#9881;</span></button>
 <details class="nocturne-tools"><summary>Creative &amp; developer tools</summary>${menu}</details>
 <p>State is saved on this device. Switching screens does not unlock Live.</p><small>Navigation ${NAVIGATION_VERSION}</small></div></details></nav>`;
-  html = html.replace(/<\/head>/i, `<link rel="stylesheet" href="/navigation.css?v=0651"><script type="module" src="/navigation.js?v=0651"></script></head>`);
+  html = html.replace(/<\/head>/i, `<link rel="stylesheet" href="/navigation.css?v=0660"><script type="module" src="/navigation.js?v=0660"></script></head>`);
   return html.replace(/<\/body>/i, nav + '</body>');
 }
