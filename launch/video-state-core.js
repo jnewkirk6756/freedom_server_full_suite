@@ -1,5 +1,5 @@
 /** Nocturne V0.67 video-state library. Local IndexedDB + shared staging sync cache. */
-export const VIDEO_STATE_VERSION='0.67.5';
+export const VIDEO_STATE_VERSION='0.68.0';
 export const VIDEO_DB_NAME='nocturne-video-states-v1';
 export const VIDEO_DB_STORE='clips';
 export const VIDEO_ANCHOR_SECONDS=.7;
@@ -150,4 +150,37 @@ export async function syncCloudToLocal({onProgress=()=>{}}={}){
 }
 export async function cloudDelete(id){
   const state=stateById(id);if(!state)return false;const {token}=await ensureMediaSession(),r=await fetch('/v1/media/'+state.id,{method:'DELETE',headers:{'x-nocturne-session':token}});if(!r.ok)return false;return true;
+}
+
+export const VIDEO_STATE_FAMILIES={
+  A16:['A16','A16B'],
+  A17:['A17','A17B'],
+  A18:['A18','A18B','A18C','A18D','A18E','A18F'],
+  A19:['A19','A19B','A19C']
+};
+export const baseStateId=id=>stateById(id)?.baseId||String(id||'').toUpperCase();
+export function familyCandidates(id,recent=[]){
+  const state=stateById(id);if(!state)return[];
+  if(state.baseId)return[state.id];
+  const fam=VIDEO_STATE_FAMILIES[state.id]||[state.id];
+  const score=x=>{const i=[...recent].reverse().indexOf(x);return i<0?-999:i;};
+  return [...fam].sort((a,b)=>score(a)-score(b));
+}
+export function playbackMode(id){
+  const base=baseStateId(id),s=stateById(id);
+  if(base==='A18'||String(s?.category||'').startsWith('peak'))return'peak-once';
+  if(base==='A19'||String(s?.category||'').startsWith('recovery'))return'recovery-once';
+  if(base==='A20')return'reset-once';
+  return'loop';
+}
+export function transitionAfterState(id){
+  const base=baseStateId(id);
+  if(base==='A18')return'A19';
+  if(base==='A19')return'A20';
+  if(base==='A20')return'A01';
+  return null;
+}
+export function initialFallbackCandidates(id='A01'){
+  const state=stateById(id);const primary=state?.id||'A01';
+  return [...new Set([primary,...familyCandidates(primary,[]),'A00','A02','A01'])];
 }
