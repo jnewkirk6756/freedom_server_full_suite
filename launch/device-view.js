@@ -37,6 +37,7 @@ export function drawDisplacement(canvas,s,custom=[]) {
   const w=canvas.clientWidth||600,h=canvas.clientHeight||150,dpr=Math.min(globalThis.devicePixelRatio||1,2);
   if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);const floor=h-25,amp=(h-50)*s.target;
+  ctx.save();ctx.fillStyle='rgba(214,190,234,.09)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 '+Math.max(24,Math.round(h*.26))+'px system-ui';ctx.fillText(Math.round(s.target*100)+'% DEPTH',w/2,h/2);ctx.restore();
   ctx.strokeStyle='#5b466d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(16,floor);ctx.lineTo(w-16,floor);ctx.stroke();
   ctx.strokeStyle='#be92f1';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=160;i++){const x=16+(w-32)*i/160,y=floor-amp*sampleCurve(i/160,custom).fraction;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
   const px=16+(w-32)*s.phase,py=floor-(h-50)*s.active;ctx.fillStyle='#eee3ff';ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
