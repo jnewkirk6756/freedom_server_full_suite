@@ -10,7 +10,7 @@ export function installGeometry(live) {
   installLiveTestMode(live);
   const root=document.getElementById('trajectory'),oldWave=document.getElementById('waveform');
   if(!root||document.getElementById('device-trajectory')||!oldWave)return;
-  const css=document.createElement('link');css.rel='stylesheet';css.href='/devices.css?v=0601';document.head.append(css);
+  const css=document.createElement('link');css.rel='stylesheet';css.href='/devices.css?v=0641';document.head.append(css);
   // Preserve legacy nodes used by the session module, but remove their decorative display.
   for(const child of [...root.children]){child.hidden=true;child.style.setProperty('display','none','important');}
   oldWave.hidden=true;oldWave.style.setProperty('display','none','important');
@@ -23,10 +23,10 @@ export function installGeometry(live) {
   const halt=()=>{if(live.running)document.getElementById('live-start')?.click();try{navigator.vibrate?.(0);}catch{};};
   const geometry=mountGeometry(target,{waveCanvas:wave,onDeviceChange:()=>{halt();started=false;live.phase=0;geometry.reset();}});
   const row=document.createElement('div');row.className='dg-views';row.style.marginTop='10px';
-  const label=document.createElement('label');label.textContent='Yaw ° ';label.style.cssText='font:12px system-ui;color:#c7afd9';
-  const yawInput=document.createElement('input');yawInput.type='number';yawInput.min='-60';yawInput.max='60';yawInput.step='1';yawInput.value=String(yaw);yawInput.setAttribute('aria-label','Trajectory yaw degrees');yawInput.style.cssText='width:75px;background:#130b20;color:#eadcf6;border:1px solid #4a315f;border-radius:8px;padding:8px;font:14px system-ui';
+  const label=document.createElement('label');label.textContent='Side angle ° ';label.style.cssText='font:12px system-ui;color:#c7afd9';
+  const yawInput=document.createElement('input');yawInput.type='number';yawInput.min='-60';yawInput.max='60';yawInput.step='1';yawInput.value=String(yaw);yawInput.setAttribute('aria-label','Side angle degrees');yawInput.style.cssText='width:75px;background:#130b20;color:#eadcf6;border:1px solid #4a315f;border-radius:8px;padding:8px;font:14px system-ui';
   yawInput.addEventListener('change',()=>{halt();yaw=clamp(yawInput.value,-60,60);yawInput.value=String(yaw);try{sessionStorage.setItem('nocturne.geometry.v1',JSON.stringify({yaw}));}catch{}});label.append(yawInput);row.append(label);target.append(row);
-  const legacyTool=document.getElementById('ct-tool');if(legacyTool){const label=legacyTool.closest('label');if(label){label.hidden=true;label.style.display='none';}const note=document.createElement('p');note.textContent='Preview profile and color are selected under Devices. Pitch is the approach-angle field; yaw is available on the geometry panel.';note.style.cssText='font:12px/1.5 system-ui;color:#baa5cc';legacyTool.closest('form')?.append(note);}
+  const legacyTool=document.getElementById('ct-tool');if(legacyTool){const label=legacyTool.closest('label');if(label){label.hidden=true;label.style.display='none';}const note=document.createElement('p');note.textContent='Profile and color come from Devices. Up/down angle uses the approach-angle field; Side angle is available on the geometry panel.';note.style.cssText='font:12px/1.5 system-ui;color:#baa5cc';legacyTool.closest('form')?.append(note);}
   const updateCustom=()=>{try{const chart=JSON.parse(localStorage.getItem('nocturne.chart.v1')||'{}');custom=Array.isArray(chart.recordedPattern)?chart.recordedPattern.slice(0,256):[];}catch{custom=[];}};updateCustom();
   document.getElementById('pattern-dialog')?.addEventListener('close',updateCustom);
   const hold=document.getElementById('hold');for(const type of ['click','touchend'])hold?.addEventListener(type,e=>{e.preventDefault();e.stopImmediatePropagation();halt();const line=document.getElementById('last-line');if(line)line.textContent='Paused. Position held; use Start Live to resume.';},{capture:true,passive:false});
@@ -45,5 +45,5 @@ export function installGeometry(live) {
     requestAnimationFrame(render);
   }
   window.addEventListener('pageshow',()=>{if(stopped){stopped=false;previousTime=null;requestAnimationFrame(render);}});
-  requestAnimationFrame(render);window.__NOCTURNE_GEOMETRY_READY__='0.60.1';
+  requestAnimationFrame(render);window.__NOCTURNE_GEOMETRY_READY__='0.64.1';
 }
