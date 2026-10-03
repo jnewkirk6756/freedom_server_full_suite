@@ -46,7 +46,7 @@ export function saveDevice(library, input, now=Date.now()) {
   if(at>=0){row.createdAt=next.devices[at].createdAt;next.devices[at]=row;} else next.devices.push(row);
   if(!next.activeId) next.activeId=row.id; return next;
 }
-export const selectedDevice = lib => lib.devices.find(d=>d.id===lib.activeId)||null;
+export const selectedDevice = lib => lib.devices.find(d=>d.id===lib.activeId)||(lib.devices.length===1?lib.devices[0]:null);
 export function mergeLibrary(library, imported) {
   const next=parseLibrary(JSON.stringify(library)), source=parseLibrary(JSON.stringify(imported));
   if(next.devices.length+source.devices.length>100) throw Error('Import would exceed 100 profiles.');
