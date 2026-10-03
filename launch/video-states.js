@@ -46,7 +46,7 @@ async function refresh(){
     const warn=document.createElement('div');warn.className='vs-warnings';for(const w of row?.warnings||[]){const x=document.createElement('small');x.textContent='⚠ '+w;warn.append(x);}
     const actions=document.createElement('div');actions.className='vs-card-actions';
     const label=document.createElement('label');label.className='file-button';label.textContent=row?'REPLACE':'ADD CLIP';const input=document.createElement('input');input.type='file';input.accept='video/*,.mp4,.mov,.webm';input.hidden=true;input.onchange=async()=>{const file=input.files?.[0];if(file)await importOne(s.id,file);input.value='';};label.append(input);actions.append(label);
-    if(row||remote){const test=document.createElement('a');test.href='/live/?state='+encodeURIComponent(s.id)+'&v=0675';test.textContent='TEST LIVE';test.className='test-live';actions.append(test);}if(row){
+    if(row||remote){const test=document.createElement('a');test.href='/live/?state='+encodeURIComponent(s.id)+'&v=0680';test.textContent='TEST LIVE';test.className='test-live';actions.append(test);}if(row){
       const preview=document.createElement('button');preview.type='button';preview.textContent='PREVIEW';preview.onclick=()=>showPreview(s.id);
       const del=document.createElement('button');del.type='button';del.textContent='DELETE';del.className='danger';del.onclick=async()=>{if(confirm('Delete '+s.id+' from this device?')){await deleteClip(s.id);message(s.id+' deleted.');await refresh();}};
       actions.append(preview,del);
