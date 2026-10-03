@@ -59,7 +59,7 @@ export function installLiveTestMode(live){
   const line=text=>{if($('last-line'))$('last-line').textContent=text;};
   const halt=()=>{if(live.running)$('live-start')?.click();live.running=false;try{navigator.vibrate?.(0);}catch{}};
   let wasActive=isLiveTestMode();
-  function render(){const s=liveTestState();toggle.textContent=s.requested?'Exit Test Mode':'Enable Test Mode';toggle.setAttribute('aria-pressed',String(s.active));detail.textContent=s.active?'TEST MODE ON · Relationship lock bypassed for this preview only. Anna’s saved state is unchanged. Control-output automation and hardware output are off; normal Anna chat remains available. Start remains manual.':s.requested?'Test expired or unavailable. Motion is paused. Exit Test Mode, then enable it again to continue.':'Test the Live controls without building relationship scores first. Test Mode does not alter Anna or start motion automatically.';panel.dataset.active=String(s.active);}
+  function render(){const s=liveTestState();toggle.textContent=s.requested?'Exit Test Mode':'Enable Test Mode';toggle.setAttribute('aria-pressed',String(s.active));detail.textContent=s.active?'TEST MODE ON · Relationship lock bypassed for this preview only. Anna’s saved state is unchanged. Physical hardware output is off; Anna chat and Autopilot remain available. Start remains manual.':s.requested?'Test expired or unavailable. Motion is paused. Exit Test Mode, then enable it again to continue.':'Test the Live controls without building relationship scores first. Test Mode does not alter Anna or start motion automatically.';panel.dataset.active=String(s.active);}
   function change(){
     if($('send')?.disabled){line('Wait for the current request to finish before changing test mode.');return;}
     halt();const enable=!liveTestState().requested;
@@ -77,7 +77,7 @@ export function installLiveTestMode(live){
     if(!isLiveTestMode()){halt();line('Controls test expired. Exit and enable Test Mode again.');return;}
     const out=testControlCommand(text,live.telemetry);Object.assign(live.telemetry,out.telemetry);
     for(const[id,key]of[['wr-pace','pace'],['wr-depth','depth'],['wr-force','force'],['wr-energy','intensity']])if($(id))$(id).textContent=String(Math.round(clamp(live.telemetry[key])*100));
-    line(out.message);if($('message'))$('message').value='';
+    line(out.message);try{window.dispatchEvent(new CustomEvent('nocturne:local-command',{detail:{text:String(text||''),telemetry:{...live.telemetry}}}))}catch{}if($('message'))$('message').value='';
   }
   function intercept(e){
     if(!testOutputSuppressed())return;
