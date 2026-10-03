@@ -10,6 +10,7 @@ test('state lookup is case insensitive',()=>assert.equal(stateById('a05')?.name,
 test('filename extracts state IDs without false A99 matches',()=>{
   assert.equal(extractStateId('anna_A03_listen.mp4'),'A03');
   assert.equal(extractStateId('redo-a20-final.mov'),'A20');
+  assert.equal(extractStateId('A18C_peak.mp4'),'A18C');
   assert.equal(extractStateId('A18B_peak_alt.mp4'),'A18B');
   assert.equal(extractStateId('anna_A99.mp4'),null);
 });
