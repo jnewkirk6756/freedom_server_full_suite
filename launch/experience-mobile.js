@@ -104,4 +104,4 @@ function savePausedScreen(){
   writeNavigationState('live.runtime',{telemetry:{...live.telemetry},cycle:live.cycle,phase:live.phase,strokes:chart.strokes,chartNumber:chart.number,completed:chart.completed,pattern,climax});
   try{saveChart();shareTelemetry()}catch{}
 }
-window.addEventListener('nocturne:suspend',savePausedScreen);
+window.addEventListener('nocturne:local-command',e=>{const t=String(e.detail?.text||'').trim();if(t)rememberLive('user',t)});window.addEventListener('nocturne:suspend',savePausedScreen);
