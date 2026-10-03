@@ -2,7 +2,7 @@ import net from 'node:net';
 import {URL} from 'node:url';
 
 const PREFIX='nocturne:media:v1:';
-const IDS=[...Array.from({length:21},(_,i)=>'A'+String(i).padStart(2,'0')),'A16B','A17B','A18B','A18C'];
+const IDS=[...Array.from({length:21},(_,i)=>'A'+String(i).padStart(2,'0')),'A16B','A17B','A18B','A18C','A18D','A18E','A19B'];
 const validId=id=>IDS.includes(String(id||'').toUpperCase());
 
 function encodeCommand(args){
