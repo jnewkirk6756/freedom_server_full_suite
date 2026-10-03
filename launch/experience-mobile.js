@@ -1,5 +1,5 @@
 import{rememberSetupDialog,readNavigationState,writeNavigationState}from'./navigation-state.js';
-import{initialLive,waveSample,waveVisual}from'./live-engine.js';import{patternState,climaxStep,eventRecord}from'./pattern-engine.js';import{hapticPlan,playPlan,gamepadActuators}from'./haptics-core.js';import{livePermission,directorBias,publishBridge,installLiveTestMode}from'./live-bridge.js';import{mobileHapticCapabilities,playMobileHaptic,stopMobileHaptic}from'./mobile-haptics.js';import{groundingContext}from'./anna-grounding.js';
+import{initialLive,waveSample,waveVisual}from'./live-engine.js';import{patternState,climaxStep,eventRecord}from'./pattern-engine.js';import{hapticPlan,playPlan,gamepadActuators}from'./haptics-core.js';import{livePermission,directorBias,publishBridge,installLiveTestMode}from'./live-bridge.js';import{mobileHapticCapabilities,playMobileHaptic,stopMobileHaptic}from'./mobile-haptics.js';import{groundingContext}from'./anna-grounding.js';import{parseTelemetryIntent}from'./live-intent.js';
 const $=id=>document.getElementById(id),clamp=v=>Math.max(0,Math.min(1,Number(v)||0));let token=sessionStorage.getItem('nocturne.staging.token'),live=initialLive(),sessionActive=false,last=performance.now(),climaxOn=true,climax=0,lastPeak=0,peakLog=[],sessionStart=0,events=[],pattern='steady',hapticsCfg={enabled:true,strength:.7,stroke:true,background:true,peak:true},chart={number:1,strokes:0,target:40,cadence:45,auto:false,tool:'white',angle:0,completed:false},recordedPattern=[],recording=false,sessionCfg={scene:'matrix',tool:'default',mood:'Calm',thc:0,alcohol:0,position:'back',vr:false,trajectory:false},LIVE_CONTEXT_KEY='nocturne.live.context.v0650',liveHistory=[],autopilotBusy=false,autopilotLast=0;
 function status(v,on=false){const p=$('presence');if(!p)return;p.querySelector('b').textContent=v;p.classList.toggle('live',on)}
 function line(v){if($('last-line'))$('last-line').textContent=v}
@@ -11,15 +11,10 @@ function setPattern(name){if(!['steady','wave','pulse','build','variable','custo
 function directorContext(){return{grounding:groundingContext(),psyche:localJSON('nocturne.anna.psyche.v056'),memory:localJSON('nocturne.anna.memory.v057'),experience:localJSON('nocturne.anna.experience.v061'),recent:liveHistory.slice(-10),mode:'live',chart:{activePort:'V',lead:'AVATAR',pace:live.telemetry.pace,depth:live.telemetry.depth,force:live.telemetry.force,intensity:live.telemetry.intensity,rhythm:pattern,position:sessionCfg.position,autopilot:chart.auto},about:'Anna is the Nocturne personal precision assistant in a live telemetry session. Preserve conversational continuity and apply exact numeric telemetry instructions exactly. When Autopilot is enabled, Anna may choose reasonable telemetry, pattern and position changes from current context. Session setup '+JSON.stringify(sessionCfg)+'. Current chart '+chart.number+', strokes '+chart.strokes+'/'+chart.target+'.' }}
 function activeTool(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');if(!Array.isArray(lib.devices))return null;return lib.devices.find(d=>d.id===lib.activeId)||(lib.devices.length===1?lib.devices[0]:null)}catch{return null}}
 function explicitLiveValues(text){
-  const t=String(text||'').toLowerCase().replace(/percent/g,'%'),changes=[],keys=new Set();
-  const specs=[
-    ['depth',[/(?:set\s+)?depth\s*(?:at|to|=|of)?\s*(\d{1,3})\s*%?/,/(\d{1,3})\s*%\s*depth/]],
-    ['pace',[/(?:set\s+)?(?:pace|speed)\s*(?:at|to|=|of)?\s*(\d{1,3})\s*%?/,/(\d{1,3})\s*%\s*(?:pace|speed)/]],
-    ['force',[/(?:set\s+)?force\s*(?:at|to|=|of)?\s*(\d{1,3})\s*%?/,/(\d{1,3})\s*%\s*force/]],
-    ['intensity',[/(?:set\s+)?(?:energy|intensity)\s*(?:at|to|=|of)?\s*(\d{1,3})\s*%?/,/(\d{1,3})\s*%\s*(?:energy|intensity)/]]
-  ];
-  for(const [key,res] of specs){let m=null;for(const re of res){m=t.match(re);if(m)break}if(m){const n=Math.max(0,Math.min(100,Number(m[1])));live.telemetry[key]=n/100;keys.add(key);changes.push((key==='intensity'?'ENERGY':key.toUpperCase())+' '+n+'%')}}
-  if(/\b(custom|unique|saved)\s+pattern\b/.test(t)&&recordedPattern.length>=4){setPattern('custom');changes.push('CUSTOM PATTERN')}
+  const intent=parseTelemetryIntent(text,{hasCustomPattern:recordedPattern.length>=4}),changes=[],keys=new Set();
+  for(const [key,value]of Object.entries(intent.telemetry||{})){live.telemetry[key]=clamp(value);keys.add(key);changes.push((key==='intensity'?'ENERGY':key.toUpperCase())+' '+Math.round(value*100)+'%')}
+  if(intent.pattern&&setPattern(intent.pattern))changes.push('PATTERN '+intent.pattern.toUpperCase());
+  if(intent.position&&$('position')?.querySelector('option[value="'+intent.position+'"]')){sessionCfg.position=intent.position;$('position').value=intent.position;changes.push('POSITION '+$('position').selectedOptions[0].textContent)}
   if(changes.length){if(keys.has('pace'))chart.cadence=Math.round(live.telemetry.pace*100);syncReadout();syncChart();saveChart();shareTelemetry()}
   return{changes,keys};
 }
