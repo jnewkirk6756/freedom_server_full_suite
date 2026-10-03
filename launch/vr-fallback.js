@@ -175,6 +175,7 @@ function controllerInteraction(frame){
 function drawControllerOverlay(mvp,rays){if(!rays.length)return;const tips=[];for(let i=0;i<rays.length;i+=6)tips.push(rays[i+3],rays[i+4],rays[i+5]);gl.disable(gl.DEPTH_TEST);drawWorld(mvp,rays,[.96,.82,1,1],gl.LINES,3);drawWorld(mvp,tips,[1,.96,1,1],gl.POINTS,11);gl.enable(gl.DEPTH_TEST)}
 async function enterFallback(e){
   if(e){e.preventDefault();e.stopImmediatePropagation()}if(session){set('diag-line','Immersive session is already active.');return}
+  const cfg=loadTelemetry();if(!cfg.initialized){set('diag-line','Initialize Entry Speed, Depth and Stroke Speed before entering VR.');try{$('vr-session-dialog')?.showModal()}catch{}return}
   const enter=$('enter');if(enter){enter.disabled=true;enter.textContent='OPENING VR…'}
   try{
     const test=await run();if(!test.immersive)throw Error('Quest reports immersive-vr unsupported');
