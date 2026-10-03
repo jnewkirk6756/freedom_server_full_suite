@@ -5,7 +5,9 @@ let worldProgram=null,worldBuf=null,uiProgram=null,uiBuf=null,uiTex=null,menuCan
 function requestedMode(){const q=new URLSearchParams(location.search).get('mode');if(['live','anna','tool','cognitive'].includes(q))return q;try{const saved=JSON.parse(localStorage.getItem('nocturne.vr.entry.v1')||'null');if(saved&&Date.now()-Number(saved.at||0)<30*60*1000&&['live','anna','tool','cognitive'].includes(saved.mode))return saved.mode}catch{}return'cognitive'}
 let sceneMode=requestedMode(),actionLine='Point a controller at a tile and press trigger.',hovered=-1;
 const triggerDown=new Map();
-let telemetry={pace:.45,depth:.5,force:.4,intensity:.35,angle:0,cadence:45};
+let telemetry={pace:.45,depth:.5,force:.4,intensity:.35,angle:0,cadence:45};let panelOffset={x:0,y:0,z:0};
+function activeDevice(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');return Array.isArray(lib.devices)?lib.devices.find(d=>d.id===lib.activeId)||null:null}catch{return null}}
+function hexRgb(hex){const m=/^#([0-9a-f]{6})$/i.exec(String(hex||''));if(!m)return[.36,1,.84,1];const n=parseInt(m[1],16);return[((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255,1]}
 function loadTelemetry(){try{const s=JSON.parse(localStorage.getItem('nocturne.telemetry.v1')||'{}');telemetry={pace:clamp(s.pace??.45),depth:clamp(s.depth??.5),force:clamp(s.force??.4),intensity:clamp(s.intensity??.35),angle:Math.max(-45,Math.min(45,Number(s.angle)||0)),cadence:Math.max(0,Math.min(100,Number(s.cadence??45)))}}catch{}return telemetry}
 async function run(){
   set('diag-secure',window.isSecureContext?'YES':'NO');set('diag-xr',navigator.xr?'YES':'NO');
@@ -30,9 +32,12 @@ function initGL(){
 function mul4(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++){let v=0;for(let k=0;k<4;k++)v+=a[k*4+r]*b[c*4+k];o[c*4+r]=v}return o}
 function rounded(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 function floorY(){return refMode==='local-floor'?0:-1.55}
-function panelY(){return refMode==='local-floor'?1.48:.02}
+function basePanelY(){return refMode==='local-floor'?1.48:.02}
+function panelY(){return basePanelY()+panelOffset.y}
 const PANEL_Z=-2.45,PANEL_W=1.62,PANEL_H=1.12;
-function panelX(){return sceneMode==='cognitive'?0:-1.42}
+function panelZ(){return PANEL_Z+panelOffset.z}
+function basePanelX(){return sceneMode==='cognitive'?0:-1.42}
+function panelX(){return basePanelX()+panelOffset.x}
 function modeColor(){return sceneMode==='live'?[.28,.78,1,1]:sceneMode==='anna'?[.86,.48,1,1]:sceneMode==='tool'?[.36,1,.84,1]:[.67,.42,.94,1]}
 function drawWorld(mvp,verts,color,mode,size=4){
   if(!verts.length)return;gl.useProgram(worldProgram);gl.bindBuffer(gl.ARRAY_BUFFER,worldBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.DYNAMIC_DRAW);
@@ -59,10 +64,16 @@ function telemetryPath(t){
 }
 function liveHudGeometry(){const tel=loadTelemetry(),y=floorY()+1.82,z=-1.62,x0=.62,x1=1.82,xf=x0+(x1-x0)*tel.force;return{track:[x0,y,z,x1,y,z],fill:[x0,y,z+.002,xf,y,z+.002],marker:[xf,y,z+.004],frame:[x0,y-.08,z,x1,y-.08,z,x1,y-.08,z,x1,y+.08,z,x1,y+.08,z,x0,y+.08,z,x0,y+.08,z,x0,y-.08,z]}}
 function toolGeometry(t){
-  const tel=loadTelemetry(),baseY=floorY()+1.15,angle=tel.angle*Math.PI/180,dir=[0,Math.sin(angle),-Math.cos(angle)],u=[1,0,0],v=[0,-Math.cos(angle),-Math.sin(angle)],period=Math.max(700,4200-tel.cadence*30),q=(1-Math.cos((t%period)/period*Math.PI*2))/2,travel=.3+tel.depth*1.05,anchor=[0,baseY,-.62],center=[anchor[0]+dir[0]*travel*q,anchor[1]+dir[1]*travel*q,anchor[2]+dir[2]*travel*q],length=.72,radius=.075+tel.force*.045,shell=[];
-  const ringAt=(offset,store)=>{let first=null,prev=null;for(let i=0;i<=20;i++){const a=i/20*Math.PI*2,p=[center[0]+dir[0]*offset+u[0]*radius*Math.cos(a)+v[0]*radius*Math.sin(a),center[1]+dir[1]*offset+u[1]*radius*Math.cos(a)+v[1]*radius*Math.sin(a),center[2]+dir[2]*offset+u[2]*radius*Math.cos(a)+v[2]*radius*Math.sin(a)];if(prev)store.push(...prev,...p);else first=p;prev=p}return first};
-  const rings=[];for(const off of[-length/2,0,length/2])rings.push(ringAt(off,shell));for(let i=0;i<8;i++){const a=i/8*Math.PI*2,p0=[center[0]+dir[0]*(-length/2)+u[0]*radius*Math.cos(a)+v[0]*radius*Math.sin(a),center[1]+dir[1]*(-length/2)+u[1]*radius*Math.cos(a)+v[1]*radius*Math.sin(a),center[2]+dir[2]*(-length/2)+u[2]*radius*Math.cos(a)+v[2]*radius*Math.sin(a)],p1=[center[0]+dir[0]*(length/2)+u[0]*radius*Math.cos(a)+v[0]*radius*Math.sin(a),center[1]+dir[1]*(length/2)+u[1]*radius*Math.cos(a)+v[1]*radius*Math.sin(a),center[2]+dir[2]*(length/2)+u[2]*radius*Math.cos(a)+v[2]*radius*Math.sin(a)];shell.push(...p0,...p1)}
-  const target=[anchor[0]+dir[0]*travel,anchor[1]+dir[1]*travel,anchor[2]+dir[2]*travel],axis=[...anchor,...target],targetRing=[];const old=center.slice();center[0]=target[0];center[1]=target[1];center[2]=target[2];ringAt(0,targetRing);center[0]=old[0];center[1]=old[1];center[2]=old[2];return{shell,axis,targetRing,marker:center};
+  const tel=loadTelemetry(),device=activeDevice(),baseY=floorY()+1.15,angle=tel.angle*Math.PI/180,dir=[0,Math.sin(angle),-Math.cos(angle)],u=[1,0,0],v=[0,-Math.cos(angle),-Math.sin(angle)],period=Math.max(700,4200-tel.cadence*30),q=(1-Math.cos((t%period)/period*Math.PI*2))/2,travel=.3+tel.depth*1.05,anchor=[0,baseY,-.62],center=[anchor[0]+dir[0]*travel*q,anchor[1]+dir[1]*travel*q,anchor[2]+dir[2]*travel*q],length=device?Math.max(.48,Math.min(1.25,Number(device.lengthMm||180)/180)):.72,radius=device?Math.max(.055,Math.min(.17,Number(device.widthMm||30)/280)):.09,color=hexRgb(device?.color||'#62e0c0'),shell=[],tip=[],baseRing=[];
+  const point=(offset,rad,a)=>[center[0]+dir[0]*offset+u[0]*rad*Math.cos(a)+v[0]*rad*Math.sin(a),center[1]+dir[1]*offset+u[1]*rad*Math.cos(a)+v[1]*rad*Math.sin(a),center[2]+dir[2]*offset+u[2]*rad*Math.cos(a)+v[2]*rad*Math.sin(a)];
+  const ringAt=(offset,rad,store)=>{let prev=null;for(let i=0;i<=24;i++){const a=i/24*Math.PI*2,p=point(offset,rad,a);if(prev)store.push(...prev,...p);prev=p}};
+  for(const off of[-length/2,0,length/2])ringAt(off,radius,shell);
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,s0=point(-length/2,radius,a),s1=point(length/2,radius,a);shell.push(...s0,...s1)}
+  for(let step=1;step<=4;step++){const q2=step/4,rr=radius*Math.cos(q2*Math.PI/2);ringAt(length/2+radius*q2,rr,tip)}
+  ringAt(-length/2-.028,radius*1.55,baseRing);
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,b0=point(-length/2,radius,a),b1=point(-length/2-.028,radius*1.55,a);baseRing.push(...b0,...b1)}
+  const target=[anchor[0]+dir[0]*travel,anchor[1]+dir[1]*travel,anchor[2]+dir[2]*travel],axis=[...anchor,...target],targetRing=[],save=[...center];center[0]=target[0];center[1]=target[1];center[2]=target[2];ringAt(0,radius,targetRing);center[0]=save[0];center[1]=save[1];center[2]=save[2];
+  return{shell,tip,baseRing,axis,targetRing,marker:center,color,name:device?.name||'Default'};
 }
 function drawScene(frame,view,t,rays){
   const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix),lat=staticLattice(),c=constellation(t),mc=modeColor();
@@ -72,7 +83,7 @@ function drawScene(frame,view,t,rays){
   const core=[];for(let i=0;i<3;i++)core.push(...ring(.36+i*.18,floorY()+1.38,-1.25,48));drawWorld(mvp,core,[mc[0],mc[1],mc[2],.5],gl.LINES,2);
   if(sceneMode==='live'){const p=telemetryPath(t),h=liveHudGeometry(),f=loadTelemetry().force;drawWorld(mvp,p.lines,[.35,.82,1,.82],gl.LINES,3);drawWorld(mvp,p.points,[.92,.82,1,.95],gl.POINTS,4);drawWorld(mvp,h.frame,[.3,.24,.36,.72],gl.LINES,1);drawWorld(mvp,h.track,[.18,.28,.42,.9],gl.LINES,6);drawWorld(mvp,h.fill,[.5+.5*f,.2+.45*(1-f),.95-.55*f,1],gl.LINES,8);drawWorld(mvp,h.marker,[1,.95,.98,1],gl.POINTS,10)}
   if(sceneMode==='anna'){const halo=[];for(let i=0;i<4;i++)halo.push(...ring(.3+i*.16,floorY()+1.42,-1.35,48));drawWorld(mvp,halo,[.88,.48,1,.64],gl.LINES,2)}
-  if(sceneMode==='tool'){const g=toolGeometry(t);drawWorld(mvp,g.axis,[.26,.7,.62,.55],gl.LINES,2);drawWorld(mvp,g.targetRing,[.75,.98,.9,.65],gl.LINES,2);drawWorld(mvp,g.shell,[.38,1,.84,.92],gl.LINES,2);drawWorld(mvp,g.marker,[.94,1,.98,1],gl.POINTS,8)}
+  if(sceneMode==='tool'){const g=toolGeometry(t),cc=g.color;drawWorld(mvp,g.axis,[cc[0],cc[1],cc[2],.42],gl.LINES,2);drawWorld(mvp,g.targetRing,[.85,.9,1,.6],gl.LINES,2);drawWorld(mvp,g.shell,[cc[0],cc[1],cc[2],.94],gl.LINES,2);drawWorld(mvp,g.tip,[Math.min(1,cc[0]+.18),Math.min(1,cc[1]+.18),Math.min(1,cc[2]+.18),.96],gl.LINES,2);drawWorld(mvp,g.baseRing,[cc[0],cc[1],cc[2],.96],gl.LINES,3);drawWorld(mvp,g.marker,[1,.96,1,1],gl.POINTS,8)}
   gl.disable(gl.BLEND);
 }
 function controllerSummary(){
@@ -90,11 +101,11 @@ function drawMenu(t){
   c.fillStyle='#171020';rounded(c,58,210,1084,70,20);c.fill();c.fillStyle='#e9ddf5';c.font='700 24px system-ui';c.fillText(controllerSummary(),82,253);
   const items=[['LIVE','waveform + telemetry'],['ANNA','cognitive presence'],['TOOL','geometry field'],['EXIT','leave immersion']];
   items.forEach((it,i)=>{const x=58+(i%2)*548,y=326+Math.floor(i/2)*142,active=(sceneMode==='live'&&i===0)||(sceneMode==='anna'&&i===1)||(sceneMode==='tool'&&i===2),hot=hovered===i;c.fillStyle=hot?'rgba(112,66,148,.98)':active?'rgba(65,48,82,.98)':'rgba(35,24,45,.94)';rounded(c,x,y,518,112,24);c.fill();c.strokeStyle=hot?'rgba(224,181,255,1)':active?'rgba(143,218,255,.9)':'rgba(105,75,127,.8)';c.lineWidth=hot?5:2;rounded(c,x,y,518,112,24);c.stroke();c.fillStyle='#fff';c.font='800 31px system-ui';c.fillText(it[0],x+28,y+44);c.fillStyle='#ae9bb9';c.font='22px system-ui';c.fillText(it[1],x+28,y+80)});
-  c.fillStyle='#806f8d';c.font='22px system-ui';c.fillText(actionLine,58,739);c.fillStyle='#5f5270';c.font='18px system-ui';c.fillText('Slow-motion lattice · no flashing · controller ray selection',58,778);
+  c.fillStyle='#806f8d';c.font='22px system-ui';c.fillText(actionLine,58,739);c.fillStyle='#5f5270';c.font='18px system-ui';c.fillText('Trigger selects · Grip + aim moves this panel · no flashing',58,778);
   gl.bindTexture(gl.TEXTURE_2D,uiTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,menuCanvas);lastMenu=t;
 }
 function renderMenu(mvp,t){
-  if(t-lastMenu>150)drawMenu(t);const y=panelY(),z=PANEL_Z,x=panelX(),w=PANEL_W/2,h=PANEL_H/2;
+  if(t-lastMenu>150)drawMenu(t);const y=panelY(),z=panelZ(),x=panelX(),w=PANEL_W/2,h=PANEL_H/2;
   const verts=new Float32Array([x-w,y-h,z,0,1,x+w,y-h,z,1,1,x-w,y+h,z,0,0,x-w,y+h,z,0,0,x+w,y-h,z,1,1,x+w,y+h,z,1,0]);
   gl.useProgram(uiProgram);gl.bindBuffer(gl.ARRAY_BUFFER,uiBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.DYNAMIC_DRAW);
   const p=gl.getAttribLocation(uiProgram,'p'),uv=gl.getAttribLocation(uiProgram,'uv');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,20,0);gl.enableVertexAttribArray(uv);gl.vertexAttribPointer(uv,2,gl.FLOAT,false,20,12);
@@ -111,9 +122,9 @@ function selectTile(i,src){
 }
 function controllerInteraction(frame){
   hovered=-1;const rays=[];if(!session||!refSpace)return rays;let nearest=Infinity,chosen=null;
-  for(const src of session.inputSources){if(!src.gamepad)continue;const pose=frame.getPose(src.targetRaySpace,refSpace);if(!pose)continue;const m=pose.transform.matrix,o=[m[12],m[13],m[14]],d=[-m[8],-m[9],-m[10]],den=d[2];let end=[o[0]+d[0]*3,o[1]+d[1]*3,o[2]+d[2]*3],idx=-1,dist=3;
-    if(Math.abs(den)>.0001){const tt=(PANEL_Z-o[2])/den;if(tt>0&&tt<6){const hx=o[0]+d[0]*tt,hy=o[1]+d[1]*tt,lx=hx-panelX();if(Math.abs(lx)<=PANEL_W/2&&Math.abs(hy-panelY())<=PANEL_H/2){end=[hx,hy,PANEL_Z+.008];dist=tt;const localY=hy-panelY();idx=(localY>-.03?0:2)+(lx>0?1:0);if(dist<nearest){nearest=dist;chosen=idx}}}}
-    rays.push(o[0],o[1],o[2],end[0],end[1],end[2]);const tr=src.gamepad.buttons?.[0]?.value||0,was=triggerDown.get(src)||false,down=tr>.62;if(down&&!was&&idx>=0)selectTile(idx,src);triggerDown.set(src,down);
+  for(const src of session.inputSources){if(!src.gamepad)continue;const pose=frame.getPose(src.targetRaySpace,refSpace);if(!pose)continue;const m=pose.transform.matrix,o=[m[12],m[13],m[14]],d=[-m[8],-m[9],-m[10]],den=d[2],tr=src.gamepad.buttons?.[0]?.value||0,gr=src.gamepad.buttons?.[1]?.value||0;if(gr>.72&&tr<.45){const dd=2.35,px=o[0]+d[0]*dd,py=o[1]+d[1]*dd,pz=o[2]+d[2]*dd;panelOffset.x=Math.max(-1.8,Math.min(1.8,px-basePanelX()));panelOffset.y=Math.max(-1.2,Math.min(1.2,py-basePanelY()));panelOffset.z=Math.max(-1.5,Math.min(1.2,pz-PANEL_Z));actionLine='Panel moved · release grip, then use trigger to select.';lastMenu=0}let end=[o[0]+d[0]*3,o[1]+d[1]*3,o[2]+d[2]*3],idx=-1,dist=3;
+    if(Math.abs(den)>.0001){const tt=(panelZ()-o[2])/den;if(tt>0&&tt<6){const hx=o[0]+d[0]*tt,hy=o[1]+d[1]*tt,lx=hx-panelX();if(Math.abs(lx)<=PANEL_W/2&&Math.abs(hy-panelY())<=PANEL_H/2){end=[hx,hy,panelZ()+.008];dist=tt;const localY=hy-panelY();idx=(localY>-.03?0:2)+(lx>0?1:0);if(dist<nearest){nearest=dist;chosen=idx}}}}
+    rays.push(o[0],o[1],o[2],end[0],end[1],end[2]);const was=triggerDown.get(src)||false,down=tr>.62;if(down&&!was&&idx>=0)selectTile(idx,src);triggerDown.set(src,down);
   }
   hovered=chosen??-1;return rays;
 }
@@ -128,7 +139,7 @@ async function enterFallback(e){
     layer=new XRWebGLLayer(session,gl);session.updateRenderState({baseLayer:layer,depthNear:.04,depthFar:60});
     try{refSpace=await session.requestReferenceSpace('local-floor');refMode='local-floor'}catch{refSpace=await session.requestReferenceSpace('local');refMode='local'}
     session.addEventListener('end',()=>{session=null;layer=null;refSpace=null;hovered=-1;triggerDown.clear();set('xr-status','VR READY');set('diag-line','Immersive session ended normally.');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}const exit=$('exit');if(exit)exit.disabled=true},{once:true});
-    sceneMode=requestedMode();actionLine=sceneMode==='live'?'Live field loaded from Session Setup.':'Point a controller at a tile and press trigger.';lastMenu=0;set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');const exit=$('exit');if(exit)exit.disabled=false;
+    sceneMode=requestedMode();panelOffset={x:0,y:0,z:0};actionLine=sceneMode==='live'?'Live field loaded from Session Setup.':'Point a controller at a tile and press trigger.';lastMenu=0;set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');const exit=$('exit');if(exit)exit.disabled=false;
     const frame=(t,f)=>{if(!session)return;const pose=f.getViewerPose(refSpace),rays=controllerInteraction(f);gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(pose)for(const view of pose.views){const vp=layer.getViewport(view);gl.viewport(vp.x,vp.y,vp.width,vp.height);gl.scissor(vp.x,vp.y,vp.width,vp.height);gl.enable(gl.SCISSOR_TEST);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(f,view,t,rays);const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix);renderMenu(mvp,t);drawControllerOverlay(mvp,rays);gl.disable(gl.SCISSOR_TEST)}session.requestAnimationFrame(frame)};session.requestAnimationFrame(frame);
   }catch(err){set('diag-line','Direct VR start failed: '+String(err&&err.message||err).slice(0,140));set('xr-status','VR START FAILED');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}session=null}
 }
