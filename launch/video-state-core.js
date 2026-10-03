@@ -174,7 +174,10 @@ export async function publishClipToCloud(id){
   return row;
 }
 export async function publishAllLocal({onProgress=()=>{}}={}){
-  const rows=await listClips(),done=[],failed=[];for(const row of rows){try{onProgress(row.id);done.push(await publishClipToCloud(row.id));}catch(e){failed.push({id:row.id,error:e.message});}}return{done,failed};
+  const rows=await listClips(),manifest=await cloudManifest(),remote=new Map((manifest.states||[]).map(x=>[x.id,x])),capacity=Number(manifest.capacityBytes)||25*1024*1024,current=Number(manifest.usedBytes)||0;
+  const replaced=rows.reduce((n,x)=>n+(Number(remote.get(x.id)?.size)||0),0),incoming=rows.reduce((n,x)=>n+(Number(x.size)||0),0),projected=current-replaced+incoming;
+  if(projected>capacity)throw Error('This local library would use '+(projected/1048576).toFixed(1)+' MB of a '+(capacity/1048576).toFixed(0)+' MB shared cache. Import the V0.68 sync-optimized media pack first.');
+  const done=[],failed=[];for(const row of rows){try{onProgress(row.id);done.push(await publishClipToCloud(row.id));}catch(e){failed.push({id:row.id,error:e.message});}}return{done,failed,projectedBytes:projected,capacityBytes:capacity};
 }
 export async function syncCloudToLocal({onProgress=()=>{}}={}){
   const m=await cloudManifest(),local=await listClips(),byId=new Map(local.map(x=>[x.id,x])),done=[],skipped=[],failed=[];
