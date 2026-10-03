@@ -41,7 +41,7 @@ export function installGeometry(live) {
     if(live.running&&elapsed>0&&elapsed<.2&&step>0&&step<.2)observedPeriod=elapsed/step;
     const period=observedPeriod||1.1+(1-clamp(live.telemetry.pace))*2.7;
     previousTime=timestamp;previousPhase=live.phase;
-    geometry.update({phase:live.phase,target:clamp(live.telemetry.depth),period,running:live.running,started,pitch,yaw,custom:pattern==='custom'?custom:[]});
+    const profile=document.getElementById('traj-tool')?.textContent?.trim().toLowerCase()||'white';geometry.update({phase:live.phase,target:clamp(live.telemetry.depth),period,running:live.running,started,pitch,yaw,profile,custom:pattern==='custom'?custom:[]});
     requestAnimationFrame(render);
   }
   window.addEventListener('pageshow',()=>{if(stopped){stopped=false;previousTime=null;requestAnimationFrame(render);}});
