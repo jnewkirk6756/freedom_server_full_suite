@@ -1,5 +1,5 @@
 /** Nocturne V0.67 video-state library. Local IndexedDB + shared staging sync cache. */
-export const VIDEO_STATE_VERSION='0.67.1';
+export const VIDEO_STATE_VERSION='0.67.2';
 export const VIDEO_DB_NAME='nocturne-video-states-v1';
 export const VIDEO_DB_STORE='clips';
 export const VIDEO_ANCHOR_SECONDS=.7;
@@ -26,9 +26,16 @@ export const VIDEO_STATES=[
   ['A19','RECOVERY SETTLE',7,'recovery','Post-peak recovery.'],
   ['A20','RESET NEUTRAL',6,'recovery','Return to baseline neutral.']
 ].map(([id,name,duration,category,description])=>({id,name,duration,category,description}));
-VIDEO_STATES.push({id:'A18B',name:'PEAK HIGH INTENSITY ALT',duration:8,category:'peak-alt',description:'Alternate peak burst; preferred transition A17 → A18B → A19.',baseId:'A18',transitionProfile:'burst'});
+VIDEO_STATES.push(
+  {id:'A16B',name:'BUILD 2 INTENSE ALT',duration:8,category:'build-alt',description:'Alternate middle-intensity build; smoother escalation.',baseId:'A16',transitionProfile:'build'},
+  {id:'A17B',name:'BUILD 3 HIGH ALT',duration:8,category:'build-alt',description:'Alternate high-build state; preferred transition A16 → A17B → A18/A18B/A18C.',baseId:'A17',transitionProfile:'build'},
+  {id:'A18B',name:'PEAK HIGH INTENSITY ALT',duration:8,category:'peak-alt',description:'Alternate peak burst; preferred transition A17 → A18B → A19.',baseId:'A18',transitionProfile:'burst'},
+  {id:'A18C',name:'PEAK EXTREME ALT',duration:8,category:'peak-alt',description:'Highest-amplitude alternate peak; route into A19 recovery.',baseId:'A18',transitionProfile:'burst-extreme'}
+);
 
 export const VIDEO_STATE_IDS=VIDEO_STATES.map(s=>s.id);
+export const PRIMARY_VIDEO_STATE_IDS=Array.from({length:21},(_,i)=>'A'+String(i).padStart(2,'0'));
+export const ALTERNATE_VIDEO_STATE_IDS=VIDEO_STATE_IDS.filter(id=>!PRIMARY_VIDEO_STATE_IDS.includes(id));
 export const stateById=id=>VIDEO_STATES.find(s=>s.id===String(id||'').toUpperCase())||null;
 export function extractStateId(name=''){
   const m=String(name).toUpperCase().match(/(?:^|[^A-Z0-9])(A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?)(?:[^A-Z0-9]|$)/);
@@ -44,7 +51,7 @@ export function metadataWarnings(meta,state){
 export function orderedAssignments(files=[],existingIds=[]){
   const assigned=[],used=new Set(existingIds),unmatched=[];
   for(const file of files){const id=extractStateId(file?.name||'');if(id&&!used.has(id)){assigned.push({id,file,source:'filename'});used.add(id);}else unmatched.push(file);}
-  const open=VIDEO_STATE_IDS.filter(id=>!used.has(id));
+  const open=PRIMARY_VIDEO_STATE_IDS.filter(id=>!used.has(id));
   unmatched.forEach((file,i)=>{if(open[i]){assigned.push({id:open[i],file,source:'order'});used.add(open[i]);}});
   return{assigned,overflow:unmatched.slice(open.length)};
 }
