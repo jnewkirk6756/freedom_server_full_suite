@@ -1,4 +1,4 @@
-import{getClip,stateById,VIDEO_ANCHOR_SECONDS}from'./video-state-core.js';
+import{getClipSynced,stateById,VIDEO_ANCHOR_SECONDS}from'./video-state-core.js';
 const wait=(video,event='loadeddata',ms=12000)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>{cleanup();reject(Error('Video load timed out.'));},ms),ok=()=>{cleanup();resolve();},bad=()=>{cleanup();reject(Error('Video state could not load.'));},cleanup=()=>{clearTimeout(timer);video.removeEventListener(event,ok);video.removeEventListener('error',bad);};video.addEventListener(event,ok,{once:true});video.addEventListener('error',bad,{once:true});});
 export function createVideoStatePlayer({host,primary=null,statusEl=null,fallback=null,onState=()=>{}}={}){
   if(!host)return{init:async()=>false,request:async()=>false,current:()=>null,destroy:()=>{}};
@@ -10,7 +10,7 @@ export function createVideoStatePlayer({host,primary=null,statusEl=null,fallback
   function revoke(i){if(urls[i]){URL.revokeObjectURL(urls[i]);urls[i]=null;}}
   function showFallback(show,text=''){if(fallback)fallback.hidden=!show;if(show&&text){const cue=fallback.querySelector?.('#orb-cue,[data-video-cue],span');if(cue)cue.textContent=text;}}
   async function loadInto(i,id,seq){
-    const row=await getClip(id);if(!row?.blob)return null;
+    const row=await getClipSynced(id);if(!row?.blob)return null;
     if(seq!==requestSeq||destroyed)return null;
     const v=videos[i];revoke(i);const url=URL.createObjectURL(row.blob);urls[i]=url;v.src=url;v.load();await wait(v,'loadeddata');if(seq!==requestSeq||destroyed)return null;
     try{v.currentTime=0;}catch{}return row;
