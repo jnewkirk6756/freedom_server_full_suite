@@ -1,23 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {VIDEO_STATES,VIDEO_STATE_IDS,stateById,extractStateId,metadataWarnings,orderedAssignments} from '../launch/video-state-core.js';
+import {VIDEO_STATES,VIDEO_STATE_IDS,PRIMARY_VIDEO_STATE_IDS,ALTERNATE_VIDEO_STATE_IDS,stateById,extractStateId,metadataWarnings,orderedAssignments} from '../launch/video-state-core.js';
 
-test('catalog contains contiguous A00-A20 states',()=>{
-  assert.equal(VIDEO_STATES.length,22);
-  assert.deepEqual(VIDEO_STATE_IDS.slice(0,21),Array.from({length:21},(_,i)=>'A'+String(i).padStart(2,'0'))); assert.equal(VIDEO_STATE_IDS[21],'A18B');
+test('catalog contains A00-A20 plus seven alternates',()=>{
+  assert.equal(VIDEO_STATES.length,28);
+  assert.deepEqual(PRIMARY_VIDEO_STATE_IDS,Array.from({length:21},(_,i)=>'A'+String(i).padStart(2,'0')));
+  assert.deepEqual(ALTERNATE_VIDEO_STATE_IDS,['A16B','A17B','A18B','A18C','A18D','A18E','A19B']);
 });
 test('state lookup is case insensitive',()=>assert.equal(stateById('a05')?.name,'THINK ANALYTICAL'));
-test('filename extracts state IDs without false A99 matches',()=>{
+test('filename extracts primary and alternate IDs without false A99 matches',()=>{
   assert.equal(extractStateId('anna_A03_listen.mp4'),'A03');
   assert.equal(extractStateId('redo-a20-final.mov'),'A20');
   assert.equal(extractStateId('A18C_peak.mp4'),'A18C');
-  assert.equal(extractStateId('A18B_peak_alt.mp4'),'A18B');
+  assert.equal(extractStateId('A18E_peak_open.mp4'),'A18E');
+  assert.equal(extractStateId('A19B_recovery.mp4'),'A19B');
   assert.equal(extractStateId('anna_A99.mp4'),null);
 });
-test('ordered stack respects filename IDs then fills open slots',()=>{
-  const files=[{name:'clip.mp4'},{name:'A03_listen.mp4'},{name:'clip2.mp4'}];
+test('ordered stack respects filename IDs then fills primary open slots',()=>{
+  const files=[{name:'clip.mp4'},{name:'A18D_peak.mp4'},{name:'clip2.mp4'}];
   const out=orderedAssignments(files,['A00']);
-  assert.equal(out.assigned.find(x=>x.file.name==='A03_listen.mp4').id,'A03');
+  assert.equal(out.assigned.find(x=>x.file.name==='A18D_peak.mp4').id,'A18D');
   assert.equal(out.assigned.find(x=>x.file.name==='clip.mp4').id,'A01');
   assert.equal(out.assigned.find(x=>x.file.name==='clip2.mp4').id,'A02');
 });
