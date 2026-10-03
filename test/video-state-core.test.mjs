@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {VIDEO_STATES,VIDEO_STATE_IDS,PRIMARY_VIDEO_STATE_IDS,ALTERNATE_VIDEO_STATE_IDS,stateById,extractStateId,metadataWarnings,orderedAssignments} from '../launch/video-state-core.js';
 
-test('catalog contains A00-A20 plus seven alternates',()=>{
-  assert.equal(VIDEO_STATES.length,28);
+test('catalog contains A00-A20 plus nine alternates',()=>{
+  assert.equal(VIDEO_STATES.length,30);
   assert.deepEqual(PRIMARY_VIDEO_STATE_IDS,Array.from({length:21},(_,i)=>'A'+String(i).padStart(2,'0')));
-  assert.deepEqual(ALTERNATE_VIDEO_STATE_IDS,['A16B','A17B','A18B','A18C','A18D','A18E','A19B']);
+  assert.deepEqual(ALTERNATE_VIDEO_STATE_IDS,['A16B','A17B','A18B','A18C','A18D','A18E','A18F','A19B','A19C']);
 });
 test('state lookup is case insensitive',()=>assert.equal(stateById('a05')?.name,'THINK ANALYTICAL'));
 test('filename extracts primary and alternate IDs without false A99 matches',()=>{
@@ -14,6 +14,8 @@ test('filename extracts primary and alternate IDs without false A99 matches',()=
   assert.equal(extractStateId('A18C_peak.mp4'),'A18C');
   assert.equal(extractStateId('A18E_peak_open.mp4'),'A18E');
   assert.equal(extractStateId('A19B_recovery.mp4'),'A19B');
+  assert.equal(extractStateId('A18F_peak_max.mp4'),'A18F');
+  assert.equal(extractStateId('A19C_recovery_neutral.mp4'),'A19C');
   assert.equal(extractStateId('anna_A99.mp4'),null);
 });
 test('ordered stack respects filename IDs then fills primary open slots',()=>{
