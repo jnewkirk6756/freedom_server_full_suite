@@ -31,7 +31,7 @@ async function seedBuiltinMedia(){
   for(const [id,duration] of builtinMediaSeeds){
     if(existing.has(id))continue;
     const b64=process.env['NOCTURNE_MEDIA_SEED_'+id];if(!b64)continue;
-    try{const data=Buffer.from(b64,'base64');if(!data.length)continue;const sha=crypto.createHash('sha256').update(data).digest('hex');await mediaPut(id,data,{mime:'video/mp4',fileName:id+'_SERVER_PREVIEW_V068.mp4',duration,width:180,height:320,sha256:sha});seeded.push(id);}catch(e){console.log('NOCTURNE_MEDIA_SEED_ERROR='+id+':'+String(e.message).slice(0,60));}
+    try{const data=Buffer.from(b64,'base64');if(!data.length)continue;const sha=crypto.createHash('sha256').update(data).digest('hex');await mediaPut(id,data,{mime:'video/mp4',fileName:id+'_SERVER_PREVIEW_V068.mp4',duration,width:144,height:256,sha256:sha});seeded.push(id);}catch(e){console.log('NOCTURNE_MEDIA_SEED_ERROR='+id+':'+String(e.message).slice(0,60));}
   }
   return seeded;
 }
