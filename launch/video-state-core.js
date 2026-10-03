@@ -1,5 +1,5 @@
 /** Nocturne V0.67 video-state library. Local IndexedDB + shared staging sync cache. */
-export const VIDEO_STATE_VERSION='0.67.2';
+export const VIDEO_STATE_VERSION='0.67.3';
 export const VIDEO_DB_NAME='nocturne-video-states-v1';
 export const VIDEO_DB_STORE='clips';
 export const VIDEO_ANCHOR_SECONDS=.7;
@@ -30,7 +30,10 @@ VIDEO_STATES.push(
   {id:'A16B',name:'BUILD 2 INTENSE ALT',duration:8,category:'build-alt',description:'Alternate middle-intensity build; smoother escalation.',baseId:'A16',transitionProfile:'build'},
   {id:'A17B',name:'BUILD 3 HIGH ALT',duration:8,category:'build-alt',description:'Alternate high-build state; preferred transition A16 → A17B → A18/A18B/A18C.',baseId:'A17',transitionProfile:'build'},
   {id:'A18B',name:'PEAK HIGH INTENSITY ALT',duration:8,category:'peak-alt',description:'Alternate peak burst; preferred transition A17 → A18B → A19.',baseId:'A18',transitionProfile:'burst'},
-  {id:'A18C',name:'PEAK EXTREME ALT',duration:8,category:'peak-alt',description:'Highest-amplitude alternate peak; route into A19 recovery.',baseId:'A18',transitionProfile:'burst-extreme'}
+  {id:'A18C',name:'PEAK EXTREME ALT',duration:8,category:'peak-alt',description:'Highest-amplitude alternate peak; route into A19 recovery.',baseId:'A18',transitionProfile:'burst-extreme'},
+  {id:'A18D',name:'PEAK CONTROLLED ALT',duration:8,category:'peak-alt',description:'Controlled alternate peak with a cleaner return toward neutral.',baseId:'A18',transitionProfile:'burst-controlled'},
+  {id:'A18E',name:'PEAK EXTREME OPEN ALT',duration:8,category:'peak-alt',description:'High-amplitude open-mouth peak; use sparingly and route into recovery.',baseId:'A18',transitionProfile:'burst-extreme-open'},
+  {id:'A19B',name:'RECOVERY SETTLE ALT',duration:8,category:'recovery-alt',description:'Alternate recovery state with closed-eye release and warmer finish.',baseId:'A19',transitionProfile:'recovery'}
 );
 
 export const VIDEO_STATE_IDS=VIDEO_STATES.map(s=>s.id);
