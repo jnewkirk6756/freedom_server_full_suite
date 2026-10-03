@@ -14,3 +14,5 @@
 .diag-grid b{color:#eee1f7}
 #diag-run{width:100%;min-height:44px}
 #diag-line{margin-top:8px;padding:10px;border:1px solid #33263c;border-radius:10px;font-size:11px;color:#cdbbdd}
+
+.vr-statebar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 14px;padding:10px 12px;border:1px solid #3d2b49;border-radius:12px;background:#09060eaa}.vr-statebar span{font-size:9px;letter-spacing:.1em;color:#9f8caf}.vr-statebar b{color:#eadcf7;font:700 13px ui-monospace,SFMono-Regular,Menlo,monospace}.vr-statebar button{min-height:38px;border:1px solid #50395e;border-radius:10px;background:#181020;color:#cdbce0;padding:8px 12px;font:800 10px system-ui}.vr-statebar button[aria-pressed="true"]{background:#bd87f5;color:#120819;border-color:#bd87f5;box-shadow:0 0 24px #9a58d744}
