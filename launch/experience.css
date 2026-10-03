@@ -215,3 +215,21 @@ body.director-thinking #last-line:before{content:"";display:inline-block;width:9
   #conversation{padding-bottom:calc(190px + env(safe-area-inset-bottom))!important}
   #device-trajectory,#live-test-controls{scroll-margin-bottom:220px}
 }
+
+/* Nocturne V0.65 — telemetry-first Live layout */
+#wave{height:334px!important;min-height:334px!important;padding:86px 14px 112px!important}
+#waveform{top:86px!important;bottom:112px!important}
+#quick-commands{position:absolute;left:14px;right:14px;bottom:56px;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0!important;z-index:10}
+#quick-commands button{min-width:0;min-height:36px;padding:7px 4px;font-size:7px;color:#d7c6e5;background:#110a19;border:1px solid #3e2a4b;border-radius:10px;touch-action:manipulation}
+#quick-commands button:active{transform:translateY(1px);filter:brightness(1.25)}
+#pattern-bar{bottom:10px!important}
+#auto-mode[aria-pressed="true"]{border-color:#9de7b9!important;background:#123024!important;color:#c6f7d9!important;box-shadow:0 0 18px #70e3aa26}
+#control-rail{grid-template-columns:1.2fr repeat(4,minmax(0,1fr))!important}
+@media(max-width:699px){
+  #wave{height:334px!important;min-height:334px!important;flex-basis:334px!important;padding:86px 10px 112px!important}
+  #quick-commands{left:10px;right:10px;bottom:56px}
+  #quick-commands button{font-size:6.5px}
+  #control-rail{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #auto-mode{grid-column:1/-1}
+  #next-chart{grid-column:auto!important}
+}
