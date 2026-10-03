@@ -1,6 +1,6 @@
 /** Staging controls test is a preview permission, never a change to Anna's state. */
 const clamp=v=>Math.max(0,Math.min(1,Number.isFinite(Number(v))?Number(v):0));
-export const BRIDGE_VERSION='NOCTURNE-LIVE-BRIDGE-0.64.1';
+export const BRIDGE_VERSION='NOCTURNE-LIVE-BRIDGE-0.65.1';
 export const LIVE_TEST_KEY='nocturne.live.controls-test.v1';
 const TEST_TTL=2*60*60*1000;
 const TEST_HOSTS=new Set(['aurelia-staging.onrender.com','localhost','127.0.0.1','[::1]']);
