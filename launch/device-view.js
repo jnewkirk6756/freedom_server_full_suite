@@ -69,8 +69,8 @@ export function mountGeometry(root,{waveCanvas=null,library=null,onDeviceChange=
     last=s;root.dataset.running=String(!!args.running);root.dataset.position=s.position.toFixed(4);root.dataset.phase=s.phase.toFixed(6);
     info.textContent=device?`${device.name} · ${device.material} · ${device.texture}`:'No measured device selected';
     values.SPEED.textContent=device?round(fromMm(s.speed,lib?.unit),2)+' '+(lib?.unit==='in'?'in':'mm')+'/s':Math.round(s.speed)+'%/s';
-    values['ACTIVE DEPTH'].textContent=`${Math.round(s.active*100)}% · ${fmt(s.position)}`;
-    values['TARGET DEPTH'].textContent=`${Math.round(s.target*100)}% · ${fmt(s.targetDistance)}`;
+    values['ACTIVE DEPTH'].textContent=device?`${Math.round(s.active*100)}% · ${fmt(s.position)}`:`${Math.round(s.active*100)}%`;
+    values['TARGET DEPTH'].textContent=device?`${Math.round(s.target*100)}% · ${fmt(s.targetDistance)}`:`${Math.round(s.target*100)}%`;
     values['TRAVEL ANGLE'].textContent=`Up/down ${s.pitch.toFixed(0)}° · Side ${s.yaw.toFixed(0)}°`;
     values.DIRECTION.textContent=s.direction;
     note.textContent=device?'Calculated from saved dimensions, not measured movement. Color follows the active profile.':'Unmeasured preview: percentages only. Add length and usable travel in Devices for inches.';
