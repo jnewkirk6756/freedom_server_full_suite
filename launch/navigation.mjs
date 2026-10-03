@@ -1,5 +1,5 @@
 /** Shared, server-rendered navigation, independent of individual screen runtimes. */
-export const NAVIGATION_VERSION = '0.70.0';
+export const NAVIGATION_VERSION = '0.70.1';
 const homePaths = new Set(['/', '/experience']);
 const tools = [
   ['/video-states/', 'Video states'], ['/world/', 'Spatial world'], ['/player/', 'Media player'],
@@ -33,6 +33,6 @@ ${tab('home', '/', 'Home')}${tab('live', '/live/', 'Live')}${tab('devices', '/de
 <button id="nocturne-edit-setup" type="button">Session setup<span aria-hidden="true">&#9881;</span></button>
 <details class="nocturne-tools"><summary>Creative &amp; developer tools</summary>${menu}</details>
 <p>State is saved on this device. Switching screens does not unlock Live.</p><small>Navigation ${NAVIGATION_VERSION}</small></div></details></nav>`;
-  html = html.replace(/<\/head>/i, `<link rel="stylesheet" href="/navigation.css?v=0700"><script type="module" src="/navigation.js?v=0700"></script></head>`);
+  html = html.replace(/<\/head>/i, `<link rel="stylesheet" href="/navigation.css?v=0701"><script type="module" src="/navigation.js?v=0701"></script></head>`);
   return html.replace(/<\/body>/i, nav + '</body>');
 }
