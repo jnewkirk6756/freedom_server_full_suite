@@ -2,10 +2,11 @@
 const $=id=>document.getElementById(id),set=(id,v)=>{const e=$(id);if(e)e.textContent=v},clamp=v=>Math.max(0,Math.min(1,Number(v)||0));
 let session=null,gl=null,layer=null,refSpace=null,refMode='local-floor';
 let worldProgram=null,worldBuf=null,uiProgram=null,uiBuf=null,uiTex=null,menuCanvas=null,menuCtx=null,lastMenu=0;
-let sceneMode='cognitive',actionLine='Point a controller at a tile and press trigger.',hovered=-1;
+function requestedMode(){const q=new URLSearchParams(location.search).get('mode');if(['live','anna','tool','cognitive'].includes(q))return q;try{const saved=JSON.parse(localStorage.getItem('nocturne.vr.entry.v1')||'null');if(saved&&Date.now()-Number(saved.at||0)<30*60*1000&&['live','anna','tool','cognitive'].includes(saved.mode))return saved.mode}catch{}return'cognitive'}
+let sceneMode=requestedMode(),actionLine='Point a controller at a tile and press trigger.',hovered=-1;
 const triggerDown=new Map();
-let telemetry={pace:.45,depth:.5,force:.4,intensity:.35};
-function loadTelemetry(){try{const s=JSON.parse(localStorage.getItem('nocturne.telemetry.v1')||'{}');telemetry={pace:clamp(s.pace??.45),depth:clamp(s.depth??.5),force:clamp(s.force??.4),intensity:clamp(s.intensity??.35)}}catch{}return telemetry}
+let telemetry={pace:.45,depth:.5,force:.4,intensity:.35,angle:0,cadence:45};
+function loadTelemetry(){try{const s=JSON.parse(localStorage.getItem('nocturne.telemetry.v1')||'{}');telemetry={pace:clamp(s.pace??.45),depth:clamp(s.depth??.5),force:clamp(s.force??.4),intensity:clamp(s.intensity??.35),angle:Math.max(-45,Math.min(45,Number(s.angle)||0)),cadence:Math.max(0,Math.min(100,Number(s.cadence??45)))}}catch{}return telemetry}
 async function run(){
   set('diag-secure',window.isSecureContext?'YES':'NO');set('diag-xr',navigator.xr?'YES':'NO');
   let glok=false;try{const c=document.createElement('canvas');glok=!!c.getContext('webgl')}catch{}set('diag-gl',glok?'YES':'NO');
@@ -30,7 +31,8 @@ function mul4(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;
 function rounded(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 function floorY(){return refMode==='local-floor'?0:-1.55}
 function panelY(){return refMode==='local-floor'?1.48:.02}
-const PANEL_Z=-2.35,PANEL_W=1.92,PANEL_H=1.28;
+const PANEL_Z=-2.45,PANEL_W=1.62,PANEL_H=1.12;
+function panelX(){return sceneMode==='cognitive'?0:-1.42}
 function modeColor(){return sceneMode==='live'?[.28,.78,1,1]:sceneMode==='anna'?[.86,.48,1,1]:sceneMode==='tool'?[.36,1,.84,1]:[.67,.42,.94,1]}
 function drawWorld(mvp,verts,color,mode,size=4){
   if(!verts.length)return;gl.useProgram(worldProgram);gl.bindBuffer(gl.ARRAY_BUFFER,worldBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.DYNAMIC_DRAW);
@@ -51,15 +53,16 @@ function constellation(t){
   return{nodes,edges,stars};
 }
 function telemetryPath(t){
-  const y0=floorY(),v=[],points=[];const tel=loadTelemetry(),depth=.5+tel.depth*1.4,amp=.08+tel.intensity*.18;
-  for(let i=0;i<40;i++){const q=i/39,z=-.8-q*depth*2.2,x=Math.sin(q*Math.PI*4+t*.00055)*amp,y=y0+1.05+Math.cos(q*Math.PI*3+t*.00035)*amp*.4;if(i){v.push(points[points.length-3],points[points.length-2],points[points.length-1],x,y,z)}points.push(x,y,z)}
-  return{lines:v,points};
+  const y0=floorY(),lines=[],points=[];const tel=loadTelemetry(),amp=.12+tel.depth*.34,cycles=1.4+tel.pace*2.6,scroll=t*.0012*(.45+tel.pace*1.8),z=-1.58;
+  for(let i=0;i<84;i++){const q=i/83,x=-1.3+q*2.6,y=y0+1.22+Math.sin(q*Math.PI*2*cycles+scroll)*amp*(.74+.26*Math.sin(q*Math.PI));if(i)lines.push(points[points.length-3],points[points.length-2],points[points.length-1],x,y,z);points.push(x,y,z)}
+  return{lines,points};
 }
-function toolGeometry(){
-  const y=floorY()+1.0,z=-1.55,v=[],x0=-.42,x1=.42,y0=y-.16,y1=y+.16;
-  v.push(x0,y0,z,x1,y0,z,x1,y0,z,x1,y1,z,x1,y1,z,x0,y1,z,x0,y1,z,x0,y0,z);
-  v.push(0,y,z+.18,0,y,z-1.15,-.18,y-.18,z-.95,.18,y-.18,z-.95,.18,y-.18,z-.95,.18,y+.18,z-.95,.18,y+.18,z-.95,-.18,y+.18,z-.95,-.18,y+.18,z-.95,-.18,y-.18,z-.95);
-  return v;
+function liveHudGeometry(){const tel=loadTelemetry(),y=floorY()+1.82,z=-1.62,x0=.62,x1=1.82,xf=x0+(x1-x0)*tel.force;return{track:[x0,y,z,x1,y,z],fill:[x0,y,z+.002,xf,y,z+.002],marker:[xf,y,z+.004],frame:[x0,y-.08,z,x1,y-.08,z,x1,y-.08,z,x1,y+.08,z,x1,y+.08,z,x0,y+.08,z,x0,y+.08,z,x0,y-.08,z]}}
+function toolGeometry(t){
+  const tel=loadTelemetry(),baseY=floorY()+1.15,angle=tel.angle*Math.PI/180,dir=[0,Math.sin(angle),-Math.cos(angle)],u=[1,0,0],v=[0,-Math.cos(angle),-Math.sin(angle)],period=Math.max(700,4200-tel.cadence*30),q=(1-Math.cos((t%period)/period*Math.PI*2))/2,travel=.3+tel.depth*1.05,anchor=[0,baseY,-.62],center=[anchor[0]+dir[0]*travel*q,anchor[1]+dir[1]*travel*q,anchor[2]+dir[2]*travel*q],length=.72,radius=.075+tel.force*.045,shell=[];
+  const ringAt=(offset,store)=>{let first=null,prev=null;for(let i=0;i<=20;i++){const a=i/20*Math.PI*2,p=[center[0]+dir[0]*offset+u[0]*radius*Math.cos(a)+v[0]*radius*Math.sin(a),center[1]+dir[1]*offset+u[1]*radius*Math.cos(a)+v[1]*radius*Math.sin(a),center[2]+dir[2]*offset+u[2]*radius*Math.cos(a)+v[2]*radius*Math.sin(a)];if(prev)store.push(...prev,...p);else first=p;prev=p}return first};
+  const rings=[];for(const off of[-length/2,0,length/2])rings.push(ringAt(off,shell));for(let i=0;i<8;i++){const a=i/8*Math.PI*2,p0=[center[0]+dir[0]*(-length/2)+u[0]*radius*Math.cos(a)+v[0]*radius*Math.sin(a),center[1]+dir[1]*(-length/2)+u[1]*radius*Math.cos(a)+v[1]*radius*Math.sin(a),center[2]+dir[2]*(-length/2)+u[2]*radius*Math.cos(a)+v[2]*radius*Math.sin(a)],p1=[center[0]+dir[0]*(length/2)+u[0]*radius*Math.cos(a)+v[0]*radius*Math.sin(a),center[1]+dir[1]*(length/2)+u[1]*radius*Math.cos(a)+v[1]*radius*Math.sin(a),center[2]+dir[2]*(length/2)+u[2]*radius*Math.cos(a)+v[2]*radius*Math.sin(a)];shell.push(...p0,...p1)}
+  const target=[anchor[0]+dir[0]*travel,anchor[1]+dir[1]*travel,anchor[2]+dir[2]*travel],axis=[...anchor,...target],targetRing=[];const old=center.slice();center[0]=target[0];center[1]=target[1];center[2]=target[2];ringAt(0,targetRing);center[0]=old[0];center[1]=old[1];center[2]=old[2];return{shell,axis,targetRing,marker:center};
 }
 function drawScene(frame,view,t,rays){
   const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix),lat=staticLattice(),c=constellation(t),mc=modeColor();
@@ -67,10 +70,9 @@ function drawScene(frame,view,t,rays){
   drawWorld(mvp,lat.grid,[.12,.09,.18,.34],gl.LINES,1);drawWorld(mvp,lat.hoops,[.28,.17,.38,.28],gl.LINES,1);drawWorld(mvp,lat.vertical,[.18,.12,.25,.22],gl.LINES,1);
   drawWorld(mvp,c.edges,[mc[0],mc[1],mc[2],.14],gl.LINES,1);drawWorld(mvp,c.stars,[.45,.62,.92,.28],gl.POINTS,2);drawWorld(mvp,c.nodes,[mc[0],mc[1],mc[2],.88],gl.POINTS,7);
   const core=[];for(let i=0;i<3;i++)core.push(...ring(.36+i*.18,floorY()+1.38,-1.25,48));drawWorld(mvp,core,[mc[0],mc[1],mc[2],.5],gl.LINES,2);
-  if(sceneMode==='live'){const p=telemetryPath(t);drawWorld(mvp,p.lines,[.35,.82,1,.75],gl.LINES,2);drawWorld(mvp,p.points,[.92,.82,1,.95],gl.POINTS,5)}
+  if(sceneMode==='live'){const p=telemetryPath(t),h=liveHudGeometry(),f=loadTelemetry().force;drawWorld(mvp,p.lines,[.35,.82,1,.82],gl.LINES,3);drawWorld(mvp,p.points,[.92,.82,1,.95],gl.POINTS,4);drawWorld(mvp,h.frame,[.3,.24,.36,.72],gl.LINES,1);drawWorld(mvp,h.track,[.18,.28,.42,.9],gl.LINES,6);drawWorld(mvp,h.fill,[.5+.5*f,.2+.45*(1-f),.95-.55*f,1],gl.LINES,8);drawWorld(mvp,h.marker,[1,.95,.98,1],gl.POINTS,10)}
   if(sceneMode==='anna'){const halo=[];for(let i=0;i<4;i++)halo.push(...ring(.3+i*.16,floorY()+1.42,-1.35,48));drawWorld(mvp,halo,[.88,.48,1,.64],gl.LINES,2)}
-  if(sceneMode==='tool')drawWorld(mvp,toolGeometry(),[.38,1,.84,.88],gl.LINES,2);
-  if(rays.length)drawWorld(mvp,rays,[.9,.76,1,.8],gl.LINES,2);
+  if(sceneMode==='tool'){const g=toolGeometry(t);drawWorld(mvp,g.axis,[.26,.7,.62,.55],gl.LINES,2);drawWorld(mvp,g.targetRing,[.75,.98,.9,.65],gl.LINES,2);drawWorld(mvp,g.shell,[.38,1,.84,.92],gl.LINES,2);drawWorld(mvp,g.marker,[.94,1,.98,1],gl.POINTS,8)}
   gl.disable(gl.BLEND);
 }
 function controllerSummary(){
@@ -82,7 +84,7 @@ function drawMenu(t){
   if(!menuCtx)return;const c=menuCtx,w=menuCanvas.width,h=menuCanvas.height;c.clearRect(0,0,w,h);
   const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'rgba(20,10,33,.97)');g.addColorStop(.55,'rgba(8,6,16,.96)');g.addColorStop(1,'rgba(3,3,8,.98)');c.fillStyle=g;rounded(c,18,18,w-36,h-36,42);c.fill();
   c.strokeStyle='rgba(183,125,240,.78)';c.lineWidth=4;rounded(c,18,18,w-36,h-36,42);c.stroke();
-  c.fillStyle='#a98bc2';c.font='700 25px system-ui';c.fillText('NOCTURNE  /  COGNITIVE FIELD  ·  0.63.0',58,69);
+  c.fillStyle='#a98bc2';c.font='700 25px system-ui';c.fillText('NOCTURNE  /  COGNITIVE FIELD  ·  0.64.0',58,69);
   c.fillStyle='#ffffff';c.font='800 54px system-ui';c.fillText(sceneMode==='cognitive'?'WORLD ONLINE':sceneMode.toUpperCase()+' FIELD',58,132);
   c.fillStyle='#bbaac8';c.font='25px system-ui';c.fillText(telemetrySummary(),58,178);
   c.fillStyle='#171020';rounded(c,58,210,1084,70,20);c.fill();c.fillStyle='#e9ddf5';c.font='700 24px system-ui';c.fillText(controllerSummary(),82,253);
@@ -92,8 +94,8 @@ function drawMenu(t){
   gl.bindTexture(gl.TEXTURE_2D,uiTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,menuCanvas);lastMenu=t;
 }
 function renderMenu(mvp,t){
-  if(t-lastMenu>150)drawMenu(t);const y=panelY(),z=PANEL_Z,w=PANEL_W/2,h=PANEL_H/2;
-  const verts=new Float32Array([-w,y-h,z,0,1,w,y-h,z,1,1,-w,y+h,z,0,0,-w,y+h,z,0,0,w,y-h,z,1,1,w,y+h,z,1,0]);
+  if(t-lastMenu>150)drawMenu(t);const y=panelY(),z=PANEL_Z,x=panelX(),w=PANEL_W/2,h=PANEL_H/2;
+  const verts=new Float32Array([x-w,y-h,z,0,1,x+w,y-h,z,1,1,x-w,y+h,z,0,0,x-w,y+h,z,0,0,x+w,y-h,z,1,1,x+w,y+h,z,1,0]);
   gl.useProgram(uiProgram);gl.bindBuffer(gl.ARRAY_BUFFER,uiBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.DYNAMIC_DRAW);
   const p=gl.getAttribLocation(uiProgram,'p'),uv=gl.getAttribLocation(uiProgram,'uv');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,20,0);gl.enableVertexAttribArray(uv);gl.vertexAttribPointer(uv,2,gl.FLOAT,false,20,12);
   gl.uniformMatrix4fv(gl.getUniformLocation(uiProgram,'m'),false,mvp);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,uiTex);gl.uniform1i(gl.getUniformLocation(uiProgram,'t'),0);
@@ -110,11 +112,12 @@ function selectTile(i,src){
 function controllerInteraction(frame){
   hovered=-1;const rays=[];if(!session||!refSpace)return rays;let nearest=Infinity,chosen=null;
   for(const src of session.inputSources){if(!src.gamepad)continue;const pose=frame.getPose(src.targetRaySpace,refSpace);if(!pose)continue;const m=pose.transform.matrix,o=[m[12],m[13],m[14]],d=[-m[8],-m[9],-m[10]],den=d[2];let end=[o[0]+d[0]*3,o[1]+d[1]*3,o[2]+d[2]*3],idx=-1,dist=3;
-    if(Math.abs(den)>.0001){const tt=(PANEL_Z-o[2])/den;if(tt>0&&tt<6){const hx=o[0]+d[0]*tt,hy=o[1]+d[1]*tt;if(Math.abs(hx)<=PANEL_W/2&&Math.abs(hy-panelY())<=PANEL_H/2){end=[hx,hy,PANEL_Z+.005];dist=tt;const localY=hy-panelY();idx=(localY>-.03?0:2)+(hx>0?1:0);if(dist<nearest){nearest=dist;chosen=idx}}}}
+    if(Math.abs(den)>.0001){const tt=(PANEL_Z-o[2])/den;if(tt>0&&tt<6){const hx=o[0]+d[0]*tt,hy=o[1]+d[1]*tt,lx=hx-panelX();if(Math.abs(lx)<=PANEL_W/2&&Math.abs(hy-panelY())<=PANEL_H/2){end=[hx,hy,PANEL_Z+.008];dist=tt;const localY=hy-panelY();idx=(localY>-.03?0:2)+(lx>0?1:0);if(dist<nearest){nearest=dist;chosen=idx}}}}
     rays.push(o[0],o[1],o[2],end[0],end[1],end[2]);const tr=src.gamepad.buttons?.[0]?.value||0,was=triggerDown.get(src)||false,down=tr>.62;if(down&&!was&&idx>=0)selectTile(idx,src);triggerDown.set(src,down);
   }
   hovered=chosen??-1;return rays;
 }
+function drawControllerOverlay(mvp,rays){if(!rays.length)return;const tips=[];for(let i=0;i<rays.length;i+=6)tips.push(rays[i+3],rays[i+4],rays[i+5]);gl.disable(gl.DEPTH_TEST);drawWorld(mvp,rays,[.96,.82,1,1],gl.LINES,3);drawWorld(mvp,tips,[1,.96,1,1],gl.POINTS,11);gl.enable(gl.DEPTH_TEST)}
 async function enterFallback(e){
   if(e){e.preventDefault();e.stopImmediatePropagation()}if(session){set('diag-line','Immersive session is already active.');return}
   const enter=$('enter');if(enter){enter.disabled=true;enter.textContent='OPENING VR…'}
@@ -125,8 +128,8 @@ async function enterFallback(e){
     layer=new XRWebGLLayer(session,gl);session.updateRenderState({baseLayer:layer,depthNear:.04,depthFar:60});
     try{refSpace=await session.requestReferenceSpace('local-floor');refMode='local-floor'}catch{refSpace=await session.requestReferenceSpace('local');refMode='local'}
     session.addEventListener('end',()=>{session=null;layer=null;refSpace=null;hovered=-1;triggerDown.clear();set('xr-status','VR READY');set('diag-line','Immersive session ended normally.');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}const exit=$('exit');if(exit)exit.disabled=true},{once:true});
-    sceneMode='cognitive';actionLine='Point a controller at a tile and press trigger.';lastMenu=0;set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne cognitive field active.');const exit=$('exit');if(exit)exit.disabled=false;
-    const frame=(t,f)=>{if(!session)return;const pose=f.getViewerPose(refSpace),rays=controllerInteraction(f);gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(pose)for(const view of pose.views){const vp=layer.getViewport(view);gl.viewport(vp.x,vp.y,vp.width,vp.height);gl.scissor(vp.x,vp.y,vp.width,vp.height);gl.enable(gl.SCISSOR_TEST);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(f,view,t,rays);renderMenu(mul4(view.projectionMatrix,view.transform.inverse.matrix),t);gl.disable(gl.SCISSOR_TEST)}session.requestAnimationFrame(frame)};session.requestAnimationFrame(frame);
+    sceneMode=requestedMode();actionLine=sceneMode==='live'?'Live field loaded from Session Setup.':'Point a controller at a tile and press trigger.';lastMenu=0;set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');const exit=$('exit');if(exit)exit.disabled=false;
+    const frame=(t,f)=>{if(!session)return;const pose=f.getViewerPose(refSpace),rays=controllerInteraction(f);gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(pose)for(const view of pose.views){const vp=layer.getViewport(view);gl.viewport(vp.x,vp.y,vp.width,vp.height);gl.scissor(vp.x,vp.y,vp.width,vp.height);gl.enable(gl.SCISSOR_TEST);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(f,view,t,rays);const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix);renderMenu(mvp,t);drawControllerOverlay(mvp,rays);gl.disable(gl.SCISSOR_TEST)}session.requestAnimationFrame(frame)};session.requestAnimationFrame(frame);
   }catch(err){set('diag-line','Direct VR start failed: '+String(err&&err.message||err).slice(0,140));set('xr-status','VR START FAILED');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}session=null}
 }
 async function testControllers(e){
