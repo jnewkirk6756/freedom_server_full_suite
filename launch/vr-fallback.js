@@ -6,7 +6,7 @@ function requestedMode(){const q=new URLSearchParams(location.search).get('mode'
 let sceneMode=requestedMode(),actionLine='Point a controller at a tile and press trigger.',hovered=-1;
 const triggerDown=new Map();
 let telemetry={pace:.45,depth:.5,force:.4,intensity:.35,angle:0,cadence:45};let panelOffset={x:0,y:0,z:0};
-function activeDevice(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');return Array.isArray(lib.devices)?lib.devices.find(d=>d.id===lib.activeId)||null:null}catch{return null}}
+function activeDevice(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');if(!Array.isArray(lib.devices))return null;return lib.devices.find(d=>d.id===lib.activeId)||(lib.devices.length===1?lib.devices[0]:null)}catch{return null}}
 function hexRgb(hex){const m=/^#([0-9a-f]{6})$/i.exec(String(hex||''));if(!m)return[.36,1,.84,1];const n=parseInt(m[1],16);return[((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255,1]}
 function loadTelemetry(){try{const s=JSON.parse(localStorage.getItem('nocturne.telemetry.v1')||'{}');telemetry={pace:clamp(s.pace??.45),depth:clamp(s.depth??.5),force:clamp(s.force??.4),intensity:clamp(s.intensity??.35),angle:Math.max(-45,Math.min(45,Number(s.angle)||0)),cadence:Math.max(0,Math.min(100,Number(s.cadence??45)))}}catch{}return telemetry}
 async function run(){
@@ -95,7 +95,7 @@ function drawMenu(t){
   if(!menuCtx)return;const c=menuCtx,w=menuCanvas.width,h=menuCanvas.height;c.clearRect(0,0,w,h);
   const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'rgba(20,10,33,.97)');g.addColorStop(.55,'rgba(8,6,16,.96)');g.addColorStop(1,'rgba(3,3,8,.98)');c.fillStyle=g;rounded(c,18,18,w-36,h-36,42);c.fill();
   c.strokeStyle='rgba(183,125,240,.78)';c.lineWidth=4;rounded(c,18,18,w-36,h-36,42);c.stroke();
-  c.fillStyle='#a98bc2';c.font='700 25px system-ui';c.fillText('NOCTURNE  /  COGNITIVE FIELD  ·  0.64.0',58,69);
+  c.fillStyle='#a98bc2';c.font='700 25px system-ui';c.fillText('NOCTURNE  /  COGNITIVE FIELD  ·  0.64.1',58,69);
   c.fillStyle='#ffffff';c.font='800 54px system-ui';c.fillText(sceneMode==='cognitive'?'WORLD ONLINE':sceneMode.toUpperCase()+' FIELD',58,132);
   c.fillStyle='#bbaac8';c.font='25px system-ui';c.fillText(telemetrySummary(),58,178);
   c.fillStyle='#171020';rounded(c,58,210,1084,70,20);c.fill();c.fillStyle='#e9ddf5';c.font='700 24px system-ui';c.fillText(controllerSummary(),82,253);
