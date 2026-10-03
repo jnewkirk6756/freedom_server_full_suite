@@ -16,9 +16,10 @@ export function createVideoStatePlayer({host,primary=null,statusEl=null,fallback
     const v=videos[i];revoke(i);const url=URL.createObjectURL(row.blob);urls[i]=url;v.src=url;configureVideo(v,id);v.load();await wait(v,'loadeddata');if(seq!==requestSeq||destroyed)return null;
     try{v.currentTime=0;}catch{}return row;
   }
-  function candidatesFor(id,{initial=false,neutralFallback=false}={}){
+  function candidatesFor(id,{initial=false,neutralFallback=false,rotate=false}={}){
     const state=stateById(id);if(!state)return[];
-    let out=state.baseId?[state.id]:familyCandidates(state.id,recent);
+    let out=state.baseId?[state.id,baseStateId(state.id),...familyCandidates(state.id,recent)]:familyCandidates(state.id,recent);
+    if(rotate&&!state.baseId&&out.length>1)out=[...out.slice(1),out[0]];
     if(initial)out=[...out,...initialFallbackCandidates(id)];
     if(neutralFallback)out=[...out,'A00','A02','A01'];
     return [...new Set(out)].filter(x=>stateById(x));
@@ -30,7 +31,7 @@ export function createVideoStatePlayer({host,primary=null,statusEl=null,fallback
   async function activateInitial(id){
     const seq=++requestSeq,found=await findLoad(active,candidatesFor(id,{initial:true}),seq);
     if(!found){label(id,'MISSING');showFallback(true,'Import a video state in Video States.');return false;}
-    const v=videos[active];v.classList.add('active');v.style.opacity='1';showFallback(false);currentId=found.id;currentBase=baseStateId(found.id);recent.push(found.id);host.dataset.videoState=found.id;label(found.id,'LIVE');try{await v.play();}catch{}onState({id:found.id,state:stateById(found.id),family:currentBase,reason:'initial'});window.dispatchEvent(new CustomEvent('nocturne:video-state',{detail:{id:found.id,family:currentBase,reason:'initial'}}));return true;
+    const v=videos[active];v.classList.add('active');v.style.opacity='1';showFallback(false);currentId=found.id;currentBase=baseStateId(found.id);recent.push(found.id);host.dataset.videoState=found.id;host.dataset.videoFamily=currentBase||'';label(found.id,'LIVE');try{await v.play();}catch{}onState({id:found.id,state:stateById(found.id),family:currentBase,reason:'initial'});window.dispatchEvent(new CustomEvent('nocturne:video-state',{detail:{id:found.id,family:currentBase,reason:'initial'}}));return true;
   }
   function readyForAnchor(){
     const v=videos[active];if(!currentId||v.paused||!Number.isFinite(v.duration)||!v.duration)return true;
@@ -42,29 +43,30 @@ export function createVideoStatePlayer({host,primary=null,statusEl=null,fallback
     try{next.currentTime=0;}catch{}next.classList.add('active');next.style.opacity='0';try{await next.play();}catch{}
     requestAnimationFrame(()=>{next.style.opacity='1';old.style.opacity='0';});
     clearTimeout(transitionTimer);transitionTimer=setTimeout(()=>{old.classList.remove('active');try{old.pause();old.currentTime=0;}catch{}revoke(from);},220);
-    active=to;currentId=p.id;currentBase=baseStateId(p.id);recent.push(p.id);recent=recent.slice(-12);host.dataset.videoState=p.id;label(p.id,'LIVE');showFallback(false);onState({id:p.id,state:stateById(p.id),family:currentBase,reason});window.dispatchEvent(new CustomEvent('nocturne:video-state',{detail:{id:p.id,family:currentBase,reason}}));return true;
+    active=to;currentId=p.id;currentBase=baseStateId(p.id);recent.push(p.id);recent=recent.slice(-12);host.dataset.videoState=p.id;host.dataset.videoFamily=currentBase||'';label(p.id,'LIVE');showFallback(false);onState({id:p.id,state:stateById(p.id),family:currentBase,reason});window.dispatchEvent(new CustomEvent('nocturne:video-state',{detail:{id:p.id,family:currentBase,reason}}));return true;
   }
   function monitor(){
     if(destroyed)return;
-    if(pending){const age=performance.now()-pending.at;if(readyForAnchor())swap('anchor');else if(age>5500)swap('timed');}
+    if(pending){const age=performance.now()-pending.at,v=videos[active],gate=Number(pending.notBefore)||0;if(gate&&Number.isFinite(v.currentTime)&&v.currentTime<gate){}else if(readyForAnchor())swap('anchor');else if(age>5500&&!gate)swap('timed');}
     raf=requestAnimationFrame(monitor);
   }
-  async function request(id,{immediate=false,neutralFallback=false,rotate=false}={}){
+  async function request(id,{immediate=false,neutralFallback=false,rotate=false,deferUntilEnd=false}={}){
     const state=stateById(id);if(!state)return false;
     const requestedBase=baseStateId(state.id);
     if(!state.baseId&&!rotate&&requestedBase===currentBase&&!pending)return true;
     if(state.baseId&&state.id===currentId&&!pending)return true;
     const seq=++requestSeq,to=1-active;label(state.id,'LOADING');
-    const found=await findLoad(to,candidatesFor(state.id,{neutralFallback}),seq);
+    const found=await findLoad(to,candidatesFor(state.id,{neutralFallback,rotate}),seq);
     if(!found){label(state.id,'MISSING');showFallback(!currentId,'Import '+state.id+' in Video States.');return false;}
-    pending={id:found.id,at:performance.now(),seq};if(immediate||!currentId||readyForAnchor())await swap(immediate?'immediate':'anchor');return true;
+    const v=videos[active],gate=deferUntilEnd&&Number.isFinite(v.duration)&&v.duration?Math.max(.2,v.duration-VIDEO_ANCHOR_SECONDS-.08):0;pending={id:found.id,at:performance.now(),seq,notBefore:gate};if(immediate||!currentId||(!deferUntilEnd&&readyForAnchor()))await swap(immediate?'immediate':'anchor');return true;
   }
-  videos.forEach((v,i)=>v.addEventListener('ended',async()=>{
+  async function armAutoNext(){const next=transitionAfterState(currentId);if(!next||destroyed||pending)return;await request(next,{neutralFallback:true,deferUntilEnd:true});}
+  videos.forEach((v,i)=>{v.addEventListener('play',()=>{if(i===active&&playbackMode(currentId)==='oneshot')setTimeout(()=>armAutoNext(),80)});v.addEventListener('ended',async()=>{
     if(destroyed||i!==active||!currentId)return;
     const next=transitionAfterState(currentId);
     if(next){const ok=await request(next,{immediate:true,neutralFallback:true});if(ok)return;}
     try{v.currentTime=0;await v.play();}catch{}
-  }));
+  });});
   async function init(defaultId='A01'){const ok=await activateInitial(defaultId);raf=requestAnimationFrame(monitor);return ok;}
   function destroy(){destroyed=true;cancelAnimationFrame(raf);clearTimeout(transitionTimer);videos.forEach((v,i)=>{try{v.pause();v.removeAttribute('src');v.load();}catch{}revoke(i);});}
   return{init,request,current:()=>currentId,family:()=>currentBase,pending:()=>pending?.id||null,history:()=>[...recent],destroy};
