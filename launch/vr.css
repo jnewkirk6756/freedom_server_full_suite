@@ -6,3 +6,11 @@
 #vr-line[data-state="error"]{border-color:#7b414a;color:#ffd7dc}
 #vr-send[data-state="sending"],#vr-send[data-state="thinking"]{opacity:.72}
 @keyframes nocturneSpin{to{transform:rotate(360deg)}}
+
+/* 0.62.2 independent Quest diagnostics */
+#xr-diagnostics{margin-top:16px;padding-top:16px;border-top:1px solid #33263c}
+.diag-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}
+.diag-grid span{display:flex;justify-content:space-between;padding:10px;border:1px solid #33263c;border-radius:10px;background:#07040b;font-size:10px;color:#a899b2}
+.diag-grid b{color:#eee1f7}
+#diag-run{width:100%;min-height:44px}
+#diag-line{margin-top:8px;padding:10px;border:1px solid #33263c;border-radius:10px;font-size:11px;color:#cdbbdd}
