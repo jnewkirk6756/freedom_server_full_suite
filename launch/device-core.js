@@ -1,5 +1,5 @@
 /** Nocturne device geometry. Physical descriptions, never physiological predictions. */
-export const DEVICE_VERSION = '0.60.1';
+export const DEVICE_VERSION = '0.64.0';
 export const DEVICE_KEY = 'nocturne.devices.v1';
 export const MATERIALS = ['Silicone','TPE','TPR','TPU','Natural rubber','Synthetic rubber','ABS plastic','Polycarbonate','Acrylic','Glass','Stainless steel','Aluminum','Ceramic','Hybrid','Other / unspecified'];
 export const TEXTURES = ['Smooth','Ridged','Ribbed','Spiral','Dimpled','Textured','Custom'];
