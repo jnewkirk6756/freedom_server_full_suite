@@ -19,7 +19,7 @@ export function schema(){return{name:'nocturne_director',schema:{type:'object',a
   paceDelta:{type:'number',minimum:-0.35,maximum:0.35},intensityDelta:{type:'number',minimum:-0.35,maximum:0.35},depthDelta:{type:'number',minimum:-0.35,maximum:0.35},forceDelta:{type:'number',minimum:-0.35,maximum:0.35},
   paceTarget:{type:['number','null'],minimum:0,maximum:1},depthTarget:{type:['number','null'],minimum:0,maximum:1},forceTarget:{type:['number','null'],minimum:0,maximum:1},intensityTarget:{type:['number','null'],minimum:0,maximum:1},
   position:{type:'string',enum:['keep','back','doggy','side','standing','squat']},pattern:{type:'string',enum:['keep','steady','wave','pulse','build','variable','custom']},hold:{type:'boolean'},memoryWrite:{type:'boolean'}
-},required:['speech','emotion','performance','lead','activePort','intensity','matrixResponse','paceDelta','intensityDelta','depthDelta','forceDelta','paceTarget','depthTarget','forceTarget','intensityTarget','position','pattern','hold','memoryWrite'],strict:true};}
+},required:['speech','emotion','performance','lead','activePort','intensity','matrixResponse','paceDelta','intensityDelta','depthDelta','forceDelta','paceTarget','depthTarget','forceTarget','intensityTarget','position','pattern','hold','memoryWrite'],strict:true}};}
 export async function openAIDirector({apiKey,model='gpt-5.6-luna',text,context,signal}){if(!apiKey)return fallbackDirector({text,context});const c=sanitizeContext(context);
 const instructions=`You are the Nocturne Director for Anna Sokolova, an adult fictional precision assistant. Return only the required structured state.
 Preserve user agency and never invent telemetry, memories, credentials, schooling events, or user preferences.
