@@ -26,11 +26,12 @@ export const VIDEO_STATES=[
   ['A19','RECOVERY SETTLE',7,'recovery','Post-peak recovery.'],
   ['A20','RESET NEUTRAL',6,'recovery','Return to baseline neutral.']
 ].map(([id,name,duration,category,description])=>({id,name,duration,category,description}));
+VIDEO_STATES.push({id:'A18B',name:'PEAK HIGH INTENSITY ALT',duration:8,category:'peak-alt',description:'Alternate peak burst; preferred transition A17 → A18B → A19.',baseId:'A18',transitionProfile:'burst'});
 
 export const VIDEO_STATE_IDS=VIDEO_STATES.map(s=>s.id);
 export const stateById=id=>VIDEO_STATES.find(s=>s.id===String(id||'').toUpperCase())||null;
 export function extractStateId(name=''){
-  const m=String(name).toUpperCase().match(/(?:^|[^A-Z0-9])(A(?:0[0-9]|1[0-9]|20))(?:[^A-Z0-9]|$)/);
+  const m=String(name).toUpperCase().match(/(?:^|[^A-Z0-9])(A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?)(?:[^A-Z0-9]|$)/);
   return m&&stateById(m[1])?m[1]:null;
 }
 export function metadataWarnings(meta,state){
