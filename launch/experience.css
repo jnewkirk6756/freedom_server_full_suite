@@ -139,3 +139,11 @@ body.xr-active{height:100%;overflow:hidden}
  #pattern-dialog{overscroll-behavior:contain}
  #pattern-pad{height:220px}
 }
+
+/* Nocturne 0.62.1 — Quest/browser navigation repair.
+   Large browser panels must remain vertically navigable instead of trapping the user in a fixed viewport. */
+@media (min-width:700px){
+  html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:auto}
+  main{position:relative;inset:auto;min-height:calc(100dvh - 58px);margin-top:58px;padding-bottom:110px}
+  #conversation{padding-bottom:28px}
+}
