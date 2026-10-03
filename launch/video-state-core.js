@@ -1,5 +1,5 @@
-/** Nocturne V0.66 local video-state library. Large media stays in IndexedDB. */
-export const VIDEO_STATE_VERSION='0.66.0';
+/** Nocturne V0.67 video-state library. Local IndexedDB + shared staging sync cache. */
+export const VIDEO_STATE_VERSION='0.67.0';
 export const VIDEO_DB_NAME='nocturne-video-states-v1';
 export const VIDEO_DB_STORE='clips';
 export const VIDEO_ANCHOR_SECONDS=.7;
@@ -67,7 +67,7 @@ export async function saveClip(id,file,meta={}){
   const state=stateById(id);if(!state)throw Error('Unknown video state.');
   if(!(file instanceof Blob))throw Error('Choose a video file.');
   if(file.size>250*1024*1024)throw Error('Each clip must be 250 MB or smaller for this local beta.');
-  const row={id:state.id,blob:file,fileName:String(file.name||meta.fileName||state.id+'.mp4').slice(0,180),size:file.size,type:file.type||'video/mp4',duration:Number(meta.duration)||0,width:Number(meta.width)||0,height:Number(meta.height)||0,importedAt:Date.now(),warnings:metadataWarnings(meta,state)};
+  const row={id:state.id,blob:file,fileName:String(file.name||meta.fileName||state.id+'.mp4').slice(0,180),size:file.size,type:file.type||meta.mime||'video/mp4',duration:Number(meta.duration)||0,width:Number(meta.width)||0,height:Number(meta.height)||0,importedAt:Date.now(),source:meta.source||'local',cloudSha:meta.cloudSha||null,syncedAt:Number(meta.syncedAt)||0,warnings:metadataWarnings(meta,state)};
   await tx('readwrite',store=>store.put(row));return{...row,blob:undefined};
 }
 export async function getClip(id){
@@ -93,4 +93,48 @@ export async function clipMetadata(file){
 }
 export async function storageEstimate(){
   try{const e=await navigator.storage?.estimate?.();return{usage:Number(e?.usage)||0,quota:Number(e?.quota)||0};}catch{return{usage:0,quota:0};}
+}
+
+const MEDIA_TOKEN_KEY='nocturne.media.session.v067';
+export async function ensureMediaSession(){
+  let token=sessionStorage.getItem(MEDIA_TOKEN_KEY)||'';
+  const headers=token?{'x-nocturne-session':token}:{};
+  const r=await fetch('/v1/media/status',{headers});if(!r.ok)throw Error('Media sync status unavailable.');
+  const d=await r.json();if(d.sessionToken){token=d.sessionToken;sessionStorage.setItem(MEDIA_TOKEN_KEY,token)}
+  return{token,status:d};
+}
+export async function cloudManifest(){
+  const {token,status}=await ensureMediaSession();if(!status.connected)return{...status,states:[]};
+  const r=await fetch('/v1/media/manifest',{headers:{'x-nocturne-session':token}});if(!r.ok)throw Error('Cloud media manifest unavailable.');
+  return await r.json();
+}
+export async function fetchCloudClip(id){
+  const state=stateById(id);if(!state)return null;const {token,status}=await ensureMediaSession();if(!status.connected)return null;
+  const manifest=await cloudManifest(),remote=(manifest.states||[]).find(x=>x.id===state.id);if(!remote)return null;
+  const local=await getClip(state.id);if(local&&local.cloudSha&&local.cloudSha===remote.sha256)return local;
+  const r=await fetch('/v1/media/'+state.id,{headers:{'x-nocturne-session':token}});if(r.status===404)return null;if(!r.ok)throw Error('Cloud clip download failed.');
+  const blob=await r.blob(),file=typeof File==='function'?new File([blob],remote.fileName||state.id+'.mp4',{type:remote.mime||blob.type||'video/mp4'}):blob;
+  await saveClip(state.id,file,{fileName:remote.fileName,duration:remote.duration,width:remote.width,height:remote.height,mime:remote.mime,source:'cloud',cloudSha:remote.sha256,syncedAt:Date.now()});
+  return await getClip(state.id);
+}
+export async function getClipSynced(id){return await getClip(id)||await fetchCloudClip(id);}
+export async function publishClipToCloud(id){
+  const state=stateById(id);if(!state)throw Error('Unknown video state.');const local=await getClip(state.id);if(!local?.blob)throw Error('Import this clip locally first.');
+  if(local.blob.size>8*1024*1024)throw Error('Cloud staging clips must be 8 MB or smaller.');
+  const {token,status}=await ensureMediaSession();if(!status.connected)throw Error('Shared media cache is unavailable.');
+  const r=await fetch('/v1/media/'+state.id,{method:'PUT',headers:{'x-nocturne-session':token,'content-type':local.type||'video/mp4','x-nocturne-filename':encodeURIComponent(local.fileName||state.id+'.mp4'),'x-nocturne-duration':String(local.duration||0),'x-nocturne-width':String(local.width||0),'x-nocturne-height':String(local.height||0)},body:local.blob});
+  const d=await r.json();if(!r.ok)throw Error(d.error?.message||'Cloud publish failed.');
+  const row=d.state||{};await saveClip(state.id,local.blob,{fileName:local.fileName,duration:local.duration,width:local.width,height:local.height,mime:local.type,source:'cloud',cloudSha:row.sha256||null,syncedAt:Date.now()});
+  return row;
+}
+export async function publishAllLocal({onProgress=()=>{}}={}){
+  const rows=await listClips(),done=[],failed=[];for(const row of rows){try{onProgress(row.id);done.push(await publishClipToCloud(row.id));}catch(e){failed.push({id:row.id,error:e.message});}}return{done,failed};
+}
+export async function syncCloudToLocal({onProgress=()=>{}}={}){
+  const m=await cloudManifest(),local=await listClips(),byId=new Map(local.map(x=>[x.id,x])),done=[],skipped=[],failed=[];
+  for(const remote of m.states||[]){const here=byId.get(remote.id);if(here?.cloudSha===remote.sha256){skipped.push(remote.id);continue;}try{onProgress(remote.id);const row=await fetchCloudClip(remote.id);if(row)done.push(remote.id);}catch(e){failed.push({id:remote.id,error:e.message});}}
+  return{done,skipped,failed,manifest:m};
+}
+export async function cloudDelete(id){
+  const state=stateById(id);if(!state)return false;const {token}=await ensureMediaSession(),r=await fetch('/v1/media/'+state.id,{method:'DELETE',headers:{'x-nocturne-session':token}});if(!r.ok)return false;return true;
 }
