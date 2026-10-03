@@ -46,8 +46,10 @@ async function run(){
   set('diag-secure',window.isSecureContext?'YES':'NO');set('diag-xr',navigator.xr?'YES':'NO');
   let glok=false;try{const c=document.createElement('canvas');glok=!!c.getContext('webgl')}catch{}set('diag-gl',glok?'YES':'NO');
   let immersive=false,err='';if(navigator.xr){try{immersive=await navigator.xr.isSessionSupported('immersive-vr')}catch(e){err=String(e&&e.message||e)}}set('diag-immersive',immersive?'YES':'NO');
-  set('diag-line',[(window.isSecureContext?'HTTPS secure':'HTTPS not secure'),(navigator.xr?'WebXR exposed':'WebXR missing'),(immersive?'immersive-vr supported':'immersive-vr not supported'),(glok?'WebGL ready':'WebGL missing')].join(' · ')+(err?' · '+err.slice(0,90):''));
-  return{immersive};
+  const cfg=loadTelemetry();set('diag-session',cfg.initialized?'READY':'ZERO');
+  let mediaOk=false;try{mediaOk=await loadAnnaVideoState(localStorage.getItem('nocturne.vr.video-state.v1')||'A01')}catch{}set('diag-media',mediaOk?(annaVideoState+' READY'):'MISSING');
+  set('diag-line',[(window.isSecureContext?'HTTPS secure':'HTTPS not secure'),(navigator.xr?'WebXR exposed':'WebXR missing'),(immersive?'immersive-vr supported':'immersive-vr not supported'),(glok?'WebGL ready':'WebGL missing'),(mediaOk?'Anna media '+annaVideoState+' ready':'Anna media missing'),(cfg.initialized?'session initialized':'session zero')].join(' · ')+(err?' · '+err.slice(0,90):''));
+  return{immersive,mediaOk};
 }
 function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s)||'shader');return s}
 function initGL(){
