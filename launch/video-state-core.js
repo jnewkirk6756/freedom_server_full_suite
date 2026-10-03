@@ -5,7 +5,7 @@ export const VIDEO_DB_STORE='clips';
 export const VIDEO_ANCHOR_SECONDS=.7;
 export const VIDEO_STATES=[
   ['A00','UNIVERSAL ANCHOR',6,'bridge','Canonical neutral calibration / bridge state.'],
-  ['A01','IDLE NEUTRAL',8,'idle','Default resting / available state.'],
+  ['A01','IDLE NEUTRAL',10,'idle','Default resting / available state; preferred canonical idle loop.'],
   ['A02','IDLE WARM',8,'idle','Warm familiar resting state.'],
   ['A03','LISTEN ATTENTIVE',7,'social','Active attentive listening.'],
   ['A04','LISTEN CURIOUS',7,'social','Curious listening response.'],
@@ -42,6 +42,39 @@ export const VIDEO_STATE_IDS=VIDEO_STATES.map(s=>s.id);
 export const PRIMARY_VIDEO_STATE_IDS=Array.from({length:21},(_,i)=>'A'+String(i).padStart(2,'0'));
 export const ALTERNATE_VIDEO_STATE_IDS=VIDEO_STATE_IDS.filter(id=>!PRIMARY_VIDEO_STATE_IDS.includes(id));
 export const stateById=id=>VIDEO_STATES.find(s=>s.id===String(id||'').toUpperCase())||null;
+export function baseStateId(id){const s=stateById(id);return s?.baseId||s?.id||null;}
+export function familyCandidates(id,recent=[]){
+  const s=stateById(id);if(!s)return[];
+  const base=baseStateId(s.id),family=VIDEO_STATES.filter(x=>(x.baseId||x.id)===base).map(x=>x.id);
+  if(s.baseId)return [s.id,base,...family.filter(x=>x!==s.id&&x!==base)];
+  const recentSet=new Set((recent||[]).slice(-5));
+  const alternates=family.filter(x=>x!==base);
+  const fresh=alternates.filter(x=>!recentSet.has(x)),used=alternates.filter(x=>recentSet.has(x));
+  return [base,...fresh,...used];
+}
+export function playbackMode(id){
+  const base=baseStateId(id);
+  return ['A18','A19','A20'].includes(base)?'oneshot':'loop';
+}
+export function transitionAfterState(id){
+  const s=stateById(id);if(!s)return null;
+  const direct={A18B:'A19B',A18C:'A19B',A18D:'A19',A18E:'A19B',A18F:'A19C',A19B:'A20',A19C:'A20'};
+  if(direct[s.id])return direct[s.id];
+  const base=baseStateId(s.id);
+  if(base==='A18')return'A19';
+  if(base==='A19')return'A20';
+  if(base==='A20')return'A01';
+  return null;
+}
+export function initialFallbackCandidates(id){
+  const base=baseStateId(id)||'A01';
+  const map={A00:['A01','A02'],A01:['A02','A00'],A02:['A01','A00'],A18:['A17','A16','A01'],A19:['A20','A01'],A20:['A01','A00']};
+  return [...new Set([...(map[base]||[]),'A01','A00'])].filter(x=>x!==id&&stateById(x));
+}
+export function stateRoute(id){
+  const s=stateById(id);if(!s)return null;
+  return{id:s.id,baseId:baseStateId(s.id),mode:playbackMode(s.id),autoNext:transitionAfterState(s.id),family:familyCandidates(s.id)};
+}
 export function extractStateId(name=''){
   const m=String(name).toUpperCase().match(/(?:^|[^A-Z0-9])(A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?)(?:[^A-Z0-9]|$)/);
   return m&&stateById(m[1])?m[1]:null;
