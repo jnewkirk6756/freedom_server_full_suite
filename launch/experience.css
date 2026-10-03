@@ -202,3 +202,8 @@ body.xr-active{height:100%;overflow:hidden}
   #control-rail button{height:40px!important}
   .actions{height:auto!important;min-height:48px}
 }
+
+/* Nocturne V0.64.1 — visible Director acknowledgement */
+body.director-thinking #last-line{position:relative;color:#e4d2f4}
+body.director-thinking #last-line:before{content:"";display:inline-block;width:9px;height:9px;margin-right:8px;border:2px solid #6d527f;border-top-color:#d6a4ff;border-radius:50%;vertical-align:-1px;animation:nocturneThink .75s linear infinite}
+@keyframes nocturneThink{to{transform:rotate(360deg)}}
