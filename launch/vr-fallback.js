@@ -41,7 +41,7 @@ function loadTelemetry(){
   }catch{telemetry={...telemetry,pace:0,depth:0,force:0,intensity:0,cadence:0,initialized:false,startedAt:0}}
   return telemetry;
 }
-function motionPeriodMs(tel,t){if(!tel.initialized)return 1e9;const elapsed=tel.startedAt?Math.max(0,Date.now()-tel.startedAt):1e9;return elapsed<tel.entrySpeedS*1000?Math.max(1000,tel.entrySpeedS*2000):Math.max(700,tel.cycleTimeS*1000)}
+function motionPeriodMs(tel,t){if(!tel.initialized)return 1e9;const elapsed=tel.startedAt?Math.max(0,Date.now()-tel.startedAt):1e9;return elapsed<tel.entrySpeedS*2000?Math.max(1000,tel.entrySpeedS*2000):Math.max(700,tel.cycleTimeS*1000)}
 async function run(){
   set('diag-secure',window.isSecureContext?'YES':'NO');set('diag-xr',navigator.xr?'YES':'NO');
   let glok=false;try{const c=document.createElement('canvas');glok=!!c.getContext('webgl')}catch{}set('diag-gl',glok?'YES':'NO');
