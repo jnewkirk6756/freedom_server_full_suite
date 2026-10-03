@@ -147,3 +147,25 @@ body.xr-active{height:100%;overflow:hidden}
   main{position:relative;inset:auto;min-height:calc(100dvh - 58px);margin-top:58px;padding-bottom:110px}
   #conversation{padding-bottom:28px}
 }
+
+
+/* Nocturne V0.64 — control separation and Quest-safe hit targets */
+#pattern-bar{bottom:8px;z-index:9}
+#mapping{bottom:44px;z-index:8;pointer-events:none}
+#wave-legend{bottom:70px}
+#control-rail{position:relative;z-index:9;flex-wrap:wrap;min-height:38px}
+#control-rail button{touch-action:manipulation;pointer-events:auto;min-width:86px}
+#control-rail button:disabled{opacity:.34;cursor:not-allowed}
+#pattern-play[aria-pressed="true"]{border-color:#8ce5c2!important;background:#133126!important;color:#bff7df!important}
+.control-confirm{filter:brightness(1.55);box-shadow:0 0 20px #bb86ff66!important;transform:translateY(-1px)}
+@media(max-width:700px){
+  #wave{min-height:300px}
+  #pattern-bar{left:10px;right:10px;bottom:10px;transform:none;width:auto;justify-content:stretch;overflow:visible}
+  #pattern-bar button{min-width:0;flex:1}
+  #mapping{bottom:50px}
+  #wave-legend{bottom:78px}
+  #control-rail{height:auto;min-height:78px;margin:4px 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  #control-rail button{height:36px;min-height:36px;min-width:0;padding:5px 3px;font-size:5.6px}
+  #next-chart{grid-column:2/4}
+  #conversation{gap:8px}
+}
