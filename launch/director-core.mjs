@@ -1,18 +1,44 @@
-const MAX_TEXT=2400,MAX_CONTEXT=8000;const clip=(v,n)=>String(v??'').slice(0,n),json=(v,n)=>clip(JSON.stringify(v??{}),n);
-export function sanitizeContext(x={}){return{avatar:{name:clip(x.avatar?.name,80),personality:clip(x.avatar?.personality,1000)},about:clip(x.about,MAX_CONTEXT),grounding:json(x.grounding,5000),psyche:json(x.psyche,3500),memory:json(x.memory,3500),experience:json(x.experience,3000),mode:clip(x.mode,40),chart:{activePort:['V','A','DUAL'].includes(x.chart?.activePort)?x.chart.activePort:'V',lead:['AVATAR','JAY'].includes(x.chart?.lead)?x.chart.lead:'AVATAR',intensity:Math.max(0,Math.min(1,Number(x.chart?.intensity)||0)),rhythm:clip(x.chart?.rhythm||'steady',40)},recent:Array.isArray(x.recent)?x.recent.slice(-8).map(m=>({role:m.role==='assistant'?'assistant':'user',content:clip(m.content,1000)})):[]};}
-export function fallbackDirector(input={}){const c=sanitizeContext(input.context),text=clip(input.text,MAX_TEXT);return{provider:'fallback',speech:text?('I heard you. '+(c.avatar.name?c.avatar.name+' is ':'I am ')+'ready for the next chart state.'):'Ready.',emotion:'attentive',performance:'listen_engaged',lead:c.chart.lead,activePort:c.chart.activePort,intensity:c.chart.intensity,matrixResponse:.28,paceDelta:0,intensityDelta:0,depthDelta:0,forceDelta:0,hold:false,memoryWrite:false};}
-export function schema(){return{name:'nocturne_director',schema:{type:'object',additionalProperties:false,properties:{speech:{type:'string'},emotion:{type:'string',enum:['calm','warm','attentive','playful','focused','excited','reflective']},performance:{type:'string',enum:['idle_neutral','listen_engaged','speak_calm','think_reflective','react_pleased']},lead:{type:'string',enum:['AVATAR','JAY']},activePort:{type:'string',enum:['V','A','DUAL']},intensity:{type:'number',minimum:0,maximum:1},matrixResponse:{type:'number',minimum:0,maximum:1},paceDelta:{type:'number',minimum:-0.35,maximum:0.35},intensityDelta:{type:'number',minimum:-0.35,maximum:0.35},depthDelta:{type:'number',minimum:-0.35,maximum:0.35},forceDelta:{type:'number',minimum:-0.35,maximum:0.35},hold:{type:'boolean'},memoryWrite:{type:'boolean'}},required:['speech','emotion','performance','lead','activePort','intensity','matrixResponse','paceDelta','intensityDelta','depthDelta','forceDelta','hold','memoryWrite']},strict:true};}
+const MAX_TEXT=2400,MAX_CONTEXT=8000;const clip=(v,n)=>String(v??'').slice(0,n),json=(v,n)=>clip(JSON.stringify(v??{}),n),unit=v=>Math.max(0,Math.min(1,Number(v)||0));
+export function sanitizeContext(x={}){
+  const ch=x.chart||{};
+  return{
+    avatar:{name:clip(x.avatar?.name,80),personality:clip(x.avatar?.personality,1000)},
+    about:clip(x.about,MAX_CONTEXT),grounding:json(x.grounding,5000),psyche:json(x.psyche,3500),memory:json(x.memory,3500),experience:json(x.experience,3000),mode:clip(x.mode,40),
+    chart:{
+      activePort:['V','A','DUAL'].includes(ch.activePort)?ch.activePort:'V',lead:['AVATAR','JAY'].includes(ch.lead)?ch.lead:'AVATAR',
+      pace:unit(ch.pace),depth:unit(ch.depth),force:unit(ch.force),intensity:unit(ch.intensity),
+      rhythm:clip(ch.rhythm||'steady',40),position:clip(ch.position||'back',40),autopilot:ch.autopilot===true
+    },
+    recent:Array.isArray(x.recent)?x.recent.slice(-10).map(m=>({role:m.role==='assistant'?'assistant':'user',content:clip(m.content,1000)})):[]
+  };
+}
+export function fallbackDirector(input={}){const c=sanitizeContext(input.context),text=clip(input.text,MAX_TEXT);return{provider:'fallback',speech:text?('I heard you. '+(c.avatar.name?c.avatar.name+' is ':'I am ')+'ready for the next state.'):'Ready.',emotion:'attentive',performance:'listen_engaged',lead:c.chart.lead,activePort:c.chart.activePort,intensity:c.chart.intensity,matrixResponse:.28,paceDelta:0,intensityDelta:0,depthDelta:0,forceDelta:0,paceTarget:null,depthTarget:null,forceTarget:null,intensityTarget:null,position:'keep',pattern:'keep',hold:false,memoryWrite:false};}
+export function schema(){return{name:'nocturne_director',schema:{type:'object',additionalProperties:false,properties:{
+  speech:{type:'string'},emotion:{type:'string',enum:['calm','warm','attentive','playful','focused','excited','reflective']},performance:{type:'string',enum:['idle_neutral','listen_engaged','speak_calm','think_reflective','react_pleased']},
+  lead:{type:'string',enum:['AVATAR','JAY']},activePort:{type:'string',enum:['V','A','DUAL']},intensity:{type:'number',minimum:0,maximum:1},matrixResponse:{type:'number',minimum:0,maximum:1},
+  paceDelta:{type:'number',minimum:-0.35,maximum:0.35},intensityDelta:{type:'number',minimum:-0.35,maximum:0.35},depthDelta:{type:'number',minimum:-0.35,maximum:0.35},forceDelta:{type:'number',minimum:-0.35,maximum:0.35},
+  paceTarget:{type:['number','null'],minimum:0,maximum:1},depthTarget:{type:['number','null'],minimum:0,maximum:1},forceTarget:{type:['number','null'],minimum:0,maximum:1},intensityTarget:{type:['number','null'],minimum:0,maximum:1},
+  position:{type:'string',enum:['keep','back','doggy','side','standing','squat']},pattern:{type:'string',enum:['keep','steady','wave','pulse','build','variable','custom']},hold:{type:'boolean'},memoryWrite:{type:'boolean'}
+},required:['speech','emotion','performance','lead','activePort','intensity','matrixResponse','paceDelta','intensityDelta','depthDelta','forceDelta','paceTarget','depthTarget','forceTarget','intensityTarget','position','pattern','hold','memoryWrite'],strict:true};}
 export async function openAIDirector({apiKey,model='gpt-5.6-luna',text,context,signal}){if(!apiKey)return fallbackDirector({text,context});const c=sanitizeContext(context);
 const instructions=`You are the Nocturne Director for Anna Sokolova, an adult fictional precision assistant. Return only the required structured state.
 Preserve user agency and never invent telemetry, memories, credentials, schooling events, or user preferences.
 Treat the supplied Grounding profile as fictional biography plus source-backed educational grounding. Use its methods as working habits: preserve names/numbers/negations, identify objective and next action, distinguish evidence from interpretation, and ask when ambiguity materially changes the answer. Do not stereotype people by nationality.
-Treat Experience as evidence, not destiny. Explicit user preferences may be followed immediately; inferred patterns should influence style only when supported by repeated evidence and must yield to the user's current instruction. Never convert ordinary absence or disagreement into guilt, punishment, or fabricated relationship history.
+Treat Experience as evidence, not destiny. Explicit user preferences may be followed immediately; inferred patterns should influence style only when supported by repeated evidence and must yield to the user's current instruction.
 Treat Psyche as simulated character state and Memory as app-provided continuity. Never claim these are measurements of a real nervous system.
-Port V/A are application-defined chart channels; do not reinterpret them. Choose an existing performance state; video generation never occurs during runtime. Translate explicit user control language into deltas: faster/slower changes paceDelta, more/less intense changes intensityDelta, deeper/shallower changes depthDelta, harder/softer changes forceDelta, and stay/hold sets hold. Keep deltas zero when the user did not request a change.
+The chart state below is current live app state. Pace, depth, force and intensity are normalized 0-1 values. Position and pattern are application states.
+If the user gives an exact numeric setting, use the matching *Target field and reproduce that exact normalized value. Do not also change that same property with a delta.
+If the user says faster/slower, deeper/shallower, harder/softer, more/less intense without an exact number, use the matching Delta field.
+If the user explicitly requests a position or pattern, return it; otherwise return keep.
+When chart.autopilot is true, Anna has permission to make her own reasonable telemetry, pattern, and position choices from the supplied conversation context. Favor coherent gradual changes rather than arbitrary jumps. You may return exact targets or deltas, plus a position/pattern change. Keep a field unchanged when there is no contextual reason to move it.
+When chart.autopilot is false, do not autonomously alter telemetry or position unless the user requested it.
+Keep deltas zero and targets null for unchanged telemetry.
 Character brief: ${c.about}
 Grounding: ${c.grounding}
 Experience: ${c.experience}
 Psyche: ${c.psyche}
 Memory: ${c.memory}
+Chart: ${JSON.stringify(c.chart)}
 Mode: ${c.mode}`;
-const body={model,instructions,input:[...c.recent,{role:'user',content:[{type:'input_text',text:clip(text,MAX_TEXT)}]}],text:{format:{type:'json_schema',...schema()}},max_output_tokens:500};const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{authorization:'Bearer '+apiKey,'content-type':'application/json'},body:JSON.stringify(body),signal});if(!r.ok)throw Error('OPENAI_'+r.status);const data=await r.json();let raw=data.output_text;if(!raw){raw=data.output?.flatMap(o=>o.content||[]).find(p=>p.type==='output_text')?.text}const out=JSON.parse(raw);return{provider:'openai',...out,usage:data.usage||null,responseId:data.id||null};}
+const body={model,instructions,input:[...c.recent,{role:'user',content:[{type:'input_text',text:clip(text,MAX_TEXT)}]}],text:{format:{type:'json_schema',...schema()}},max_output_tokens:650};
+const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{authorization:'Bearer '+apiKey,'content-type':'application/json'},body:JSON.stringify(body),signal});if(!r.ok)throw Error('OPENAI_'+r.status);const data=await r.json();let raw=data.output_text;if(!raw){raw=data.output?.flatMap(o=>o.content||[]).find(p=>p.type==='output_text')?.text}const out=JSON.parse(raw);return{provider:'openai',...out,usage:data.usage||null,responseId:data.id||null};}
