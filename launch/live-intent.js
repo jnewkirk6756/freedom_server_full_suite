@@ -1,4 +1,4 @@
-export const LIVE_INTENT_VERSION='0.65.0';
+export const LIVE_INTENT_VERSION='0.65.1';
 const pct=n=>Math.max(0,Math.min(100,Number(n)));
 export function parseTelemetryIntent(text,{hasCustomPattern=false}={}){
   const t=String(text||'').toLowerCase().replace(/percent/g,'%').replace(/\s+/g,' ').trim();
