@@ -1,10 +1,10 @@
-import{VIDEO_STATES,stateById,extractStateId,listClips,getClip,saveClip,deleteClip,clipMetadata,storageEstimate,ensureMediaSession,cloudManifest,publishAllLocal,syncCloudToLocal}from'./video-state-core.js';
+import{VIDEO_STATES,PRIMARY_VIDEO_STATE_IDS,ALTERNATE_VIDEO_STATE_IDS,stateById,extractStateId,listClips,getClip,saveClip,deleteClip,clipMetadata,storageEstimate,ensureMediaSession,cloudManifest,publishAllLocal,syncCloudToLocal}from'./video-state-core.js';
 const $=id=>document.getElementById(id),fmtMB=n=>(Number(n||0)/1048576).toFixed(n>104857600?0:1)+' MB';
 let clips=[],previewUrl=null,busy=false,cloudStates=[];
 function message(t){$('vs-message').textContent=t}
 async function refresh(){
-  clips=await listClips();let cloud={states:[],usedBytes:0,capacityBytes:25*1024*1024,connected:false};try{const s=await ensureMediaSession();if(s.status.connected){cloud=await cloudManifest();cloud.connected=true}}catch{}cloudStates=cloud.states||[];const byId=new Map(clips.map(x=>[x.id,x])),cloudById=new Map(cloudStates.map(x=>[x.id,x])),ready=clips.length,flags=clips.reduce((n,x)=>n+(x.warnings?.length||0),0),est=await storageEstimate();
-  $('vs-ready').textContent=ready+' / '+VIDEO_STATES.length;$('vs-count').textContent=ready+' loaded';$('vs-quality').textContent=flags?flags+' flag'+(flags===1?'':'s'):'CLEAR';$('vs-storage').textContent=est.usage?fmtMB(est.usage):'LOCAL';$('vs-cloud').textContent=cloud.connected?(cloudStates.length+' · '+fmtMB(cloud.usedBytes||0)+' / '+fmtMB(cloud.capacityBytes||0)):'OFFLINE';
+  clips=await listClips();let cloud={states:[],usedBytes:0,capacityBytes:25*1024*1024,connected:false};try{const s=await ensureMediaSession();if(s.status.connected){cloud=await cloudManifest();cloud.connected=true}}catch{}cloudStates=cloud.states||[];const byId=new Map(clips.map(x=>[x.id,x])),cloudById=new Map(cloudStates.map(x=>[x.id,x])),readyPrimary=clips.filter(x=>PRIMARY_VIDEO_STATE_IDS.includes(x.id)).length,readyAlt=clips.filter(x=>ALTERNATE_VIDEO_STATE_IDS.includes(x.id)).length,ready=clips.length,flags=clips.reduce((n,x)=>n+(x.warnings?.length||0),0),est=await storageEstimate();
+  $('vs-ready').textContent=readyPrimary+' / '+PRIMARY_VIDEO_STATE_IDS.length;$('vs-count').textContent=ready+' loaded · '+readyAlt+' alt';$('vs-quality').textContent=flags?flags+' flag'+(flags===1?'':'s'):'CLEAR';$('vs-storage').textContent=est.usage?fmtMB(est.usage):'LOCAL';$('vs-cloud').textContent=cloud.connected?(cloudStates.length+' · '+fmtMB(cloud.usedBytes||0)+' / '+fmtMB(cloud.capacityBytes||0)):'OFFLINE';
   const grid=$('vs-grid');grid.replaceChildren();
   for(const s of VIDEO_STATES){
     const row=byId.get(s.id),remote=cloudById.get(s.id),card=document.createElement('article');card.className='vs-card'+(row?' loaded':'')+(remote?' cloud':'');
@@ -32,7 +32,7 @@ async function importOne(id,file){
 function chooseBulk(files){
   const existing=new Set(clips.map(x=>x.id)),result=[],unnamed=[],seen=new Set();
   for(const file of files){const id=extractStateId(file.name);if(id&&!seen.has(id)){result.push({id,file,source:'filename'});seen.add(id);}else unnamed.push(file);}
-  const open=VIDEO_STATES.map(s=>s.id).filter(id=>!seen.has(id)&&!existing.has(id));unnamed.forEach((file,i)=>{if(open[i])result.push({id:open[i],file,source:'order'});});
+  const open=PRIMARY_VIDEO_STATE_IDS.filter(id=>!seen.has(id)&&!existing.has(id));unnamed.forEach((file,i)=>{if(open[i])result.push({id:open[i],file,source:'order'});});
   return{result,overflow:unnamed.slice(open.length)};
 }
 $('vs-stack').onchange=async e=>{
@@ -53,6 +53,6 @@ $('vs-preview-close').onclick=()=>{const v=$('vs-preview-video');try{v.pause();v
 $('vs-publish').onclick=async()=>{if(busy)return;if(!clips.length){message('Import at least one clip locally first.');return}if(!confirm('Publish '+clips.length+' local clip'+(clips.length===1?'':'s')+' to the shared staging cache?'))return;busy=true;try{const out=await publishAllLocal({onProgress:id=>message('Publishing '+id+'…')});message('Publish complete · '+out.done.length+' synced'+(out.failed.length?' · '+out.failed.length+' failed':'')+'.');}catch(e){message('Publish failed: '+e.message)}finally{busy=false;await refresh();}};
 $('vs-sync').onclick=async()=>{if(busy)return;busy=true;try{const out=await syncCloudToLocal({onProgress:id=>message('Syncing '+id+'…')});message('Sync complete · '+out.done.length+' downloaded · '+out.skipped.length+' already current'+(out.failed.length?' · '+out.failed.length+' failed':'')+'.');}catch(e){message('Sync failed: '+e.message)}finally{busy=false;await refresh();}};
 $('vs-persist').onclick=async()=>{try{const ok=await navigator.storage?.persist?.();message(ok?'Browser granted persistent local media storage.':'Persistent storage was not granted; clips still remain in normal browser storage.');}catch{message('Persistent storage request is unavailable in this browser.')}};
-$('vs-export').onclick=async()=>{const rows=await listClips(),manifest={version:'0.67.0',exportedAt:new Date().toISOString(),states:VIDEO_STATES.map(s=>({...s,clip:rows.find(x=>x.id===s.id)||null}))},url=URL.createObjectURL(new Blob([JSON.stringify(manifest,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='nocturne-video-state-manifest.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);message('Metadata manifest exported. Video files remain local.')};
+$('vs-export').onclick=async()=>{const rows=await listClips(),manifest={version:'0.67.2',exportedAt:new Date().toISOString(),states:VIDEO_STATES.map(s=>({...s,clip:rows.find(x=>x.id===s.id)||null}))},url=URL.createObjectURL(new Blob([JSON.stringify(manifest,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='nocturne-video-state-manifest.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);message('Metadata manifest exported. Video files remain local.')};
 window.addEventListener('pagehide',()=>{if(previewUrl)URL.revokeObjectURL(previewUrl)});
 refresh().catch(e=>message('Video library unavailable: '+e.message));
