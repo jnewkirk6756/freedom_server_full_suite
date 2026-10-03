@@ -7,7 +7,7 @@ export function sanitizeContext(x={}){
     chart:{
       activePort:['V','A','DUAL'].includes(ch.activePort)?ch.activePort:'V',lead:['AVATAR','JAY'].includes(ch.lead)?ch.lead:'AVATAR',
       pace:unit(ch.pace),depth:unit(ch.depth),force:unit(ch.force),intensity:unit(ch.intensity),
-      rhythm:clip(ch.rhythm||'steady',40),position:clip(ch.position||'back',40),videoState:/^A(?:0[0-9]|1[0-9]|20)$/.test(ch.videoState||'')?ch.videoState:'A01',autopilot:ch.autopilot===true
+      rhythm:clip(ch.rhythm||'steady',40),position:clip(ch.position||'back',40),videoState:/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(ch.videoState||'')?ch.videoState:'A01',autopilot:ch.autopilot===true
     },
     recent:Array.isArray(x.recent)?x.recent.slice(-10).map(m=>({role:m.role==='assistant'?'assistant':'user',content:clip(m.content,1000)})):[]
   };
