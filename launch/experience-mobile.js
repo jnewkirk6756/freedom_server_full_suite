@@ -7,12 +7,12 @@ function activeTool(){try{const lib=JSON.parse(localStorage.getItem('nocturne.de
 function explicitLiveValues(text){
   const t=String(text||'').toLowerCase(),changes=[];
   const specs=[
-    ['depth',/(?:depth\s*(?:at|to|=|of)?\s*|)(\d{1,3})\s*%\s*(?:depth)?/],
+    ['depth',/(?:depth\s*(?:at|to|=|of)?\s*(\d{1,3})\s*%?|(?:at\s*)?(\d{1,3})\s*%\s*depth)/],
     ['pace',/(?:pace|speed)\s*(?:at|to|=|of)?\s*(\d{1,3})\s*%?/],
     ['force',/force\s*(?:at|to|=|of)?\s*(\d{1,3})\s*%?/],
     ['intensity',/(?:energy|intensity)\s*(?:at|to|=|of)?\s*(\d{1,3})\s*%?/]
   ];
-  for(const [key,re] of specs){const m=t.match(re);if(m){const n=Math.max(0,Math.min(100,Number(m[1])));live.telemetry[key]=n/100;changes.push(key.toUpperCase()+' '+n+'%')}}
+  for(const [key,re] of specs){const m=t.match(re);if(m){const raw=m.slice(1).find(v=>v!==undefined),n=Math.max(0,Math.min(100,Number(raw)));live.telemetry[key]=n/100;changes.push(key.toUpperCase()+' '+n+'%')}}
   if(/\b(custom|unique|saved)\s+pattern\b/.test(t)&&recordedPattern.length>=4){pattern='custom';for(const x of document.querySelectorAll('[data-pattern]'))x.classList.remove('active');if($('ls-pattern'))$('ls-pattern').textContent='CUSTOM';changes.push('CUSTOM PATTERN')}
   if(changes.length){syncReadout();syncChart();saveChart();shareTelemetry()}
   return changes;
