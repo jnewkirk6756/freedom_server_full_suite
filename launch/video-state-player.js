@@ -1,4 +1,4 @@
-import{getClipSynced,stateById,VIDEO_ANCHOR_SECONDS,familyCandidates,playbackMode,transitionAfterState,initialFallbackCandidates,baseStateId}from'./video-state-core.js';
+import{getClipSynced,stateById,VIDEO_ANCHOR_SECONDS,familyCandidates,playbackMode,transitionAfterState,initialFallbackCandidates,semanticFallbackCandidates,baseStateId}from'./video-state-core.js';
 const wait=(video,event='loadeddata',ms=12000)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>{cleanup();reject(Error('Video load timed out.'));},ms),ok=()=>{cleanup();resolve();},bad=()=>{cleanup();reject(Error('Video state could not load.'));},cleanup=()=>{clearTimeout(timer);video.removeEventListener(event,ok);video.removeEventListener('error',bad);};video.addEventListener(event,ok,{once:true});video.addEventListener('error',bad,{once:true});});
 export function createVideoStatePlayer({host,primary=null,statusEl=null,fallback=null,onState=()=>{}}={}){
   if(!host)return{init:async()=>false,request:async()=>false,current:()=>null,family:()=>null,pending:()=>null,history:()=>[],destroy:()=>{}};
@@ -9,18 +9,28 @@ export function createVideoStatePlayer({host,primary=null,statusEl=null,fallback
   function label(id,extra=''){const s=stateById(id);if(statusEl)statusEl.textContent=s?(s.id+(extra?' · '+extra:'')):String(extra||'READY');}
   function revoke(i){if(urls[i]){URL.revokeObjectURL(urls[i]);urls[i]=null;}}
   function showFallback(show,text=''){if(fallback)fallback.hidden=!show;if(show&&text){const cue=fallback.querySelector?.('#orb-cue,[data-video-cue],span');if(cue)cue.textContent=text;}}
+  function applyMediaSizing(row,id){
+    const w=Number(row?.width)||0,h=Number(row?.height)||0,dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+    if(w&&h){
+      const nativeCss=Math.max(112,Math.min(172,w/dpr*1.35));
+      host.style.setProperty('--anna-video-ratio',String(w/h));
+      host.style.setProperty('--anna-video-width',nativeCss.toFixed(0)+'px');
+      host.dataset.videoResolution=w+'x'+h;
+    }
+    host.dataset.videoState=id||'';
+  }
   function configureVideo(v,id){const mode=playbackMode(id);v.loop=mode==='loop';v.dataset.state=id;v.dataset.playbackMode=mode;}
   async function loadInto(i,id,seq){
     const row=await getClipSynced(id);if(!row?.blob)return null;
     if(seq!==requestSeq||destroyed)return null;
     const v=videos[i];revoke(i);const url=URL.createObjectURL(row.blob);urls[i]=url;v.src=url;configureVideo(v,id);v.load();await wait(v,'loadeddata');if(seq!==requestSeq||destroyed)return null;
-    try{v.currentTime=0;}catch{}return row;
+    try{v.currentTime=0;}catch{}applyMediaSizing(row,id);return row;
   }
   function candidatesFor(id,{initial=false,neutralFallback=false,rotate=false}={}){
     const state=stateById(id);if(!state)return[];
     let out=state.baseId?[state.id,baseStateId(state.id),...familyCandidates(state.id,recent)]:familyCandidates(state.id,recent);
     if(rotate&&!state.baseId&&out.length>1)out=[...out.slice(1),out[0]];
-    out=[...out,...initialFallbackCandidates(id)];
+    out=[...out,...semanticFallbackCandidates(id),...initialFallbackCandidates(id)];
     if(neutralFallback)out=[...out,'A00','A02','A01'];
     return [...new Set(out)].filter(x=>stateById(x));
   }
