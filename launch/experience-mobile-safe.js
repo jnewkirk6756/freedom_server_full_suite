@@ -70,15 +70,16 @@ async function bootDirector(){
 }
 async function loadVideo(id){
   id=String(id||'A01').toUpperCase();if(!/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(id))id='A01';
-  try{
-    if(!token)await bootDirector();
-    var r=await fetch('/v1/media/'+id,{headers:{'x-nocturne-session':token||''}});
-    if(!r.ok&&id!=='A01')return loadVideo('A01');
-    if(!r.ok)throw new Error('media '+r.status);
-    var blob=await r.blob(),v=$('performance');if(!v)return;
-    if(videoUrl)URL.revokeObjectURL(videoUrl);videoUrl=URL.createObjectURL(blob);v.src=videoUrl;v.muted=true;v.playsInline=true;v.loop=true;v.load();try{await v.play()}catch(e){}
-    state.videoState=id;var os=$('orb-state');if(os)os.textContent=id;save();
-  }catch(e){var os2=$('orb-state');if(os2)os2.textContent='READY'}
+  var v=$('performance');if(!v)return false;
+  var os=$('orb-state'),empty=$('empty'),cue=$('orb-cue'),requested=id;
+  if(os)os.textContent=id+' · LOADING';if(cue)cue.textContent='Loading Anna from the server…';
+  return await new Promise(function(resolve){
+    var settled=false,timer=setTimeout(function(){if(settled)return;settled=true;if(requested!=='A01'){loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media did not decode in this browser.';resolve(false)},10000);
+    function done(ok){if(settled)return;settled=true;clearTimeout(timer);resolve(ok)}
+    v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=true;if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}done(true)};
+    v.onerror=function(){if(requested!=='A01'){clearTimeout(timer);settled=true;loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media could not load.';done(false)};
+    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0706';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
+  });
 }
 function applyDirector(q){
   if(!q)return;
