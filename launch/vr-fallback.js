@@ -2,7 +2,8 @@
 const $=id=>document.getElementById(id),set=(id,v)=>{const e=$(id);if(e)e.textContent=v},clamp=v=>Math.max(0,Math.min(1,Number(v)||0));
 let session=null,gl=null,layer=null,refSpace=null,refMode='local-floor';
 let worldProgram=null,worldBuf=null,uiProgram=null,uiBuf=null,uiTex=null,annaTex=null,menuCanvas=null,menuCtx=null,lastMenu=0;
-let mediaCorePromise=null,annaVideo=null,annaVideoState='A01',annaVideoLoadSeq=0,annaCanvas=null,annaCtx=null,annaVideoReady=false,annaVideoError='',aiStatus='AI CONNECTING';
+let mediaCorePromise=null,annaVideo=null,annaVideoState='A01',annaVideoLoadSeq=0,annaCanvas=null,annaCtx=null,annaVideoReady=false,annaVideoError='',aiStatus='AI CONNECTING',annaTexReady=false,annaTexW=0,annaTexH=0,annaLastUpload=0,lastMotionCycle=-1,lastMotionEvent=0,lastControllerEvent=0;
+const ANNA_POSTER_DATA='data:image/jpeg;base64,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';const annaPoster=new Image();let annaPosterReady=false;annaPoster.onload=()=>{annaPosterReady=true};annaPoster.src=ANNA_POSTER_DATA;
 let editTarget='anna',annaPose={x:1.42,y:1.48,z:-2.05,scale:1,yaw:0},toolPose={x:0,y:0,z:0,scale:1,yaw:0};
 function requestedMode(){const q=new URLSearchParams(location.search).get('mode');if(['live','anna','tool','cognitive'].includes(q))return q;try{const saved=JSON.parse(localStorage.getItem('nocturne.vr.entry.v1')||'null');if(saved&&Date.now()-Number(saved.at||0)<30*60*1000&&['live','anna','tool','cognitive'].includes(saved.mode))return saved.mode}catch{}return'cognitive'}
 let sceneMode=requestedMode(),actionLine='Point a controller at a tile and press trigger.',hovered=-1;
@@ -56,6 +57,22 @@ function loadTelemetry(){
   return telemetry;
 }
 function motionPeriodMs(tel,t){if(!tel.initialized)return 1e9;const elapsed=tel.startedAt?Math.max(0,Date.now()-tel.startedAt):1e9;return elapsed<tel.entrySpeedS*2000?Math.max(1000,tel.entrySpeedS*2000):Math.max(700,tel.cycleTimeS*1000)}
+function motionState(){
+  const tel=loadTelemetry();if(!tel.initialized)return{phase:0,cycle:0,envelope:0,velocity:0,direction:'STILL',period:1e9};
+  const elapsed=Math.max(0,Date.now()-(tel.startedAt||Date.now())),entryPeriod=Math.max(1000,tel.entrySpeedS*2000);
+  let phase=0,cycle=0,period=entryPeriod;
+  if(elapsed<entryPeriod){phase=elapsed/entryPeriod}
+  else{period=Math.max(700,tel.cycleTimeS*1000);const after=elapsed-entryPeriod;cycle=1+Math.floor(after/period);phase=(after%period)/period}
+  const envelope=(1-Math.cos(phase*Math.PI*2))/2,velocity=Math.sin(phase*Math.PI*2)*Math.PI*2/period;
+  return{phase,cycle,envelope,velocity,direction:Math.abs(velocity)<.00002?'STILL':velocity>0?'FORWARD':'RETURN',period};
+}
+function aiLinkColor(){const s=String(aiStatus).toUpperCase();if(s.includes('ERROR'))return[1,.28,.34,.9];if(s.includes('THINK')||s.includes('CHOOS'))return[.77,.45,1,.92];if(s.includes('APPLIED'))return[.42,1,.72,.92];if(s.includes('AUTO'))return[.36,.82,1,.9];return[.72,.6,.9,.72]}
+function syncMotionRuntime(t,motion){
+  const tel=loadTelemetry();window.__NOCTURNE_VR_SYNC__={phase:motion.phase,cycle:motion.cycle,direction:motion.direction,envelope:motion.envelope,telemetry:{...tel},videoState:annaVideoState,aiStatus,at:Date.now()};
+  if(motion.cycle!==lastMotionCycle){if(lastMotionCycle>=0&&session){const amp=clamp(.28+tel.intensity*.34+tel.force*.2);for(const src of session.inputSources||[])pulseSource(src,amp,40+tel.depth*65);window.dispatchEvent(new CustomEvent('nocturne:vr-cycle',{detail:{...window.__NOCTURNE_VR_SYNC__}}))}lastMotionCycle=motion.cycle}
+  if(t-lastMotionEvent>120){lastMotionEvent=t;window.dispatchEvent(new CustomEvent('nocturne:vr-motion',{detail:{...window.__NOCTURNE_VR_SYNC__}}))}
+  if(session&&t-lastControllerEvent>240){lastControllerEvent=t;const controllers=[...session.inputSources].filter(s=>s.gamepad).map(s=>({hand:s.handedness,trigger:s.gamepad.buttons?.[0]?.value||0,grip:s.gamepad.buttons?.[1]?.value||0,axes:[...(s.gamepad.axes||[])].slice(0,4)}));window.dispatchEvent(new CustomEvent('nocturne:vr-controller-state',{detail:{controllers}}))}
+}
 async function run(){
   set('diag-secure',window.isSecureContext?'YES':'NO');set('diag-xr',navigator.xr?'YES':'NO');
   let glok=false;try{const c=document.createElement('canvas');glok=!!c.getContext('webgl')}catch{}set('diag-gl',glok?'YES':'NO');
@@ -113,14 +130,15 @@ function constellation(t){
   for(let i=0;i<90;i++){const a=i*1.6180339,r=5.5+(i%9)*.32,yy=y0+.2+((i*53)%100)/100*4.2;stars.push(Math.cos(a)*r,yy,Math.sin(a)*r)}
   return{nodes,edges,stars};
 }
-function telemetryPath(t){
-  const y0=floorY(),lines=[],points=[];const tel=loadTelemetry(),amp=tel.initialized?(.08+tel.depth*.36):0,period=motionPeriodMs(tel,t),cycles=1.5,scroll=tel.initialized?(t/period*Math.PI*2):0,z=-1.58;
+function telemetryPath(t,motion=motionState()){
+  const y0=floorY(),lines=[],points=[];const tel=loadTelemetry(),amp=tel.initialized?(.08+tel.depth*.36):0,cycles=1.5,scroll=tel.initialized?(motion.phase*Math.PI*2):0,z=-1.58;
   for(let i=0;i<84;i++){const q=i/83,x=-1.3+q*2.6,y=y0+1.22+Math.sin(q*Math.PI*2*cycles+scroll)*amp*(.74+.26*Math.sin(q*Math.PI));if(i)lines.push(points[points.length-3],points[points.length-2],points[points.length-1],x,y,z);points.push(x,y,z)}
-  return{lines,points};
+  return{lines,points,motion};
 }
+function waveVolumeGeometry(path){const back=[],front=[],ribs=[],pts=path.points,n=pts.length/3;for(let i=1;i<n;i++){for(const dz of[-.09,.09])back.push(pts[(i-1)*3],pts[(i-1)*3+1],pts[(i-1)*3+2]+dz,pts[i*3],pts[i*3+1],pts[i*3+2]+dz)}for(let i=0;i<n;i+=7)ribs.push(pts[i*3],pts[i*3+1],pts[i*3+2]-.09,pts[i*3],pts[i*3+1],pts[i*3+2]+.09);const idx=Math.max(0,Math.min(n-1,Math.round(path.motion.phase*(n-1))));front.push(pts[idx*3],pts[idx*3+1],pts[idx*3+2]);return{layers:back,ribs,marker:front}}
 function liveHudGeometry(){const tel=loadTelemetry(),y=floorY()+1.82,z=-1.62,x0=.62,x1=1.82,xf=x0+(x1-x0)*tel.force;return{track:[x0,y,z,x1,y,z],fill:[x0,y,z+.002,xf,y,z+.002],marker:[xf,y,z+.004],frame:[x0,y-.08,z,x1,y-.08,z,x1,y-.08,z,x1,y+.08,z,x1,y+.08,z,x0,y+.08,z,x0,y+.08,z,x0,y-.08,z]}}
-function toolGeometry(t){
-  const tel=loadTelemetry(),device=activeDevice(),baseY=floorY()+1.15,angle=tel.angle*Math.PI/180,dir=[0,Math.sin(angle),-Math.cos(angle)],u=[1,0,0],v=[0,-Math.cos(angle),-Math.sin(angle)],period=motionPeriodMs(tel,t),q=tel.initialized?(1-Math.cos((t%period)/period*Math.PI*2))/2:0,travel=tel.initialized?(.3+tel.depth*1.05):0,anchor=[0,baseY,-.62],center=[anchor[0]+dir[0]*travel*q,anchor[1]+dir[1]*travel*q,anchor[2]+dir[2]*travel*q],length=device?Math.max(.48,Math.min(1.25,Number(device.lengthMm||180)/180)):.72,radius=device?Math.max(.055,Math.min(.17,Number(device.widthMm||30)/280)):.09,color=hexRgb(device?.color||'#62e0c0'),shell=[],tip=[],baseRing=[];
+function toolGeometry(t,motion=motionState()){
+  const tel=loadTelemetry(),device=activeDevice(),baseY=floorY()+1.15,angle=tel.angle*Math.PI/180,dir=[0,Math.sin(angle),-Math.cos(angle)],u=[1,0,0],v=[0,-Math.cos(angle),-Math.sin(angle)],q=tel.initialized?motion.envelope:0,travel=tel.initialized?(.3+tel.depth*1.05):0,anchor=[0,baseY,-.62],center=[anchor[0]+dir[0]*travel*q,anchor[1]+dir[1]*travel*q,anchor[2]+dir[2]*travel*q],length=device?Math.max(.48,Math.min(1.25,Number(device.lengthMm||180)/180)):.72,radius=device?Math.max(.055,Math.min(.17,Number(device.widthMm||30)/280)):.09,color=hexRgb(device?.color||'#62e0c0'),shell=[],tip=[],baseRing=[];
   const point=(offset,rad,a)=>[center[0]+dir[0]*offset+u[0]*rad*Math.cos(a)+v[0]*rad*Math.sin(a),center[1]+dir[1]*offset+u[1]*rad*Math.cos(a)+v[1]*rad*Math.sin(a),center[2]+dir[2]*offset+u[2]*rad*Math.cos(a)+v[2]*rad*Math.sin(a)];
   const ringAt=(offset,rad,store)=>{let prev=null;for(let i=0;i<=24;i++){const a=i/24*Math.PI*2,p=point(offset,rad,a);if(prev)store.push(...prev,...p);prev=p}};
   for(const off of[-length/2,0,length/2])ringAt(off,radius,shell);
@@ -129,15 +147,15 @@ function toolGeometry(t){
   ringAt(-length/2-.028,radius*1.55,baseRing);
   for(let i=0;i<10;i++){const a=i/10*Math.PI*2,b0=point(-length/2,radius,a),b1=point(-length/2-.028,radius*1.55,a);baseRing.push(...b0,...b1)}
   const target=[anchor[0]+dir[0]*travel,anchor[1]+dir[1]*travel,anchor[2]+dir[2]*travel],axis=[...anchor,...target],targetRing=[],save=[...center];center[0]=target[0];center[1]=target[1];center[2]=target[2];ringAt(0,radius,targetRing);center[0]=save[0];center[1]=save[1];center[2]=save[2];
-  return{shell,tip,baseRing,axis,targetRing,marker:center,color,name:device?.name||'Default'};
+  return{shell,tip,baseRing,axis,targetRing,marker:center,color,name:device?.name||'Default',anchor,dir,maxTravel:travel,envelope:q};
 }
-function drawScene(frame,view,t,rays){
+function drawScene(frame,view,t,rays,motion=motionState()){
   const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix),lat=staticLattice(),c=constellation(t),mc=modeColor();
   gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   drawWorld(mvp,lat.grid,[.12,.09,.18,.34],gl.LINES,1);drawWorld(mvp,lat.hoops,[.28,.17,.38,.28],gl.LINES,1);drawWorld(mvp,lat.vertical,[.18,.12,.25,.22],gl.LINES,1);
   drawWorld(mvp,c.edges,[mc[0],mc[1],mc[2],.14],gl.LINES,1);drawWorld(mvp,c.stars,[.45,.62,.92,.28],gl.POINTS,2);drawWorld(mvp,c.nodes,[mc[0],mc[1],mc[2],.88],gl.POINTS,7);
   const core=[];for(let i=0;i<3;i++)core.push(...ring(.36+i*.18,floorY()+1.38,-1.25,48));drawWorld(mvp,core,[mc[0],mc[1],mc[2],.5],gl.LINES,2);
-  {const p=telemetryPath(t),h=liveHudGeometry(),f=loadTelemetry().force,g=toolGeometry(t),cc=g.color,pivot=[0,floorY()+1.15,-.62],axis=transformVerts(g.axis,toolPose,pivot),shell=transformVerts(g.shell,toolPose,pivot),tip=transformVerts(g.tip,toolPose,pivot),base=transformVerts(g.baseRing,toolPose,pivot),targetRing=transformVerts(g.targetRing,toolPose,pivot),marker=transformVerts(g.marker,toolPose,pivot);drawWorld(mvp,p.lines,[.35,.82,1,.82],gl.LINES,3);drawWorld(mvp,p.points,[.92,.82,1,.95],gl.POINTS,4);drawWorld(mvp,h.frame,[.3,.24,.36,.72],gl.LINES,1);drawWorld(mvp,h.track,[.18,.28,.42,.9],gl.LINES,6);drawWorld(mvp,h.fill,[.5+.5*f,.2+.45*(1-f),.95-.55*f,1],gl.LINES,8);drawWorld(mvp,h.marker,[1,.95,.98,1],gl.POINTS,10);drawWorld(mvp,axis,[cc[0],cc[1],cc[2],.36],gl.LINES,2);drawWorld(mvp,targetRing,[.85,.9,1,.55],gl.LINES,2);drawWorld(mvp,shell,[cc[0],cc[1],cc[2],.9],gl.LINES,2);drawWorld(mvp,tip,[.92,.82,1,.92],gl.LINES,2);drawWorld(mvp,base,[cc[0],cc[1],cc[2],.82],gl.LINES,2);drawWorld(mvp,marker,[1,.96,1,1],gl.POINTS,8);renderAnnaVideo(mvp)}
+  {const p=telemetryPath(t,motion),vol=waveVolumeGeometry(p),h=liveHudGeometry(),f=loadTelemetry().force,g=toolGeometry(t,motion),cc=g.color,pivot=[0,floorY()+1.15,-.62],axis=transformVerts(g.axis,toolPose,pivot),shell=transformVerts(g.shell,toolPose,pivot),tip=transformVerts(g.tip,toolPose,pivot),base=transformVerts(g.baseRing,toolPose,pivot),targetRing=transformVerts(g.targetRing,toolPose,pivot),marker=transformVerts(g.marker,toolPose,pivot);drawWorld(mvp,vol.layers,[.22,.58,.82,.28],gl.LINES,1);drawWorld(mvp,vol.ribs,[.38,.76,1,.2],gl.LINES,1);drawWorld(mvp,p.lines,[.35,.82,1,.9],gl.LINES,3);drawWorld(mvp,p.points,[.92,.82,1,.9],gl.POINTS,3);drawWorld(mvp,vol.marker,[1,.95,1,1],gl.POINTS,11);drawWorld(mvp,h.frame,[.3,.24,.36,.72],gl.LINES,1);drawWorld(mvp,h.track,[.18,.28,.42,.9],gl.LINES,6);drawWorld(mvp,h.fill,[.5+.5*f,.2+.45*(1-f),.95-.55*f,1],gl.LINES,8);drawWorld(mvp,h.marker,[1,.95,.98,1],gl.POINTS,10);drawWorld(mvp,axis,[cc[0],cc[1],cc[2],.42],gl.LINES,2);drawWorld(mvp,targetRing,[.85,.9,1,.65],gl.LINES,2);drawWorld(mvp,shell,[cc[0],cc[1],cc[2],.96],gl.LINES,2);drawWorld(mvp,tip,[.92,.82,1,.98],gl.LINES,2);drawWorld(mvp,base,[cc[0],cc[1],cc[2],.9],gl.LINES,3);drawWorld(mvp,marker,[1,.96,1,1],gl.POINTS,9);const trail=[];for(let k=1;k<=6;k++){const q=Math.max(0,g.envelope-k*.08),pt=[g.anchor[0]+g.dir[0]*g.maxTravel*q,g.anchor[1]+g.dir[1]*g.maxTravel*q,g.anchor[2]+g.dir[2]*g.maxTravel*q],tp=transformPoint(pt,toolPose,pivot);trail.push(...tp)}drawWorld(mvp,trail,[cc[0],cc[1],cc[2],.22],gl.POINTS,5);renderAnnaVideo(mvp);const ag=annaPlaneGeometry(),link=[ag.x,ag.y,ag.z,...marker.slice(0,3)],lc=aiLinkColor();drawWorld(mvp,link,lc,gl.LINES,2);const nodes=[];for(let i=1;i<7;i++){const q=i/7;nodes.push(ag.x+(marker[0]-ag.x)*q,ag.y+(marker[1]-ag.y)*q,ag.z+(marker[2]-ag.z)*q)}drawWorld(mvp,nodes,[lc[0],lc[1],lc[2],.7],gl.POINTS,4);drawWorld(mvp,ag.frame,[.83,.6,1,.9],gl.LINES,2)}
   gl.disable(gl.BLEND);
 }
 function controllerSummary(){
@@ -148,9 +166,9 @@ function telemetrySummary(){const t=loadTelemetry();return t.initialized?('PACE 
 function drawMenu(t){
   if(!menuCtx)return;const c=menuCtx,w=menuCanvas.width,h=menuCanvas.height,tel=loadTelemetry(),auto=localStorage.getItem('nocturne.vr.autopilot.v1')==='on';
   c.clearRect(0,0,w,h);const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'rgba(20,10,33,.98)');g.addColorStop(.58,'rgba(8,6,16,.97)');g.addColorStop(1,'rgba(3,3,8,.99)');c.fillStyle=g;rounded(c,18,18,w-36,h-36,42);c.fill();c.strokeStyle='rgba(183,125,240,.82)';c.lineWidth=4;rounded(c,18,18,w-36,h-36,42);c.stroke();
-  c.fillStyle='#a98bc2';c.font='700 24px system-ui';c.fillText('NOCTURNE / LIVE IMMERSIVE · 0.72',56,61);
+  c.fillStyle='#a98bc2';c.font='700 24px system-ui';c.fillText('NOCTURNE / LIVE IMMERSIVE · 0.73',56,61);
   c.fillStyle='#fff';c.font='800 44px system-ui';c.fillText(tel.initialized?'SESSION LIVE':'SESSION READY',56,113);
-  c.fillStyle='#bbaac8';c.font='22px system-ui';c.fillText('ANNA '+annaVideoState+' · '+(annaVideoReady?'VIDEO READY':'VIDEO '+String(annaVideoError||'WAIT').toUpperCase())+' · '+aiStatus,56,151);
+  c.fillStyle='#bbaac8';c.font='22px system-ui';c.fillText('ANNA '+annaVideoState+' · '+(annaTexReady?'VISIBLE':annaVideoReady?'VIDEO READY':'VIDEO '+String(annaVideoError||'WAIT').toUpperCase())+' · '+aiStatus,56,151);if(annaCanvas&&annaTexReady){try{c.drawImage(annaCanvas,1058,32,86,116);c.strokeStyle='rgba(201,151,242,.9)';c.lineWidth=3;c.strokeRect(1058,32,86,116)}catch{}}
   const metrics=[['PACE',Math.round(tel.pace*100)+'%'],['DEPTH',Math.round(tel.depth*100)+'%'],['FORCE',Math.round(tel.force*100)+'%'],['ENERGY',Math.round(tel.intensity*100)+'%'],['CYCLE',tel.initialized?tel.cycleTimeS.toFixed(1)+'s':'—']];
   metrics.forEach((m,i)=>{const x=56+i*216;c.fillStyle='rgba(24,15,34,.95)';rounded(c,x,178,196,72,17);c.fill();c.strokeStyle='rgba(80,55,96,.75)';c.lineWidth=2;rounded(c,x,178,196,72,17);c.stroke();c.fillStyle='#8f7e9d';c.font='700 14px system-ui';c.fillText(m[0],x+16,203);c.fillStyle='#f1e8f8';c.font='800 25px ui-monospace';c.fillText(m[1],x+16,234)});
   const items=[['AUTO',auto?'ON':'OFF'],['AI','CHOOSE'],['FASTER','PACE +'],['SLOWER','PACE −'],['DEEPER','DEPTH +'],['EASE','ENERGY −'],['VIEW',editTarget.toUpperCase()],['EXIT','LEAVE VR']];
@@ -170,18 +188,30 @@ function renderMenu(mvp,t){
   gl.uniformMatrix4fv(gl.getUniformLocation(uiProgram,'m'),false,mvp);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,uiTex);gl.uniform1i(gl.getUniformLocation(uiProgram,'t'),0);
   gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.drawArrays(gl.TRIANGLES,0,6);gl.disable(gl.BLEND);
 }
-function renderAnnaVideo(mvp){
-  if(!annaTex||!annaVideo||!annaCanvas||!annaCtx||!annaVideoReady||annaVideo.readyState<2)return;
+function updateAnnaTexture(t){
+  if(!annaTex||!annaCanvas||!annaCtx)return false;if(t-annaLastUpload<66&&annaTexReady)return true;annaLastUpload=t;
   try{
-    const vw=annaVideo.videoWidth||144,vh=annaVideo.videoHeight||256,srcRatio=vw/vh,dstRatio=annaCanvas.width/annaCanvas.height;let sx=0,sy=0,sw=vw,sh=vh;
-    if(srcRatio>dstRatio){sw=vh*dstRatio;sx=(vw-sw)/2}else{sh=vw/dstRatio;sy=(vh-sh)/2}
-    annaCtx.fillStyle='#08040d';annaCtx.fillRect(0,0,annaCanvas.width,annaCanvas.height);annaCtx.drawImage(annaVideo,sx,sy,sw,sh,0,0,annaCanvas.width,annaCanvas.height);
-    gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,annaCanvas);
-  }catch(e){annaVideoError='texture';return}
-  const h=.72*annaPose.scale,ratio=annaCanvas.width/annaCanvas.height,w=h*ratio,x=annaPose.x,y=floorY()+annaPose.y,z=annaPose.z,a=annaPose.yaw,ca=Math.cos(a),sa=Math.sin(a),rx=ca*w,rz=sa*w;
+    const vw=annaVideo?.videoWidth||120,vh=annaVideo?.videoHeight||213,srcRatio=vw/vh,dstRatio=annaCanvas.width/annaCanvas.height;let sx=0,sy=0,sw=vw,sh=vh;
+    annaCtx.fillStyle='#08040d';annaCtx.fillRect(0,0,annaCanvas.width,annaCanvas.height);
+    if(annaPosterReady)annaCtx.drawImage(annaPoster,0,0,annaCanvas.width,annaCanvas.height);
+    if(annaVideoReady&&annaVideo?.readyState>=2){if(srcRatio>dstRatio){sw=vh*dstRatio;sx=(vw-sw)/2}else{sh=vw/dstRatio;sy=(vh-sh)/2}annaCtx.drawImage(annaVideo,sx,sy,sw,sh,0,0,annaCanvas.width,annaCanvas.height)}
+    gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+    if(!annaTexReady||annaTexW!==annaCanvas.width||annaTexH!==annaCanvas.height){gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,annaCanvas);annaTexW=annaCanvas.width;annaTexH=annaCanvas.height;annaTexReady=true}
+    else gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,gl.RGBA,gl.UNSIGNED_BYTE,annaCanvas);
+    return true;
+  }catch(e){annaVideoError='texture';return false}
+}
+function annaPlaneGeometry(){
+  const h=.78*annaPose.scale,ratio=(annaCanvas?.width&&annaCanvas?.height)?annaCanvas.width/annaCanvas.height:.5625,w=h*ratio,x=annaPose.x,y=floorY()+annaPose.y,z=annaPose.z,a=annaPose.yaw,ca=Math.cos(a),sa=Math.sin(a),rx=ca*w,rz=sa*w;
+  const corners=[[x-rx,y-h,z-rz],[x+rx,y-h,z+rz],[x+rx,y+h,z+rz],[x-rx,y+h,z-rz]],frame=[];for(let i=0;i<4;i++){const a=corners[i],b=corners[(i+1)%4];frame.push(...a,...b)}
+  return{h,w,x,y,z,rx,rz,corners,frame};
+}
+function renderAnnaVideo(mvp){
+  if(!annaTexReady)return;const g=annaPlaneGeometry(),x=g.x,y=g.y,z=g.z,h=g.h,rx=g.rx,rz=g.rz;
   const verts=new Float32Array([x-rx,y-h,z-rz,0,1,x+rx,y-h,z+rz,1,1,x-rx,y+h,z-rz,0,0,x-rx,y+h,z-rz,0,0,x+rx,y-h,z+rz,1,1,x+rx,y+h,z+rz,1,0]);
   gl.useProgram(uiProgram);gl.bindBuffer(gl.ARRAY_BUFFER,uiBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.DYNAMIC_DRAW);const p=gl.getAttribLocation(uiProgram,'p'),uv=gl.getAttribLocation(uiProgram,'uv');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,20,0);gl.enableVertexAttribArray(uv);gl.vertexAttribPointer(uv,2,gl.FLOAT,false,20,12);gl.uniformMatrix4fv(gl.getUniformLocation(uiProgram,'m'),false,mvp);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.uniform1i(gl.getUniformLocation(uiProgram,'t'),0);gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.drawArrays(gl.TRIANGLES,0,6);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);
-}function pulseSource(src){const gp=src?.gamepad,acts=[];if(!gp)return;try{if(gp.vibrationActuator)acts.push(gp.vibrationActuator);for(const a of gp.hapticActuators||[])acts.push(a)}catch{}for(const a of acts){try{if(a.pulse)a.pulse(.45,75);else if(a.playEffect)a.playEffect('dual-rumble',{duration:75,strongMagnitude:.45,weakMagnitude:.25})}catch{}}}
+}
+function pulseSource(src,strength=.45,duration=75){const gp=src?.gamepad,acts=[];if(!gp)return;try{if(gp.vibrationActuator)acts.push(gp.vibrationActuator);for(const a of gp.hapticActuators||[])acts.push(a)}catch{}for(const a of acts){try{if(a.pulse)a.pulse(clamp(strength),duration);else if(a.playEffect)a.playEffect('dual-rumble',{duration,strongMagnitude:clamp(strength),weakMagnitude:clamp(strength*.6)})}catch{}}}
 function dispatchVrAction(action){window.dispatchEvent(new CustomEvent('nocturne:vr-ui-action',{detail:{action}}))}
 function selectTile(i,src){
   if(i===0)dispatchVrAction('toggle-auto');
@@ -224,7 +254,7 @@ async function enterFallback(e){
     try{refSpace=await session.requestReferenceSpace('local-floor');refMode='local-floor'}catch{refSpace=await session.requestReferenceSpace('local');refMode='local'}
     session.addEventListener('end',()=>{session=null;layer=null;refSpace=null;hovered=-1;triggerDown.clear();window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:false}}));set('xr-status','VR READY');set('diag-line','Immersive session ended normally.');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}const exit=$('exit');if(exit)exit.disabled=true},{once:true});
     sceneMode='live';panelOffset={x:0,y:0,z:0};actionLine='Live workspace · waveform + geometry + Anna + AI controls.';lastMenu=0;if(annaVideo&&!annaVideo.paused){try{annaVideo.play()}catch{}}window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:true,mode:sceneMode}}));set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');const exit=$('exit');if(exit)exit.disabled=false;
-    const frame=(t,f)=>{if(!session)return;const pose=f.getViewerPose(refSpace),rays=controllerInteraction(f);gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(pose)for(const view of pose.views){const vp=layer.getViewport(view);gl.viewport(vp.x,vp.y,vp.width,vp.height);gl.scissor(vp.x,vp.y,vp.width,vp.height);gl.enable(gl.SCISSOR_TEST);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(f,view,t,rays);const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix);renderMenu(mvp,t);drawControllerOverlay(mvp,rays);gl.disable(gl.SCISSOR_TEST)}session.requestAnimationFrame(frame)};session.requestAnimationFrame(frame);
+    const frame=(t,f)=>{if(!session)return;const motion=motionState();syncMotionRuntime(t,motion);updateAnnaTexture(t);const pose=f.getViewerPose(refSpace),rays=controllerInteraction(f);gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(pose)for(const view of pose.views){const vp=layer.getViewport(view);gl.viewport(vp.x,vp.y,vp.width,vp.height);gl.scissor(vp.x,vp.y,vp.width,vp.height);gl.enable(gl.SCISSOR_TEST);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(f,view,t,rays,motion);const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix);renderMenu(mvp,t);drawControllerOverlay(mvp,rays);gl.disable(gl.SCISSOR_TEST)}session.requestAnimationFrame(frame)};session.requestAnimationFrame(frame);
   }catch(err){set('diag-line','Direct VR start failed: '+String(err&&err.message||err).slice(0,140));set('xr-status','VR START FAILED');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}session=null}
 }
 async function testControllers(e){
