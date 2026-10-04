@@ -2,7 +2,8 @@
 const $=id=>document.getElementById(id),set=(id,v)=>{const e=$(id);if(e)e.textContent=v},clamp=v=>Math.max(0,Math.min(1,Number(v)||0));
 let session=null,gl=null,layer=null,refSpace=null,refMode='local-floor';
 let worldProgram=null,worldBuf=null,uiProgram=null,uiBuf=null,uiTex=null,annaTex=null,menuCanvas=null,menuCtx=null,lastMenu=0;
-let mediaCorePromise=null,annaVideo=null,annaVideoUrl=null,annaVideoState='A01',annaVideoLoadSeq=0,annaCanvas=null,annaCtx=null,annaVideoReady=false,annaVideoError='';
+let mediaCorePromise=null,annaVideo=null,annaVideoState='A01',annaVideoLoadSeq=0,annaCanvas=null,annaCtx=null,annaVideoReady=false,annaVideoError='',aiStatus='AI CONNECTING';
+let editTarget='anna',annaPose={x:1.42,y:1.48,z:-2.05,scale:1,yaw:0},toolPose={x:0,y:0,z:0,scale:1,yaw:0};
 function requestedMode(){const q=new URLSearchParams(location.search).get('mode');if(['live','anna','tool','cognitive'].includes(q))return q;try{const saved=JSON.parse(localStorage.getItem('nocturne.vr.entry.v1')||'null');if(saved&&Date.now()-Number(saved.at||0)<30*60*1000&&['live','anna','tool','cognitive'].includes(saved.mode))return saved.mode}catch{}return'cognitive'}
 let sceneMode=requestedMode(),actionLine='Point a controller at a tile and press trigger.',hovered=-1;
 const triggerDown=new Map();
@@ -15,21 +16,34 @@ async function resolveAnnaState(id){
   return null;
 }
 async function loadAnnaVideoState(id){
-  const seq=++annaVideoLoadSeq;annaVideoReady=false;annaVideoError='loading';set('vr-video-state','LOADING');
-  const found=await resolveAnnaState(id);if(!found||seq!==annaVideoLoadSeq){annaVideoError='missing';set('vr-video-state','MISSING');return false}
-  const {core,row}=found;annaVideoState=found.id;try{localStorage.setItem('nocturne.vr.video-state.v1',annaVideoState)}catch{}
+  const seq=++annaVideoLoadSeq,core=await mediaCore(),requested=String(id||'A01').toUpperCase(),state=core.stateById(requested);
+  const ids=state?[...core.familyCandidates(requested,[]),'A01','A02','A00']:['A01','A02','A00'];
   if(!annaVideo){
     annaVideo=document.createElement('video');annaVideo.muted=true;annaVideo.playsInline=true;annaVideo.autoplay=true;annaVideo.preload='auto';annaVideo.setAttribute('playsinline','');annaVideo.setAttribute('webkit-playsinline','');
     annaVideo.style.cssText='position:fixed;width:2px;height:2px;opacity:.001;pointer-events:none;left:-20px;top:-20px';document.body.appendChild(annaVideo);
-    annaCanvas=document.createElement('canvas');annaCanvas.width=256;annaCanvas.height=455;annaCtx=annaCanvas.getContext('2d',{alpha:false});
+    annaCanvas=document.createElement('canvas');annaCanvas.width=360;annaCanvas.height=640;annaCtx=annaCanvas.getContext('2d',{alpha:false});
   }
-  try{annaVideo.pause()}catch{}if(annaVideoUrl)URL.revokeObjectURL(annaVideoUrl);annaVideoUrl=URL.createObjectURL(row.blob);annaVideo.src=annaVideoUrl;annaVideo.loop=core.playbackMode(annaVideoState)==='loop';
-  annaVideo.onloadeddata=()=>{if(seq!==annaVideoLoadSeq)return;annaVideoReady=true;annaVideoError='';set('vr-video-state',annaVideoState);actionLine='Anna '+annaVideoState+' ready · '+annaVideo.videoWidth+'×'+annaVideo.videoHeight;lastMenu=0;try{annaVideo.play()}catch{}};
-  annaVideo.onerror=()=>{if(seq!==annaVideoLoadSeq)return;annaVideoReady=false;annaVideoError='decode';set('vr-video-state','VIDEO ERROR');actionLine='Anna video could not decode in Quest.';lastMenu=0};
-  annaVideo.onended=()=>{const next=core.transitionAfterState(annaVideoState);if(next)loadAnnaVideoState(next)};
-  annaVideo.load();try{await annaVideo.play()}catch{}
-  return true;
+  annaVideoReady=false;annaVideoError='loading';set('vr-video-state','LOADING');
+  for(const candidate of [...new Set(ids)]){
+    if(seq!==annaVideoLoadSeq)return false;
+    try{
+      const head=await fetch('/media/'+candidate+'.mp4?v=0720',{method:'HEAD',cache:'no-store'});if(!head.ok)continue;
+      const ok=await new Promise(resolve=>{
+        let settled=false;const done=v=>{if(settled)return;settled=true;clearTimeout(timer);resolve(v)};
+        const timer=setTimeout(()=>done(false),7000);
+        annaVideo.onloadeddata=()=>done(true);annaVideo.onerror=()=>done(false);
+        annaVideo.src='/media/'+candidate+'.mp4?v=0720';annaVideo.loop=core.playbackMode(candidate)==='loop';annaVideo.load();try{annaVideo.play()}catch{}
+      });
+      if(!ok)continue;
+      annaVideoState=candidate;annaVideoReady=true;annaVideoError='';try{localStorage.setItem('nocturne.vr.video-state.v1',candidate)}catch{}
+      const vw=annaVideo.videoWidth||360,vh=annaVideo.videoHeight||640;if(vw>0&&vh>0){annaCanvas.width=Math.max(180,Math.min(720,vw));annaCanvas.height=Math.max(320,Math.min(1280,vh))}
+      annaVideo.onended=()=>{const next=core.transitionAfterState(annaVideoState);if(next)loadAnnaVideoState(next)};
+      set('vr-video-state',candidate);actionLine='Anna '+candidate+' ready · '+vw+'×'+vh;lastMenu=0;try{await annaVideo.play()}catch{}return true;
+    }catch{}
+  }
+  annaVideoReady=false;annaVideoError='missing';set('vr-video-state','MISSING');actionLine='Anna media unavailable in Quest.';lastMenu=0;return false;
 }
+
 function activeDevice(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');if(!Array.isArray(lib.devices))return null;return lib.devices.find(d=>d.id===lib.activeId)||(lib.devices.length===1?lib.devices[0]:null)}catch{return null}}
 function hexRgb(hex){const m=/^#([0-9a-f]{6})$/i.exec(String(hex||''));if(!m)return[.36,1,.84,1];const n=parseInt(m[1],16);return[((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255,1]}
 function loadTelemetry(){
@@ -69,11 +83,18 @@ function rounded(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+
 function floorY(){return refMode==='local-floor'?0:-1.55}
 function basePanelY(){return refMode==='local-floor'?1.48:.02}
 function panelY(){return basePanelY()+panelOffset.y}
-const PANEL_Z=-2.45,PANEL_W=1.62,PANEL_H=1.12;
+const PANEL_Z=-2.38,PANEL_W=2.05,PANEL_H=1.38;
 function panelZ(){return PANEL_Z+panelOffset.z}
-function basePanelX(){return sceneMode==='cognitive'?0:-1.42}
+function basePanelX(){return -1.28}
 function panelX(){return basePanelX()+panelOffset.x}
 function modeColor(){return sceneMode==='live'?[.28,.78,1,1]:sceneMode==='anna'?[.86,.48,1,1]:sceneMode==='tool'?[.36,1,.84,1]:[.67,.42,.94,1]}
+function transformPoint(p,pose,pivot=[0,0,0]){
+  const x=(p[0]-pivot[0])*pose.scale,z=(p[2]-pivot[2])*pose.scale,y=(p[1]-pivot[1])*pose.scale,a=pose.yaw,ca=Math.cos(a),sa=Math.sin(a);
+  return[pivot[0]+x*ca-z*sa+pose.x,pivot[1]+y+pose.y,pivot[2]+x*sa+z*ca+pose.z];
+}
+function transformVerts(v,pose,pivot=[0,0,0]){const out=[];for(let i=0;i<v.length;i+=3)out.push(...transformPoint([v[i],v[i+1],v[i+2]],pose,pivot));return out}
+function resetSpatialView(){panelOffset={x:0,y:0,z:0};annaPose={x:1.42,y:1.48,z:-2.05,scale:1,yaw:0};toolPose={x:0,y:0,z:0,scale:1,yaw:0};editTarget='anna';actionLine='View reset · editing ANNA';lastMenu=0}
+
 function drawWorld(mvp,verts,color,mode,size=4){
   if(!verts.length)return;gl.useProgram(worldProgram);gl.bindBuffer(gl.ARRAY_BUFFER,worldBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.DYNAMIC_DRAW);
   const a=gl.getAttribLocation(worldProgram,'a');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);gl.uniformMatrix4fv(gl.getUniformLocation(worldProgram,'m'),false,mvp);gl.uniform4fv(gl.getUniformLocation(worldProgram,'c'),color);gl.uniform1f(gl.getUniformLocation(worldProgram,'ps'),size);gl.drawArrays(mode,0,verts.length/3);
@@ -116,9 +137,7 @@ function drawScene(frame,view,t,rays){
   drawWorld(mvp,lat.grid,[.12,.09,.18,.34],gl.LINES,1);drawWorld(mvp,lat.hoops,[.28,.17,.38,.28],gl.LINES,1);drawWorld(mvp,lat.vertical,[.18,.12,.25,.22],gl.LINES,1);
   drawWorld(mvp,c.edges,[mc[0],mc[1],mc[2],.14],gl.LINES,1);drawWorld(mvp,c.stars,[.45,.62,.92,.28],gl.POINTS,2);drawWorld(mvp,c.nodes,[mc[0],mc[1],mc[2],.88],gl.POINTS,7);
   const core=[];for(let i=0;i<3;i++)core.push(...ring(.36+i*.18,floorY()+1.38,-1.25,48));drawWorld(mvp,core,[mc[0],mc[1],mc[2],.5],gl.LINES,2);
-  if(sceneMode==='live'){const p=telemetryPath(t),h=liveHudGeometry(),f=loadTelemetry().force,g=toolGeometry(t),cc=g.color;drawWorld(mvp,p.lines,[.35,.82,1,.82],gl.LINES,3);drawWorld(mvp,p.points,[.92,.82,1,.95],gl.POINTS,4);drawWorld(mvp,h.frame,[.3,.24,.36,.72],gl.LINES,1);drawWorld(mvp,h.track,[.18,.28,.42,.9],gl.LINES,6);drawWorld(mvp,h.fill,[.5+.5*f,.2+.45*(1-f),.95-.55*f,1],gl.LINES,8);drawWorld(mvp,h.marker,[1,.95,.98,1],gl.POINTS,10);drawWorld(mvp,g.axis,[cc[0],cc[1],cc[2],.28],gl.LINES,2);drawWorld(mvp,g.shell,[cc[0],cc[1],cc[2],.72],gl.LINES,2);drawWorld(mvp,g.tip,[.92,.82,1,.82],gl.LINES,2);renderAnnaVideo(mvp)}
-  if(sceneMode==='anna'){const halo=[];for(let i=0;i<4;i++)halo.push(...ring(.3+i*.16,floorY()+1.42,-1.95,48));drawWorld(mvp,halo,[.88,.48,1,.64],gl.LINES,2);renderAnnaVideo(mvp)}
-  if(sceneMode==='tool'){const g=toolGeometry(t),cc=g.color;drawWorld(mvp,g.axis,[cc[0],cc[1],cc[2],.42],gl.LINES,2);drawWorld(mvp,g.targetRing,[.85,.9,1,.6],gl.LINES,2);drawWorld(mvp,g.shell,[cc[0],cc[1],cc[2],.94],gl.LINES,2);drawWorld(mvp,g.tip,[Math.min(1,cc[0]+.18),Math.min(1,cc[1]+.18),Math.min(1,cc[2]+.18),.96],gl.LINES,2);drawWorld(mvp,g.baseRing,[cc[0],cc[1],cc[2],.96],gl.LINES,3);drawWorld(mvp,g.marker,[1,.96,1,1],gl.POINTS,8)}
+  {const p=telemetryPath(t),h=liveHudGeometry(),f=loadTelemetry().force,g=toolGeometry(t),cc=g.color,pivot=[0,floorY()+1.15,-.62],axis=transformVerts(g.axis,toolPose,pivot),shell=transformVerts(g.shell,toolPose,pivot),tip=transformVerts(g.tip,toolPose,pivot),base=transformVerts(g.baseRing,toolPose,pivot),targetRing=transformVerts(g.targetRing,toolPose,pivot),marker=transformVerts(g.marker,toolPose,pivot);drawWorld(mvp,p.lines,[.35,.82,1,.82],gl.LINES,3);drawWorld(mvp,p.points,[.92,.82,1,.95],gl.POINTS,4);drawWorld(mvp,h.frame,[.3,.24,.36,.72],gl.LINES,1);drawWorld(mvp,h.track,[.18,.28,.42,.9],gl.LINES,6);drawWorld(mvp,h.fill,[.5+.5*f,.2+.45*(1-f),.95-.55*f,1],gl.LINES,8);drawWorld(mvp,h.marker,[1,.95,.98,1],gl.POINTS,10);drawWorld(mvp,axis,[cc[0],cc[1],cc[2],.36],gl.LINES,2);drawWorld(mvp,targetRing,[.85,.9,1,.55],gl.LINES,2);drawWorld(mvp,shell,[cc[0],cc[1],cc[2],.9],gl.LINES,2);drawWorld(mvp,tip,[.92,.82,1,.92],gl.LINES,2);drawWorld(mvp,base,[cc[0],cc[1],cc[2],.82],gl.LINES,2);drawWorld(mvp,marker,[1,.96,1,1],gl.POINTS,8);renderAnnaVideo(mvp)}
   gl.disable(gl.BLEND);
 }
 function controllerSummary(){
@@ -127,18 +146,22 @@ function controllerSummary(){
 }
 function telemetrySummary(){const t=loadTelemetry();return t.initialized?('PACE '+Math.round(t.pace*100)+'   DEPTH '+Math.round(t.depth*100)+'   CYCLE '+t.cycleTimeS.toFixed(1)+'s   ENERGY '+Math.round(t.intensity*100)):'SESSION NOT STARTED · ZERO TELEMETRY'}
 function drawMenu(t){
-  if(!menuCtx)return;const c=menuCtx,w=menuCanvas.width,h=menuCanvas.height;c.clearRect(0,0,w,h);
-  const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'rgba(20,10,33,.97)');g.addColorStop(.55,'rgba(8,6,16,.96)');g.addColorStop(1,'rgba(3,3,8,.98)');c.fillStyle=g;rounded(c,18,18,w-36,h-36,42);c.fill();
-  c.strokeStyle='rgba(183,125,240,.78)';c.lineWidth=4;rounded(c,18,18,w-36,h-36,42);c.stroke();
-  c.fillStyle='#a98bc2';c.font='700 25px system-ui';c.fillText('NOCTURNE  /  IMMERSIVE FIELD  ·  0.69.0',58,69);
-  c.fillStyle='#ffffff';c.font='800 54px system-ui';c.fillText(sceneMode==='cognitive'?'WORLD ONLINE':sceneMode.toUpperCase()+' FIELD',58,132);
-  c.fillStyle='#bbaac8';c.font='25px system-ui';c.fillText(telemetrySummary()+'   ANNA '+annaVideoState+'   '+(localStorage.getItem('nocturne.vr.autopilot.v1')==='on'?'AUTO ON':'AUTO OFF'),58,178);
-  c.fillStyle='#171020';rounded(c,58,210,1084,70,20);c.fill();c.fillStyle='#e9ddf5';c.font='700 24px system-ui';c.fillText(controllerSummary(),82,253);
-  const items=[['LIVE','waveform + telemetry'],['ANNA','cognitive presence'],['TOOL','geometry field'],['EXIT','leave immersion']];
-  items.forEach((it,i)=>{const x=58+(i%2)*548,y=326+Math.floor(i/2)*142,active=(sceneMode==='live'&&i===0)||(sceneMode==='anna'&&i===1)||(sceneMode==='tool'&&i===2),hot=hovered===i;c.fillStyle=hot?'rgba(112,66,148,.98)':active?'rgba(65,48,82,.98)':'rgba(35,24,45,.94)';rounded(c,x,y,518,112,24);c.fill();c.strokeStyle=hot?'rgba(224,181,255,1)':active?'rgba(143,218,255,.9)':'rgba(105,75,127,.8)';c.lineWidth=hot?5:2;rounded(c,x,y,518,112,24);c.stroke();c.fillStyle='#fff';c.font='800 31px system-ui';c.fillText(it[0],x+28,y+44);c.fillStyle='#ae9bb9';c.font='22px system-ui';c.fillText(it[1],x+28,y+80)});
-  c.fillStyle='#806f8d';c.font='22px system-ui';c.fillText(actionLine,58,739);c.fillStyle='#5f5270';c.font='18px system-ui';c.fillText('Trigger selects · Grip + aim moves this panel · no flashing',58,778);
+  if(!menuCtx)return;const c=menuCtx,w=menuCanvas.width,h=menuCanvas.height,tel=loadTelemetry(),auto=localStorage.getItem('nocturne.vr.autopilot.v1')==='on';
+  c.clearRect(0,0,w,h);const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'rgba(20,10,33,.98)');g.addColorStop(.58,'rgba(8,6,16,.97)');g.addColorStop(1,'rgba(3,3,8,.99)');c.fillStyle=g;rounded(c,18,18,w-36,h-36,42);c.fill();c.strokeStyle='rgba(183,125,240,.82)';c.lineWidth=4;rounded(c,18,18,w-36,h-36,42);c.stroke();
+  c.fillStyle='#a98bc2';c.font='700 24px system-ui';c.fillText('NOCTURNE / LIVE IMMERSIVE · 0.72',56,61);
+  c.fillStyle='#fff';c.font='800 44px system-ui';c.fillText(tel.initialized?'SESSION LIVE':'SESSION READY',56,113);
+  c.fillStyle='#bbaac8';c.font='22px system-ui';c.fillText('ANNA '+annaVideoState+' · '+(annaVideoReady?'VIDEO READY':'VIDEO '+String(annaVideoError||'WAIT').toUpperCase())+' · '+aiStatus,56,151);
+  const metrics=[['PACE',Math.round(tel.pace*100)+'%'],['DEPTH',Math.round(tel.depth*100)+'%'],['FORCE',Math.round(tel.force*100)+'%'],['ENERGY',Math.round(tel.intensity*100)+'%'],['CYCLE',tel.initialized?tel.cycleTimeS.toFixed(1)+'s':'—']];
+  metrics.forEach((m,i)=>{const x=56+i*216;c.fillStyle='rgba(24,15,34,.95)';rounded(c,x,178,196,72,17);c.fill();c.strokeStyle='rgba(80,55,96,.75)';c.lineWidth=2;rounded(c,x,178,196,72,17);c.stroke();c.fillStyle='#8f7e9d';c.font='700 14px system-ui';c.fillText(m[0],x+16,203);c.fillStyle='#f1e8f8';c.font='800 25px ui-monospace';c.fillText(m[1],x+16,234)});
+  const items=[['AUTO',auto?'ON':'OFF'],['AI','CHOOSE'],['FASTER','PACE +'],['SLOWER','PACE −'],['DEEPER','DEPTH +'],['EASE','ENERGY −'],['VIEW',editTarget.toUpperCase()],['EXIT','LEAVE VR']];
+  const top=290,tw=258,th=132,gap=18;
+  items.forEach((it,i)=>{const col=i%4,row=Math.floor(i/4),x=56+col*(tw+gap),y=top+row*(th+gap),hot=hovered===i,active=(i===0&&auto)||(i===6);c.fillStyle=hot?'rgba(112,66,148,.98)':active?'rgba(62,42,78,.98)':'rgba(30,20,40,.96)';rounded(c,x,y,tw,th,22);c.fill();c.strokeStyle=hot?'rgba(230,193,255,1)':active?'rgba(162,112,205,.95)':'rgba(78,56,92,.8)';c.lineWidth=hot?5:2;rounded(c,x,y,tw,th,22);c.stroke();c.fillStyle='#fff';c.font='800 25px system-ui';c.fillText(it[0],x+22,y+48);c.fillStyle='#ac98ba';c.font='20px system-ui';c.fillText(it[1],x+22,y+86)});
+  c.fillStyle='#d3c2de';c.font='20px system-ui';c.fillText(actionLine,56,670);
+  c.fillStyle='#746481';c.font='18px system-ui';c.fillText('Grip + aim moves '+editTarget.toUpperCase()+' · while gripping, thumbstick X rotates / Y scales',56,711);
+  c.fillText(controllerSummary(),56,751);
   gl.bindTexture(gl.TEXTURE_2D,uiTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,menuCanvas);lastMenu=t;
 }
+
 function renderMenu(mvp,t){
   if(t-lastMenu>150)drawMenu(t);const y=panelY(),z=panelZ(),x=panelX(),w=PANEL_W/2,h=PANEL_H/2;
   const verts=new Float32Array([x-w,y-h,z,0,1,x+w,y-h,z,1,1,x-w,y+h,z,0,0,x-w,y+h,z,0,0,x+w,y-h,z,1,1,x+w,y+h,z,1,0]);
@@ -155,25 +178,39 @@ function renderAnnaVideo(mvp){
     annaCtx.fillStyle='#08040d';annaCtx.fillRect(0,0,annaCanvas.width,annaCanvas.height);annaCtx.drawImage(annaVideo,sx,sy,sw,sh,0,0,annaCanvas.width,annaCanvas.height);
     gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,annaCanvas);
   }catch(e){annaVideoError='texture';return}
-  const live=sceneMode==='live',h=live?.72:1.12,ratio=annaCanvas.width/annaCanvas.height,w=h*ratio,x=live?1.48:0,y=floorY()+(live?1.48:1.48),z=live?-2.05:-1.86;
-  const verts=new Float32Array([x-w,y-h,z,0,1,x+w,y-h,z,1,1,x-w,y+h,z,0,0,x-w,y+h,z,0,0,x+w,y-h,z,1,1,x+w,y+h,z,1,0]);
+  const h=.72*annaPose.scale,ratio=annaCanvas.width/annaCanvas.height,w=h*ratio,x=annaPose.x,y=floorY()+annaPose.y,z=annaPose.z,a=annaPose.yaw,ca=Math.cos(a),sa=Math.sin(a),rx=ca*w,rz=sa*w;
+  const verts=new Float32Array([x-rx,y-h,z-rz,0,1,x+rx,y-h,z+rz,1,1,x-rx,y+h,z-rz,0,0,x-rx,y+h,z-rz,0,0,x+rx,y-h,z+rz,1,1,x+rx,y+h,z+rz,1,0]);
   gl.useProgram(uiProgram);gl.bindBuffer(gl.ARRAY_BUFFER,uiBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.DYNAMIC_DRAW);const p=gl.getAttribLocation(uiProgram,'p'),uv=gl.getAttribLocation(uiProgram,'uv');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,20,0);gl.enableVertexAttribArray(uv);gl.vertexAttribPointer(uv,2,gl.FLOAT,false,20,12);gl.uniformMatrix4fv(gl.getUniformLocation(uiProgram,'m'),false,mvp);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.uniform1i(gl.getUniformLocation(uiProgram,'t'),0);gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.drawArrays(gl.TRIANGLES,0,6);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);
 }function pulseSource(src){const gp=src?.gamepad,acts=[];if(!gp)return;try{if(gp.vibrationActuator)acts.push(gp.vibrationActuator);for(const a of gp.hapticActuators||[])acts.push(a)}catch{}for(const a of acts){try{if(a.pulse)a.pulse(.45,75);else if(a.playEffect)a.playEffect('dual-rumble',{duration:75,strongMagnitude:.45,weakMagnitude:.25})}catch{}}}
+function dispatchVrAction(action){window.dispatchEvent(new CustomEvent('nocturne:vr-ui-action',{detail:{action}}))}
 function selectTile(i,src){
-  if(i===0){sceneMode='live';actionLine='Live telemetry field selected.'}
-  else if(i===1){sceneMode='anna';actionLine='Anna cognitive field selected.'}
-  else if(i===2){sceneMode='tool';actionLine='Tool geometry field selected.'}
-  else if(i===3){actionLine='Leaving immersive VR…';try{session?.end()}catch{}}
+  if(i===0)dispatchVrAction('toggle-auto');
+  else if(i===1)dispatchVrAction('ai-choose');
+  else if(i===2)dispatchVrAction('faster');
+  else if(i===3)dispatchVrAction('slower');
+  else if(i===4)dispatchVrAction('deeper');
+  else if(i===5)dispatchVrAction('ease');
+  else if(i===6){editTarget=editTarget==='anna'?'tool':editTarget==='tool'?'panel':'anna';actionLine='Editing '+editTarget.toUpperCase()+' · grip + aim to move';lastMenu=0}
+  else if(i===7){actionLine='Leaving immersive VR…';try{session?.end()}catch{}}
   pulseSource(src);lastMenu=0;
 }
 function controllerInteraction(frame){
   hovered=-1;const rays=[];if(!session||!refSpace)return rays;let nearest=Infinity,chosen=null;
-  for(const src of session.inputSources){if(!src.gamepad)continue;const pose=frame.getPose(src.targetRaySpace,refSpace);if(!pose)continue;const m=pose.transform.matrix,o=[m[12],m[13],m[14]],d=[-m[8],-m[9],-m[10]],den=d[2],tr=src.gamepad.buttons?.[0]?.value||0,gr=src.gamepad.buttons?.[1]?.value||0;if(gr>.72&&tr<.45){const dd=2.35,px=o[0]+d[0]*dd,py=o[1]+d[1]*dd,pz=o[2]+d[2]*dd;panelOffset.x=Math.max(-1.8,Math.min(1.8,px-basePanelX()));panelOffset.y=Math.max(-1.2,Math.min(1.2,py-basePanelY()));panelOffset.z=Math.max(-1.5,Math.min(1.2,pz-PANEL_Z));actionLine='Panel moved · release grip, then use trigger to select.';lastMenu=0}let end=[o[0]+d[0]*3,o[1]+d[1]*3,o[2]+d[2]*3],idx=-1,dist=3;
-    if(Math.abs(den)>.0001){const tt=(panelZ()-o[2])/den;if(tt>0&&tt<6){const hx=o[0]+d[0]*tt,hy=o[1]+d[1]*tt,lx=hx-panelX();if(Math.abs(lx)<=PANEL_W/2&&Math.abs(hy-panelY())<=PANEL_H/2){end=[hx,hy,panelZ()+.008];dist=tt;const localY=hy-panelY();idx=(localY>-.03?0:2)+(lx>0?1:0);if(dist<nearest){nearest=dist;chosen=idx}}}}
+  for(const src of session.inputSources){if(!src.gamepad)continue;const pose=frame.getPose(src.targetRaySpace,refSpace);if(!pose)continue;const m=pose.transform.matrix,o=[m[12],m[13],m[14]],d=[-m[8],-m[9],-m[10]],den=d[2],tr=src.gamepad.buttons?.[0]?.value||0,gr=src.gamepad.buttons?.[1]?.value||0,ax=src.gamepad.axes?.[2]??src.gamepad.axes?.[0]??0,ay=src.gamepad.axes?.[3]??src.gamepad.axes?.[1]??0;
+    if(gr>.72&&tr<.45){
+      const dd=2.25,px=o[0]+d[0]*dd,py=o[1]+d[1]*dd,pz=o[2]+d[2]*dd;
+      if(editTarget==='panel'){panelOffset.x=Math.max(-1.8,Math.min(1.8,px-basePanelX()));panelOffset.y=Math.max(-1.1,Math.min(1.1,py-basePanelY()));panelOffset.z=Math.max(-1.4,Math.min(.8,pz-PANEL_Z))}
+      else if(editTarget==='anna'){annaPose.x=Math.max(-2.2,Math.min(2.2,px));annaPose.y=Math.max(.55,Math.min(2.6,py-floorY()));annaPose.z=Math.max(-4.5,Math.min(-.7,pz));annaPose.yaw=Math.max(-1.2,Math.min(1.2,annaPose.yaw+ax*.018));annaPose.scale=Math.max(.45,Math.min(1.8,annaPose.scale-ay*.012))}
+      else {toolPose.x=Math.max(-2,Math.min(2,px));toolPose.y=Math.max(-1,Math.min(1.6,py-(floorY()+1.15)));toolPose.z=Math.max(-2.2,Math.min(1.2,pz+.62));toolPose.yaw=Math.max(-1.2,Math.min(1.2,toolPose.yaw+ax*.018));toolPose.scale=Math.max(.55,Math.min(1.8,toolPose.scale-ay*.012))}
+      actionLine='Moving '+editTarget.toUpperCase()+' · stick X rotate · Y scale';lastMenu=0;
+    }
+    let end=[o[0]+d[0]*3,o[1]+d[1]*3,o[2]+d[2]*3],idx=-1,dist=3;
+    if(Math.abs(den)>.0001){const tt=(panelZ()-o[2])/den;if(tt>0&&tt<6){const hx=o[0]+d[0]*tt,hy=o[1]+d[1]*tt,lx=(hx-panelX())/PANEL_W+.5,ly=.5-(hy-panelY())/PANEL_H;if(lx>=0&&lx<=1&&ly>=0&&ly<=1){end=[hx,hy,panelZ()+.008];dist=tt;if(ly>=.34&&ly<=.79){const col=Math.max(0,Math.min(3,Math.floor(lx*4))),row=ly<.565?0:1;idx=row*4+col;if(dist<nearest){nearest=dist;chosen=idx}}}}}
     rays.push(o[0],o[1],o[2],end[0],end[1],end[2]);const was=triggerDown.get(src)||false,down=tr>.62;if(down&&!was&&idx>=0)selectTile(idx,src);triggerDown.set(src,down);
   }
   hovered=chosen??-1;return rays;
 }
+
 function drawControllerOverlay(mvp,rays){if(!rays.length)return;const tips=[];for(let i=0;i<rays.length;i+=6)tips.push(rays[i+3],rays[i+4],rays[i+5]);gl.disable(gl.DEPTH_TEST);drawWorld(mvp,rays,[.96,.82,1,1],gl.LINES,3);drawWorld(mvp,tips,[1,.96,1,1],gl.POINTS,11);gl.enable(gl.DEPTH_TEST)}
 async function enterFallback(e){
   if(e){e.preventDefault();e.stopImmediatePropagation()}if(session){set('diag-line','Immersive session is already active.');return}
@@ -186,7 +223,7 @@ async function enterFallback(e){
     layer=new XRWebGLLayer(session,gl);session.updateRenderState({baseLayer:layer,depthNear:.04,depthFar:60});
     try{refSpace=await session.requestReferenceSpace('local-floor');refMode='local-floor'}catch{refSpace=await session.requestReferenceSpace('local');refMode='local'}
     session.addEventListener('end',()=>{session=null;layer=null;refSpace=null;hovered=-1;triggerDown.clear();window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:false}}));set('xr-status','VR READY');set('diag-line','Immersive session ended normally.');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}const exit=$('exit');if(exit)exit.disabled=true},{once:true});
-    sceneMode=requestedMode();panelOffset={x:0,y:0,z:0};actionLine=sceneMode==='live'?'Full Live field · waveform + geometry + Anna.':'Point a controller at a tile and press trigger.';lastMenu=0;if(annaVideo&&!annaVideo.paused){try{annaVideo.play()}catch{}}window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:true,mode:sceneMode}}));set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');const exit=$('exit');if(exit)exit.disabled=false;
+    sceneMode='live';panelOffset={x:0,y:0,z:0};actionLine='Live workspace · waveform + geometry + Anna + AI controls.';lastMenu=0;if(annaVideo&&!annaVideo.paused){try{annaVideo.play()}catch{}}window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:true,mode:sceneMode}}));set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');const exit=$('exit');if(exit)exit.disabled=false;
     const frame=(t,f)=>{if(!session)return;const pose=f.getViewerPose(refSpace),rays=controllerInteraction(f);gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(pose)for(const view of pose.views){const vp=layer.getViewport(view);gl.viewport(vp.x,vp.y,vp.width,vp.height);gl.scissor(vp.x,vp.y,vp.width,vp.height);gl.enable(gl.SCISSOR_TEST);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(f,view,t,rays);const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix);renderMenu(mvp,t);drawControllerOverlay(mvp,rays);gl.disable(gl.SCISSOR_TEST)}session.requestAnimationFrame(frame)};session.requestAnimationFrame(frame);
   }catch(err){set('diag-line','Direct VR start failed: '+String(err&&err.message||err).slice(0,140));set('xr-status','VR START FAILED');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}session=null}
 }
@@ -198,7 +235,7 @@ async function testControllers(e){
 }
 window.nocturneVrSelfTest=run;
 document.addEventListener('DOMContentLoaded',()=>{$('diag-run')?.addEventListener('click',run);setTimeout(run,0);const enter=$('enter');if(enter)enter.addEventListener('click',enterFallback,{capture:true});const test=$('test');if(test)test.addEventListener('click',testControllers,{capture:true});const exit=$('exit');if(exit)exit.addEventListener('click',async e=>{if(session){e.preventDefault();e.stopImmediatePropagation();try{await session.end()}catch{}}},{capture:true})});
-window.addEventListener('nocturne:vr-video-state',e=>{const id=String(e.detail?.id||'').toUpperCase();if(id)loadAnnaVideoState(id)});window.addEventListener('storage',e=>{if(e.key==='nocturne.vr.video-state.v1'&&e.newValue)loadAnnaVideoState(e.newValue)});
+window.addEventListener('nocturne:vr-video-state',e=>{const id=String(e.detail?.id||'').toUpperCase();if(id)loadAnnaVideoState(id)});window.addEventListener('nocturne:vr-ai-status',e=>{aiStatus=String(e.detail?.text||'AI READY').slice(0,38);lastMenu=0});window.addEventListener('nocturne:vr-reset-view',()=>resetSpatialView());window.addEventListener('storage',e=>{if(e.key==='nocturne.vr.video-state.v1'&&e.newValue)loadAnnaVideoState(e.newValue)});
 window.addEventListener('error',e=>set('diag-line','VR script error: '+String(e.message||'unknown').slice(0,120)));
 window.addEventListener('unhandledrejection',e=>set('diag-line','VR promise error: '+String(e.reason&&e.reason.message||e.reason||'unknown').slice(0,120)));
 })();
