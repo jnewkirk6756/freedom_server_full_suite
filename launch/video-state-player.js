@@ -20,7 +20,7 @@ export function createVideoStatePlayer({host,primary=null,statusEl=null,fallback
     const state=stateById(id);if(!state)return[];
     let out=state.baseId?[state.id,baseStateId(state.id),...familyCandidates(state.id,recent)]:familyCandidates(state.id,recent);
     if(rotate&&!state.baseId&&out.length>1)out=[...out.slice(1),out[0]];
-    if(initial)out=[...out,...initialFallbackCandidates(id)];
+    out=[...out,...initialFallbackCandidates(id)];
     if(neutralFallback)out=[...out,'A00','A02','A01'];
     return [...new Set(out)].filter(x=>stateById(x));
   }
