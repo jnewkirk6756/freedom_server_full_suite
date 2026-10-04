@@ -99,11 +99,12 @@ function sizeAvatarFromVideo(v,id){
   var host=$('avatar');if(!host||!v)return;
   host.classList.add('video-state-stage');
   var w=Number(v.videoWidth)||144,h=Number(v.videoHeight)||256,dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
-  var cssW=Math.max(108,Math.min(164,(w/dpr)*1.45));
+  var cssW=w<120?72:w<220?100:Math.min(148,Math.max(112,w/(dpr*.8)));
   host.style.setProperty('--anna-video-ratio',String(w/h));
   host.style.setProperty('--anna-video-width',Math.round(cssW)+'px');
   host.dataset.videoState=id||'';
   host.dataset.videoResolution=w+'x'+h;
+  host.dataset.videoQuality=w<120?'preview-low':w<240?'preview':'sync-hq';
 }
 async function loadVideo(id,reason){
   id=String(id||'A01').toUpperCase();if(!/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(id))id='A01';id=resolveVideoState(id);
