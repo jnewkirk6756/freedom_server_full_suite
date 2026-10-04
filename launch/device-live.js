@@ -1,13 +1,11 @@
 /** Observe the existing session object: no independent motion clock and no device commands. */
 import {mountGeometry} from './device-view.js';
 import {clamp} from './device-core.js';
-import {installLiveTestMode} from './live-bridge.js';
 export function attachGeometry(live) {
   if(typeof window==='undefined'||!/^\/live\/?$/.test(window.location.pathname))return live;
   queueMicrotask(()=>installGeometry(live));return live;
 }
 export function installGeometry(live) {
-  installLiveTestMode(live);
   const root=document.getElementById('trajectory'),oldWave=document.getElementById('waveform');
   if(!root||document.getElementById('device-trajectory')||!oldWave)return;
   const css=document.createElement('link');css.rel='stylesheet';css.href='/devices.css?v=0641';document.head.append(css);
