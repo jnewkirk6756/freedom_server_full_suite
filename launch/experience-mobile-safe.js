@@ -70,12 +70,12 @@ async function bootDirector(){
 }
 function resolveVideoState(requested){
   requested=String(requested||'A01').toUpperCase();
-  var exact={A00:1,A01:1,A02:1,A16:1,A16B:1,A17:1,A17B:1,A18:1,A18B:1,A18C:1,A18D:1,A18E:1,A18F:1,A19B:1,A19C:1};
+  var exact={A00:1,A01:1,A02:1,A05:1,A10:1,A16:1,A16B:1,A17:1,A17B:1,A18:1,A18B:1,A18C:1,A18D:1,A18E:1,A18F:1,A19B:1,A19C:1};
   if(exact[requested])return requested;
   var semantic={
-    A03:['A02','A01'],A04:['A02','A01'],A05:['A02','A01'],A06:['A02','A01'],
-    A07:['A01','A02'],A08:['A02','A01'],A09:['A02','A01'],A10:['A02','A01'],
-    A11:['A02','A01'],A12:['A16','A02','A01'],A13:['A19C','A02','A01'],A14:['A02','A01'],
+    A03:['A05','A02','A01'],A04:['A02','A05','A01'],A05:['A05','A02','A01'],A06:['A05','A10','A01'],
+    A07:['A01','A02'],A08:['A02','A01'],A09:['A02','A01'],A10:['A10','A05','A01'],
+    A11:['A05','A02','A01'],A12:['A10','A16','A02','A01'],A13:['A19C','A02','A01'],A14:['A02','A01'],
     A15:['A16','A02','A01'],A19:['A19B','A19C','A01'],A20:['A01','A00']
   };
   var options=semantic[requested]||['A02','A01'],current=state.videoState;
@@ -102,7 +102,7 @@ async function loadVideo(id){
     function done(ok){if(settled)return;settled=true;clearTimeout(timer);resolve(ok)}
     v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=true;sizeAvatarFromVideo(v,requested);if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}done(true)};
     v.onerror=function(){if(requested!=='A01'){clearTimeout(timer);settled=true;loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media could not load.';done(false)};
-    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0707';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
+    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0708';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
   });
 }
 function applyDirector(q){
