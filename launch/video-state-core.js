@@ -66,6 +66,16 @@ export function transitionAfterState(id){
   if(base==='A20')return'A01';
   return null;
 }
+export function semanticFallbackCandidates(id){
+  const base=baseStateId(id)||String(id||'').toUpperCase();
+  const map={
+    A03:['A05','A01'], A04:['A02','A01'], A05:['A05','A01'], A06:['A05','A01'],
+    A07:['A02','A01'], A08:['A02','A01'], A09:['A02','A01'], A10:['A05','A01'],
+    A11:['A05','A01'], A12:['A05','A01'], A13:['A05','A01'], A14:['A02','A01'],
+    A15:['A16','A02','A01'], A19:['A19B','A19C','A01'], A20:['A01','A00']
+  };
+  return [...new Set(map[base]||[])].filter(x=>x!==id&&stateById(x));
+}
 export function initialFallbackCandidates(id){
   const base=baseStateId(id)||'A01';
   const map={A00:['A01','A02'],A01:['A02','A00'],A02:['A01','A00'],A03:['A01','A02'],A04:['A02','A01'],A05:['A01','A00'],A06:['A01','A00'],A07:['A01','A02'],A08:['A02','A01'],A09:['A02','A01'],A10:['A01','A00'],A11:['A01','A02'],A12:['A01','A00'],A13:['A01','A00'],A14:['A02','A01'],A15:['A16','A17','A02','A01'],A16:['A16B','A17','A01'],A17:['A17B','A16','A01'],A18:['A17','A16','A01'],A19:['A19B','A19C','A20','A01'],A20:['A01','A00']};
