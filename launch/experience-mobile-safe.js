@@ -68,17 +68,41 @@ function explicitTelemetry(text){
 async function bootDirector(){
   try{var r=await fetch('/v1/director/status',{headers:token?{'x-nocturne-session':token}:{}}),d=await r.json();if(d.sessionToken){token=d.sessionToken;sessionStorage.setItem(TOKEN_KEY,token)}status(d.openAIConfigured?'AI LIVE':'FALLBACK',true);return d}catch(e){status('OFFLINE');return null}
 }
+function resolveVideoState(requested){
+  requested=String(requested||'A01').toUpperCase();
+  var exact={A00:1,A01:1,A02:1,A16:1,A16B:1,A17:1,A17B:1,A18:1,A18B:1,A18C:1,A18D:1,A18E:1,A18F:1,A19B:1,A19C:1};
+  if(exact[requested])return requested;
+  var semantic={
+    A03:['A02','A01'],A04:['A02','A01'],A05:['A02','A01'],A06:['A02','A01'],
+    A07:['A01','A02'],A08:['A02','A01'],A09:['A02','A01'],A10:['A02','A01'],
+    A11:['A02','A01'],A12:['A16','A02','A01'],A13:['A19C','A02','A01'],A14:['A02','A01'],
+    A15:['A16','A02','A01'],A19:['A19B','A19C','A01'],A20:['A01','A00']
+  };
+  var options=semantic[requested]||['A02','A01'],current=state.videoState;
+  for(var i=0;i<options.length;i++)if(options[i]!==current)return options[i];
+  return options[0]||'A01';
+}
+function sizeAvatarFromVideo(v,id){
+  var host=$('avatar');if(!host||!v)return;
+  host.classList.add('video-state-stage');
+  var w=Number(v.videoWidth)||144,h=Number(v.videoHeight)||256,dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+  var cssW=Math.max(108,Math.min(164,(w/dpr)*1.45));
+  host.style.setProperty('--anna-video-ratio',String(w/h));
+  host.style.setProperty('--anna-video-width',Math.round(cssW)+'px');
+  host.dataset.videoState=id||'';
+  host.dataset.videoResolution=w+'x'+h;
+}
 async function loadVideo(id){
-  id=String(id||'A01').toUpperCase();if(!/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(id))id='A01';
+  id=String(id||'A01').toUpperCase();if(!/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(id))id='A01';id=resolveVideoState(id);
   var v=$('performance');if(!v)return false;
   var os=$('orb-state'),empty=$('empty'),cue=$('orb-cue'),requested=id;
   if(os)os.textContent=id+' · LOADING';if(cue)cue.textContent='Loading Anna from the server…';
   return await new Promise(function(resolve){
     var settled=false,timer=setTimeout(function(){if(settled)return;settled=true;if(requested!=='A01'){loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media did not decode in this browser.';resolve(false)},10000);
     function done(ok){if(settled)return;settled=true;clearTimeout(timer);resolve(ok)}
-    v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=true;if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}done(true)};
+    v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=true;sizeAvatarFromVideo(v,requested);if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}done(true)};
     v.onerror=function(){if(requested!=='A01'){clearTimeout(timer);settled=true;loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media could not load.';done(false)};
-    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0706';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
+    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0707';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
   });
 }
 function applyDirector(q){
