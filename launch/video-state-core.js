@@ -1,5 +1,5 @@
 /** Nocturne V0.67 video-state library. Local IndexedDB + shared staging sync cache. */
-export const VIDEO_STATE_VERSION='0.70.2';
+export const VIDEO_STATE_VERSION='0.70.4';
 export const VIDEO_DB_NAME='nocturne-video-states-v1';
 export const VIDEO_DB_STORE='clips';
 export const VIDEO_ANCHOR_SECONDS=.7;
@@ -163,7 +163,14 @@ export async function fetchCloudClip(id){
   await saveClip(state.id,file,{fileName:remote.fileName,duration:remote.duration,width:remote.width,height:remote.height,mime:remote.mime,source:'cloud',cloudSha:remote.sha256,syncedAt:Date.now()});
   return await getClip(state.id);
 }
-export async function getClipSynced(id){return await getClip(id)||await fetchCloudClip(id);}
+export async function getClipSynced(id){
+  const state=stateById(id);if(!state)return null;
+  try{
+    const remote=await fetchCloudClip(state.id);
+    if(remote?.blob)return remote;
+  }catch{}
+  return await getClip(state.id);
+}
 export async function publishClipToCloud(id){
   const state=stateById(id);if(!state)throw Error('Unknown video state.');const local=await getClip(state.id);if(!local?.blob)throw Error('Import this clip locally first.');
   if(local.blob.size>8*1024*1024)throw Error('Cloud staging clips must be 8 MB or smaller.');
