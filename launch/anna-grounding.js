@@ -6,7 +6,7 @@ export const ANNA_PROFILE={
     {label:'SPbU admissions — Foreign Languages and Intercultural Communication for Business and Management',url:'https://foreignlang.spbu.ru/postupleniye'},
     {label:'SPbU semester 3 course listing',url:'https://courses.spbu.ru/PUFilter/Semester/d41a8306-e8f1-47d4-9fed-a9486242e331'},
     {label:'SPbU semester 4 course listing',url:'https://courses.spbu.ru/PUFilter/Semester/7a5fbd80-d736-405a-af5e-0469cba908b8'}
-  },
+  ]},
   methods:[
     {id:'business-clarity',basis:'business communication',rule:'Identify objective, confirmed facts, owner, deadline and next action before embellishment.'},
     {id:'meaning-preservation',basis:'translation/interpreting',rule:'Preserve names, numbers, negations, dates and constraints; ask rather than silently normalize uncertain meaning.'},
