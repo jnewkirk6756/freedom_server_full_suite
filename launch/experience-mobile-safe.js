@@ -1,7 +1,8 @@
 (function(){
 'use strict';
 var $=function(id){return document.getElementById(id)}, clamp=function(v){v=Number(v)||0;return Math.max(0,Math.min(1,v))};
-var SESSION_KEY='nocturne.mobile.session.v0702', TOKEN_KEY='nocturne.staging.token';
+var SESSION_KEY='nocturne.mobile.session.v0710', TOKEN_KEY='nocturne.staging.token';
+var AVAILABLE_VIDEO_STATES=['A00','A01','A02','A05','A10','A16','A16B','A17','A17B','A18','A18B','A18C','A18D','A18E','A18F','A19B','A19C'];
 var state={running:false,initialized:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,pattern:'steady',phase:0,cycle:0,chart:1,strokes:0,target:40,auto:false,videoState:'A01',startedAt:0,lastTs:0};
 var token=sessionStorage.getItem(TOKEN_KEY)||'', videoUrl='', autoTimer=0, directorBusy=false, lastAuto=0;
 
@@ -46,14 +47,14 @@ function toggleLive(){
   if(!state.initialized){showSetup();line('Set Entry Speed, Depth and Stroke Speed first.');return}
   state.running=!state.running;if(state.running&&!state.startedAt)state.startedAt=Date.now();save();sync();line(state.running?'Live started.':'Live paused.');
 }
-function setPattern(p){if(['steady','wave','pulse','build','variable'].indexOf(p)<0)return;state.pattern=p;save();sync();line('Pattern · '+p.toUpperCase())}
+function setPattern(p){if(['steady','wave','pulse','build','variable'].indexOf(p)<0)return;state.pattern=p;save();sync();if(state.running)adaptiveFace('pattern');line('Pattern · '+p.toUpperCase())}
 function quick(cmd){
   if(!state.initialized){showSetup();return}
   if(cmd==='faster'){state.cycleTimeS=Math.max(.7,state.cycleTimeS-.3);state.pace=paceFromCycle(state.cycleTimeS)}
   if(cmd==='slower'){state.cycleTimeS=Math.min(10,state.cycleTimeS+.3);state.pace=paceFromCycle(state.cycleTimeS)}
   if(cmd==='more')state.intensity=clamp(state.intensity+.1);
   if(cmd==='ease')state.intensity=clamp(state.intensity-.1);
-  save();sync();line(cmd.toUpperCase()+' applied.');
+  save();sync();adaptiveFace('quick-command');line(cmd.toUpperCase()+' applied.');
 }
 function explicitTelemetry(text){
   var t=String(text||'').toLowerCase().replace(/percent/g,'%'), changed=[];
@@ -82,6 +83,18 @@ function resolveVideoState(requested){
   for(var i=0;i<options.length;i++)if(options[i]!==current)return options[i];
   return options[0]||'A01';
 }
+function bestVideoState(){
+  if(!state.running)return state.intensity>.28?'A02':'A01';
+  var drive=Math.max(state.intensity,state.depth*.78,state.pace*.62,state.force*.55);
+  if(drive<.28)return'A02';
+  if(drive<.46)return state.pattern==='wave'?'A16B':'A16';
+  if(drive<.66)return state.pattern==='variable'?'A17B':'A17';
+  if(drive<.78)return'A18D';
+  if(drive<.88)return state.pattern==='pulse'?'A18B':'A18';
+  return ['A18C','A18E','A18F'][state.cycle%3];
+}
+function adaptiveFace(reason){var next=bestVideoState();if(next&&next!==state.videoState)loadVideo(next,reason||'adaptive');return next}
+function isOneShotVideo(id){return /^A18/.test(id)||/^A19/.test(id)||id==='A20'}
 function sizeAvatarFromVideo(v,id){
   var host=$('avatar');if(!host||!v)return;
   host.classList.add('video-state-stage');
@@ -92,17 +105,17 @@ function sizeAvatarFromVideo(v,id){
   host.dataset.videoState=id||'';
   host.dataset.videoResolution=w+'x'+h;
 }
-async function loadVideo(id){
+async function loadVideo(id,reason){
   id=String(id||'A01').toUpperCase();if(!/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(id))id='A01';id=resolveVideoState(id);
-  var v=$('performance');if(!v)return false;
+  var v=$('performance');if(!v)return false;if(state.videoState===id&&v.getAttribute('src')&&v.readyState>=2)return true;
   var os=$('orb-state'),empty=$('empty'),cue=$('orb-cue'),requested=id;
   if(os)os.textContent=id+' · LOADING';if(cue)cue.textContent='Loading Anna from the server…';
   return await new Promise(function(resolve){
     var settled=false,timer=setTimeout(function(){if(settled)return;settled=true;if(requested!=='A01'){loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media did not decode in this browser.';resolve(false)},10000);
     function done(ok){if(settled)return;settled=true;clearTimeout(timer);resolve(ok)}
-    v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=true;sizeAvatarFromVideo(v,requested);if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}done(true)};
+    v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=!isOneShotVideo(requested);v.onended=function(){if(/^A18/.test(requested))loadVideo('A19C','recovery');else if(/^A19/.test(requested)||requested==='A20')loadVideo('A01','idle')};sizeAvatarFromVideo(v,requested);if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}done(true)};
     v.onerror=function(){if(requested!=='A01'){clearTimeout(timer);settled=true;loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media could not load.';done(false)};
-    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0708';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
+    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0710';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
   });
 }
 function applyDirector(q){
@@ -113,7 +126,7 @@ function applyDirector(q){
   });
   if(Number.isFinite(q.paceTarget)||Number(q.paceDelta||0))state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3));
   if(q.pattern&&q.pattern!=='keep')setPattern(q.pattern);
-  if(q.videoState&&q.videoState!=='keep')loadVideo(q.videoState);
+  if(q.videoState&&q.videoState!=='keep')loadVideo(q.videoState,'director');else if(state.running)adaptiveFace('director-fallback');
   if(q.hold)state.running=false;
   save();sync();
 }
@@ -121,7 +134,7 @@ async function director(text,auto){
   if(directorBusy)return null;directorBusy=true;
   try{
     if(!token)await bootDirector();
-    var context={mode:'live',recent:[],chart:{activePort:'V',lead:'AVATAR',pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,rhythm:state.pattern,position:'keep',videoState:state.videoState,autopilot:!!auto,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS},about:'Nocturne mobile Live. Apply exact numeric telemetry requests exactly. Keep continuity. Choose an available Anna video state when useful.'};
+    var context={mode:'live',recent:[],experience:{availableVideoStates:AVAILABLE_VIDEO_STATES.slice()},chart:{activePort:'V',lead:'AVATAR',pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,rhythm:state.pattern,position:'keep',videoState:state.videoState,autopilot:!!auto,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS},about:'Nocturne mobile Live. Apply exact numeric telemetry requests exactly. Keep continuity. Choose ONLY from experience.availableVideoStates for Anna videoState. Change Anna visual state when the emotional or telemetry context changes; do not leave her frozen on idle during a meaningful build or peak.'};
     var r=await fetch('/v1/director/respond',{method:'POST',headers:{'content-type':'application/json','x-nocturne-session':token||''},body:JSON.stringify({text:text,context:context})}),d=await r.json();if(!r.ok)throw new Error((d.error&&d.error.message)||'Director failed');applyDirector(d.director||{});return d.director||{};
   }finally{directorBusy=false}
 }
