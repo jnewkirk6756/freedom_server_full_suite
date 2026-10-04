@@ -32,7 +32,7 @@ export function createVideoStatePlayer({host,primary=null,statusEl=null,fallback
     if(rotate&&!state.baseId&&out.length>1)out=[...out.slice(1),out[0]];
     out=[...out,...semanticFallbackCandidates(id),...initialFallbackCandidates(id)];
     if(neutralFallback)out=[...out,'A00','A02','A01'];
-    return [...new Set(out)].filter(x=>stateById(x));
+    const uniq=[...new Set(out)].filter(x=>stateById(x));if(currentId&&uniq.length>1&&uniq.includes(currentId)){const rest=uniq.filter(x=>x!==currentId);rest.push(currentId);return rest}return uniq;
   }
   async function findLoad(i,ids,seq){
     for(const id of ids){try{const row=await loadInto(i,id,seq);if(row)return{id,row};}catch{}}
