@@ -262,3 +262,35 @@ html[data-live-boot="error"] #live-start{border-color:#d26c86!important;backgrou
   #anna-chat-dock .talk{height:52px!important}
   #anna-chat-dock .talk input,#anna-chat-dock .talk button{height:52px!important}
 }
+
+/* Nocturne V0.70.2 intrinsic avatar sizing */
+#avatar.video-state-stage{--anna-video-width:150px;--anna-video-ratio:.5625}
+@media(max-width:699px){
+  #avatar.video-state-stage{
+    width:var(--anna-video-width)!important;
+    max-width:44vw!important;
+    height:auto!important;
+    aspect-ratio:var(--anna-video-ratio)!important;
+    flex:0 0 auto!important;
+    margin:10px auto 12px!important;
+    border-radius:20px!important;
+    overflow:hidden!important;
+    background:#09050d!important;
+    box-shadow:0 0 0 1px #3a2647,0 18px 50px #0008;
+  }
+  #avatar.video-state-stage .video-state-layer,
+  #avatar.video-state-stage #performance{
+    width:100%!important;height:100%!important;
+    object-fit:cover!important;
+    object-position:50% 24%!important;
+    image-rendering:auto!important;
+  }
+  #avatar.video-state-stage::after{
+    content:attr(data-video-state)" · "attr(data-video-resolution);
+    position:absolute;right:8px;top:8px;z-index:8;
+    padding:4px 6px;border:1px solid #ffffff1f;border-radius:999px;
+    background:#08050bcc;color:#baa5c8;font:600 8px ui-monospace,SFMono-Regular,Menlo,monospace;
+    letter-spacing:.04em;pointer-events:none;
+  }
+  #avatar.video-state-stage #feeling{bottom:8px!important}
+}
