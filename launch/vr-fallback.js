@@ -28,12 +28,12 @@ async function loadAnnaVideoState(id){
   for(const candidate of [...new Set(ids)]){
     if(seq!==annaVideoLoadSeq)return false;
     try{
-      const head=await fetch('/media/'+candidate+'.mp4?v=0720',{method:'HEAD',cache:'no-store'});if(!head.ok)continue;
+      const head=await fetch('/media/'+candidate+'.mp4?v=0730',{method:'HEAD',cache:'no-store'});if(!head.ok)continue;
       const ok=await new Promise(resolve=>{
         let settled=false;const done=v=>{if(settled)return;settled=true;clearTimeout(timer);resolve(v)};
         const timer=setTimeout(()=>done(false),7000);
         annaVideo.onloadeddata=()=>done(true);annaVideo.onerror=()=>done(false);
-        annaVideo.src='/media/'+candidate+'.mp4?v=0720';annaVideo.loop=core.playbackMode(candidate)==='loop';annaVideo.load();try{annaVideo.play()}catch{}
+        annaVideo.src='/media/'+candidate+'.mp4?v=0730';annaVideo.loop=core.playbackMode(candidate)==='loop';annaVideo.load();try{annaVideo.play()}catch{}
       });
       if(!ok)continue;
       annaVideoState=candidate;annaVideoReady=true;annaVideoError='';try{localStorage.setItem('nocturne.vr.video-state.v1',candidate)}catch{}
