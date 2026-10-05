@@ -4,7 +4,7 @@ var $=function(id){return document.getElementById(id)}, clamp=function(v){v=Numb
 var SESSION_KEY='nocturne.mobile.session.v0710', TOKEN_KEY='nocturne.staging.token';
 var AVAILABLE_VIDEO_STATES=['A00','A01','A02','A05','A10','A16','A16B','A17','A17B','A18','A18B','A18C','A18D','A18E','A18F','A19B','A19C'];
 var state={running:false,initialized:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,angle:0,pattern:'steady',tool:'white',phase:0,cycle:0,chart:1,strokes:0,target:40,auto:false,videoState:'A03',embodied:'attentive',position:'back',startedAt:0,lastTs:0};
-var token=sessionStorage.getItem(TOKEN_KEY)||'', mediaToken=sessionStorage.getItem('nocturne.media.session.v067')||'', videoUrl='', avatarObjectUrl='', mediaManifestCache=null, mediaManifestAt=0, videoCorePromise=null, autoTimer=0, directorBusy=false, lastAuto=0, explicitLocks={}, lastSpokenAt=0;
+var token=sessionStorage.getItem(TOKEN_KEY)||'', mediaToken=sessionStorage.getItem('nocturne.media.session.v067')||'', videoUrl='', avatarObjectUrl='', mediaManifestCache=null, mediaManifestAt=0, videoCorePromise=null, assetPackPromise=null, autoTimer=0, directorBusy=false, lastAuto=0, explicitLocks={}, lastSpokenAt=0;
 var visuals={videoEnabled:localStorage.getItem('nocturne.vr.video-enabled.v1')!=='off',avatar3D:localStorage.getItem('nocturne.vr.avatar-3d.v1')==='on',voiceGuidance:localStorage.getItem('nocturne.vr.voice-guidance.v1')!=='off',toolSolid:localStorage.getItem('nocturne.vr.tool-solid.v1')!=='off',waveScale:Math.max(.5,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-scale.v1'))||1)),waveMotion:Math.max(.35,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-motion.v1'))||1))};
 var EMBODIED_KEY='nocturne.embodied.state.v071';
 var EMBODIED={calm:{pace:.24,depth:.34,force:.22,intensity:.24,pattern:'steady',pulse:3600},attentive:{pace:.34,depth:.44,force:.28,intensity:.34,pattern:'steady',pulse:3000},curious:{pace:.42,depth:.48,force:.27,intensity:.42,pattern:'wave',pulse:2500},focused:{pace:.46,depth:.56,force:.44,intensity:.50,pattern:'steady',pulse:2200},playful:{pace:.50,depth:.50,force:.33,intensity:.56,pattern:'variable',pulse:1900},assertive:{pace:.57,depth:.62,force:.58,intensity:.65,pattern:'pulse',pulse:1600},intense:{pace:.70,depth:.76,force:.66,intensity:.82,pattern:'build',pulse:1250},irritated:{pace:.48,depth:.42,force:.67,intensity:.60,pattern:'pulse',pulse:1450},withdrawn:{pace:.12,depth:.14,force:.11,intensity:.16,pattern:'steady',pulse:4400},recovering:{pace:.21,depth:.27,force:.15,intensity:.23,pattern:'wave',pulse:3800}};
@@ -16,6 +16,24 @@ function lockTelemetry(k,ms){explicitLocks[k]=Date.now()+(ms||45000)}
 function telemetryLocked(k){return Number(explicitLocks[k]||0)>Date.now()}
 function applyEmbodiedBias(dt){if(!state.running||!state.auto)return;var p=EMBODIED[state.embodied]||EMBODIED.attentive;['pace','depth','force','intensity'].forEach(function(k){if(telemetryLocked(k))return;state[k]+=(p[k]-state[k])*Math.min(1,dt*.18)});if(!telemetryLocked('pattern'))state.pattern=p.pattern;state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3))}
 function line(t){var e=$('last-line');if(e)e.textContent=String(t||'')}
+function assetCore(){return assetPackPromise||(assetPackPromise=import('./asset-pack-core.js'))}
+function fmtMB(n){return(Number(n||0)/1048576).toFixed(1)+' MB'}
+async function refreshAssetDialog(){
+  var box=$('asset-status');if(!box)return;
+  box.textContent='Checking device assets…';
+  try{var core=await assetCore(),s=await core.assetStatus();box.innerHTML='<b>ON DEVICE</b> '+s.local.clips+' clips · '+fmtMB(s.local.bytes)+'<br><b>HD LOCAL</b> '+s.local.hdClips+' clips<br><b>CLOUD PACK</b> '+s.remote.clips+' clips · '+fmtMB(s.remote.bytes)+'<br><b>VR</b> compatible · shared with Live/VR on this device<br><b>STORAGE</b> '+fmtMB(s.storage.usage)+' used'+(s.storage.persisted?' · persistent':' · browser managed');}
+  catch(e){box.textContent='Asset status unavailable · '+String(e.message||e).slice(0,80)}
+}
+async function openAssetDialog(){var d=$('asset-dialog');if(!d||!d.showModal)return;await refreshAssetDialog();if(!d.open)d.showModal()}
+async function downloadDeviceAssets(){
+  var btn=$('asset-download-now'),p=$('asset-progress'),t=$('asset-progress-text');
+  if(btn)btn.disabled=true;if(p)p.removeAttribute('value');if(t)t.textContent='Preparing local asset pack…';
+  try{
+    var core=await assetCore(),result=await core.downloadAssets({onProgress:function(x){if(t)t.textContent=String(x.label||x.stage||'Downloading…')}});
+    if(p){p.max=100;p.value=100}if(t)t.textContent='Assets ready on this device · '+result.status.local.clips+' clips · '+fmtMB(result.status.local.bytes)+'.';await refreshAssetDialog();
+  }catch(e){if(p){p.max=100;p.value=0}if(t)t.textContent='Download failed · '+String(e.message||e).slice(0,100)}
+  finally{if(btn)btn.disabled=false}
+}
 function persistVisuals(){try{localStorage.setItem('nocturne.vr.video-enabled.v1',visuals.videoEnabled?'on':'off');localStorage.setItem('nocturne.vr.avatar-3d.v1',visuals.avatar3D?'on':'off');localStorage.setItem('nocturne.vr.voice-guidance.v1',visuals.voiceGuidance?'on':'off');localStorage.setItem('nocturne.vr.tool-solid.v1',visuals.toolSolid?'on':'off');localStorage.setItem('nocturne.vr.wave-scale.v1',String(visuals.waveScale));localStorage.setItem('nocturne.vr.wave-motion.v1',String(visuals.waveMotion));localStorage.setItem('nocturne.vr.position.v1',state.position||'back')}catch(e){}}
 function applyVisuals(){var v=$('performance'),poster=$('anna-poster'),empty=$('empty'),host=$('avatar'),showVideo=visuals.videoEnabled;if(host){host.classList.toggle('avatar-video-mode',showVideo);host.classList.toggle('avatar-3d-mode',!!visuals.avatar3D)}if(poster){poster.hidden=false;poster.style.display='block'}if(v){v.style.visibility=showVideo?'visible':'hidden';v.style.opacity=(showVideo&&v.readyState>=2)?'1':'0';try{if(showVideo&&v.getAttribute('src')){var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause()}catch(e){}}if(empty)empty.hidden=true;var vb=$('avatar-video-toggle'),ab=$('avatar-3d-toggle');if(vb){vb.setAttribute('aria-pressed',showVideo?'true':'false');vb.classList.toggle('active',showVideo)}if(ab){ab.setAttribute('aria-pressed',visuals.avatar3D?'true':'false');ab.classList.toggle('active',!!visuals.avatar3D)}var cue=$('orb-cue'),os=$('orb-state');if(visuals.avatar3D){if(os)os.textContent='3D VR MODE';if(cue)cue.textContent='Video preview stays visible here · realtime 3D renders in VR.'}else{if(cue&&(!v||v.readyState<2))cue.textContent='Loading Anna video…'}document.body.classList.toggle('tool-wire',!visuals.toolSolid);persistVisuals()}
 function speakGuide(t,force){var s=String(t||'').trim(),now=Date.now();if(!visuals.voiceGuidance||!s||!('speechSynthesis'in window))return false;if(!force&&now-lastSpokenAt<7000)return false;lastSpokenAt=now;try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s.slice(0,220));u.rate=.96;u.pitch=.94;u.volume=.92;speechSynthesis.speak(u);return true}catch(e){return false}}
@@ -232,6 +250,8 @@ function routeControlClick(e){
   else if(id==='custom-telemetry'){recognized=true;advancedOpen()}
   else if(id==='avatar-video-toggle'){recognized=true;visuals.videoEnabled=true;visuals.avatar3D=false;applyVisuals();line('Video avatar selected.')}
   else if(id==='avatar-hd-import'){recognized=true;var f=$('avatar-hd-file');if(f){f.value='';f.click()}}
+  else if(id==='asset-download'){recognized=true;openAssetDialog()}
+  else if(id==='asset-download-now'){recognized=true;downloadDeviceAssets()}
   else if(id==='enter-vr'){recognized=true;routeVr()}
   else if(id==='send'){recognized=true;send()}
   if(recognized){e.preventDefault();e.stopImmediatePropagation();controlFlash(b)}
@@ -254,6 +274,7 @@ function install(){
   window.addEventListener('nocturne:setup',function(){showSetup()});window.addEventListener('pagehide',function(){save();persistVisuals()});
   autoTimer=setInterval(function(){if(state.auto&&state.running&&Date.now()-lastAuto>11000){lastAuto=Date.now();director('Continue the Live session with a coherent next adjustment and give a short spoken cue only when the pattern calls for it.',true).catch(function(){})}},12000);
   if(!window.__NOCTURNE_CONTROL_ROUTER__){window.__NOCTURNE_CONTROL_ROUTER__=true;document.addEventListener('click',routeControlClick,true)}
+  assetCore().then(function(m){return m.installServiceWorker()}).catch(function(){});
   window.__NOCTURNE_MOBILE_READY__=true;document.documentElement.dataset.liveBoot='ready';requestAnimationFrame(draw);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
