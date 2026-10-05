@@ -10,7 +10,7 @@ var EMBODIED={calm:{pace:.24,depth:.34,force:.22,intensity:.24,pattern:'steady',
 
 function embodiedFromVideo(id){id=String(id||'').toUpperCase();if(/^A18/.test(id))return'intense';if(/^A19/.test(id)||id==='A20')return'recovering';var m={A00:'calm',A01:'calm',A02:'attentive',A03:'attentive',A04:'curious',A05:'focused',A06:'focused',A07:'attentive',A08:'playful',A09:'playful',A10:'assertive',A11:'attentive',A12:'irritated',A13:'withdrawn',A14:'recovering',A15:'attentive',A16:'focused',A17:'intense'};return m[id]||'attentive'}
 function videoFromEmbodied(s){var m={calm:'A01',attentive:'A03',curious:'A04',focused:'A05',playful:'A09',assertive:'A10',intense:'A17',irritated:'A12',withdrawn:'A13',recovering:'A19'};return m[s]||'A03'}
-function setEmbodied(next,reason){if(!EMBODIED[next])next='attentive';state.embodied=next;state.videoState=videoFromEmbodied(next);try{localStorage.setItem(EMBODIED_KEY,next)}catch(e){}document.body.dataset.aiState=next;document.documentElement.style.setProperty('--ai-pulse-ms',EMBODIED[next].pulse+'ms');var o=$('orb-state');if(o)o.textContent=next.toUpperCase();var f=$('feeling');if(f){var s=f.querySelector('span');if(s)s.textContent=next.toUpperCase()}var p=$('presence');if(p){var b=p.querySelector('b');if(b)b.textContent='AI '+next.toUpperCase()}if(reason&&reason!=='boot'){var t=$('change-toast'),x=$('change-text');if(t&&x){x.textContent='STATE · '+next.toUpperCase();t.hidden=false;setTimeout(function(){t.hidden=true},1200)}}save()}
+function setEmbodied(next,reason){if(!EMBODIED[next])next='attentive';state.embodied=next;try{localStorage.setItem(EMBODIED_KEY,next)}catch(e){}document.body.dataset.aiState=next;document.documentElement.style.setProperty('--ai-pulse-ms',EMBODIED[next].pulse+'ms');var f=$('feeling');if(f){var s=f.querySelector('span');if(s)s.textContent=next.toUpperCase()}var p=$('presence');if(p){var b=p.querySelector('b');if(b)b.textContent='AI '+next.toUpperCase()}if(reason&&reason!=='boot'){var t=$('change-toast'),x=$('change-text');if(t&&x){x.textContent='STATE · '+next.toUpperCase();t.hidden=false;setTimeout(function(){t.hidden=true},1200)}}save()}
 function lockTelemetry(k,ms){explicitLocks[k]=Date.now()+(ms||45000)}
 function telemetryLocked(k){return Number(explicitLocks[k]||0)>Date.now()}
 function applyEmbodiedBias(dt){if(!state.running||!state.auto)return;var p=EMBODIED[state.embodied]||EMBODIED.attentive;['pace','depth','force','intensity'].forEach(function(k){if(telemetryLocked(k))return;state[k]+=(p[k]-state[k])*Math.min(1,dt*.18)});if(!telemetryLocked('pattern'))state.pattern=p.pattern;state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3))}
@@ -53,7 +53,7 @@ function initializeFromSetup(){
 }
 function toggleLive(){
   if(!state.initialized){showSetup();line('Set Entry Speed, Depth and Stroke Speed first.');return}
-  state.running=!state.running;if(state.running&&!state.startedAt)state.startedAt=Date.now();save();sync();line(state.running?'Live started.':'Live paused.');
+  state.running=!state.running;if(state.running&&!state.startedAt)state.startedAt=Date.now();save();sync();if(state.running)adaptiveFace('live-start');line(state.running?'Live started.':'Live paused.');
 }
 function setPattern(p){if(['steady','wave','pulse','build','variable'].indexOf(p)<0)return;state.pattern=p;save();sync();if(state.running)adaptiveFace('pattern');line('Pattern · '+p.toUpperCase())}
 function quick(cmd){
@@ -101,7 +101,7 @@ function bestVideoState(){
   if(drive<.88)return state.pattern==='pulse'?'A18B':'A18';
   return ['A18C','A18E','A18F'][state.cycle%3];
 }
-function adaptiveFace(reason){var next=bestVideoState();var embodied=embodiedFromVideo(next);if(embodied!==state.embodied)setEmbodied(embodied,reason||'adaptive');return next}
+function adaptiveFace(reason){var next=bestVideoState(),embodied=embodiedFromVideo(next);if(embodied!==state.embodied)setEmbodied(embodied,reason||'adaptive');loadVideo(next,reason||'adaptive').catch(function(){});return next}
 function isOneShotVideo(id){return /^A18/.test(id)||/^A19/.test(id)||id==='A20'}
 function sizeAvatarFromVideo(v,id){
   var host=$('avatar');if(!host||!v)return;
@@ -124,7 +124,7 @@ async function loadVideo(id,reason){
     function done(ok){if(settled)return;settled=true;clearTimeout(timer);resolve(ok)}
     v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=!isOneShotVideo(requested);v.onended=function(){if(/^A18/.test(requested))loadVideo('A19C','recovery');else if(/^A19/.test(requested)||requested==='A20')loadVideo('A01','idle')};sizeAvatarFromVideo(v,requested);if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}done(true)};
     v.onerror=function(){if(requested!=='A01'){clearTimeout(timer);settled=true;loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media could not load.';done(false)};
-    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0710';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
+    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0741';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
   });
 }
 function applyDirector(q){
@@ -135,7 +135,7 @@ function applyDirector(q){
   });
   if(Number.isFinite(q.paceTarget)||Number(q.paceDelta||0))state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3));
   if(q.pattern&&q.pattern!=='keep')setPattern(q.pattern);
-  if(q.videoState&&q.videoState!=='keep')setEmbodied(embodiedFromVideo(q.videoState),'director');else if(state.running)adaptiveFace('director-fallback');
+  if(q.videoState&&q.videoState!=='keep'){setEmbodied(embodiedFromVideo(q.videoState),'director');loadVideo(q.videoState,'director').catch(function(){})}else if(state.running)adaptiveFace('director-fallback');
   if(q.hold)state.running=false;
   save();sync();
 }
@@ -177,7 +177,7 @@ function advancedOpen(){
   [['ct-pace','pace'],['ct-depth','depth'],['ct-force','force'],['ct-energy','intensity']].forEach(function(x){if($(x[0]))$(x[0]).value=Math.round(state[x[1]]*100)});if($('ct-pattern'))$('ct-pattern').value=state.pattern;if($('ct-cadence'))$('ct-cadence').value=Math.round(state.pace*100);if($('ct-strokes'))$('ct-strokes').value=state.target;d.showModal();
 }
 function install(){
-  restore();var perf=$('performance');if(perf){try{perf.pause()}catch(e){}perf.hidden=true}var empty=$('empty');if(empty)empty.hidden=false;var avatar=$('avatar');if(avatar)avatar.classList.add('embodied-presence');var cue=$('orb-cue');if(cue)cue.textContent='Anna is expressed through rhythm, pressure, pace, holds and waveform behavior.';setEmbodied(state.embodied||'attentive','boot');sync();status('CONNECTING');bootDirector();
+  restore();var perf=$('performance');if(perf){perf.hidden=false;perf.muted=true;perf.playsInline=true}var empty=$('empty');if(empty)empty.hidden=false;var avatar=$('avatar');if(avatar)avatar.classList.add('embodied-presence');var cue=$('orb-cue');if(cue)cue.textContent='Loading Anna…';setEmbodied(state.embodied||'attentive','boot');sync();status('CONNECTING');bootDirector();loadVideo(state.videoState||videoFromEmbodied(state.embodied),'boot').catch(function(){});
   bind('live-start',toggleLive);bind('send',send);bind('enter-vr',routeVr);bind('hold',function(){state.running=false;sync();line('Held / paused.')});
   bind('change',function(){setPattern(state.pattern==='steady'?'wave':'steady');director('Change the current pattern.',false).catch(function(){})});
   bind('peak',function(){setEmbodied('intense','manual');state.intensity=Math.max(state.intensity,.82);state.force=Math.max(state.force,.62);sync();save();line('Anna shifted intense.')});
