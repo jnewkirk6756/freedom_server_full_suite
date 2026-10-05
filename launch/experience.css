@@ -337,3 +337,14 @@ body.tool-wire #trajectory .tool::before{background:#0b0711!important;border:1px
   #avatar-display-controls button{padding-left:5px!important;padding-right:5px!important;font-size:6.4px!important}
 }
 #avatar-hd-import{border-color:#52607a!important}
+
+/* Nocturne V0.76.5 — literal telemetry trajectory + production-3D gate */
+#avatar-display-controls button:disabled{opacity:.42!important;filter:saturate(.35);cursor:not-allowed!important;border-style:dashed!important}
+#trajectory .tool{transform-origin:100% 50%!important}
+.trajectory-readout{gap:8px!important}
+.trajectory-readout span{min-width:0;white-space:nowrap}
+#traj-live-depth{color:#fff!important}
+@media(max-width:699px){
+  .trajectory-readout{font-size:5.5px!important;gap:5px!important}
+  .trajectory-readout span{flex:1 1 auto;text-align:center}
+}
