@@ -9,12 +9,12 @@
     if(fallbackStarted||window.__NOCTURNE_MOBILE_READY__)return;
     fallbackStarted=true;
     document.documentElement.dataset.liveBoot='recovering';
-    line('Recovering Live…');
+    line('Starting emergency Live…');
     const s=document.createElement('script');
-    s.src='/experience-mobile-safe.js?v=0705';
+    s.src='/live-emergency.js?v=0750';
     s.defer=true;
-    s.onload=()=>{setTimeout(()=>{if(window.__NOCTURNE_MOBILE_READY__){document.documentElement.dataset.liveBoot='ready';line('Live recovered · controls ready.');}},0)};
-    s.onerror=()=>line('Live recovery failed. Reload the main Nocturne page.');
+    s.onload=()=>{setTimeout(()=>{if(window.__NOCTURNE_MOBILE_READY__){document.documentElement.dataset.liveBoot='ready';line('Emergency Live active · core controls ready.');}},0)};
+    s.onerror=()=>line('Emergency Live failed. Return to Home and reopen Live.');
     document.head.appendChild(s);
   }
   window.addEventListener('error',e=>{
