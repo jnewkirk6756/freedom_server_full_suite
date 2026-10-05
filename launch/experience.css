@@ -481,3 +481,43 @@ body.tool-wire #trajectory .tool::before{background:#0b0711!important;border:1px
   #wave-readout{top:38px!important}
   #heat-meter{top:62px!important}
 }
+
+/* Nocturne V0.77.3 — depth-calibrated inserted-tool renderer */
+#trajectory .trajectory-lane{
+  background:
+    linear-gradient(90deg,transparent 7.8%,rgba(201,151,242,.12) 8%,transparent 8.2%),
+    linear-gradient(90deg,transparent 28.8%,rgba(255,255,255,.035) 29%,transparent 29.2%),
+    linear-gradient(90deg,transparent 49.8%,rgba(255,255,255,.035) 50%,transparent 50.2%),
+    linear-gradient(90deg,transparent 70.8%,rgba(255,255,255,.035) 71%,transparent 71.2%),
+    linear-gradient(90deg,transparent 91.8%,rgba(255,255,255,.07) 92%,transparent 92.2%);
+}
+#trajectory .tool{
+  left:8%;
+  width:0;
+  min-width:0!important;
+  transform:translateY(-50%)!important;
+  transform-origin:left center!important;
+  transition:none!important;
+  overflow:visible!important;
+}
+#trajectory .tool::before{
+  left:-8px!important;
+  width:10px!important;
+  height:160%!important;
+  z-index:2!important;
+}
+#trajectory .tool::after{
+  content:""!important;
+  position:absolute!important;
+  right:-5px!important;
+  top:50%!important;
+  width:10px!important;
+  height:150%!important;
+  transform:translateY(-50%)!important;
+  border-radius:50%!important;
+  background:#f2edf7!important;
+  box-shadow:0 0 7px #fff,0 0 13px #bd88f7!important;
+  opacity:.96!important;
+}
+#trajectory .depth-stop{z-index:4!important}
+#trajectory .live-depth-stop{z-index:7!important}
