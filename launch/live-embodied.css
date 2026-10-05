@@ -82,8 +82,8 @@ body[data-ai-state="recovering"] #avatar .aura{opacity:.38!important}
   box-shadow:0 0 18px #a45bdb2b;
 }
 #avatar.avatar-video-mode #empty{display:none!important}
-#avatar.avatar-3d-mode #performance{display:none!important}
-#avatar.avatar-3d-mode #empty{display:flex!important}
+#avatar.avatar-3d-mode #performance{display:block!important;visibility:visible!important;opacity:1!important}
+#avatar.avatar-3d-mode #empty{display:none!important}
 #avatar.avatar-3d-mode #presence-orb{
   position:relative!important;width:118px!important;height:158px!important;
   border-radius:52% 52% 44% 44%!important;
@@ -113,3 +113,13 @@ body[data-ai-state="recovering"] #avatar .aura{opacity:.38!important}
   #avatar-display-controls button{min-width:104px;min-height:36px;font-size:8px}
   #avatar.embodied-presence.video-state-stage{max-width:32vw!important}
 }
+
+/* Nocturne V0.76.4 — 3D mode keeps HD/video mobile preview visible */
+#avatar.avatar-3d-mode.video-state-stage #performance,
+#avatar.avatar-3d-mode #performance{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  z-index:6!important;
+}
+#avatar.avatar-3d-mode #empty{display:none!important}
