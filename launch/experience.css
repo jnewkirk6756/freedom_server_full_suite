@@ -294,3 +294,11 @@ html[data-live-boot="error"] #live-start{border-color:#d26c86!important;backgrou
   }
   #avatar.video-state-stage #feeling{bottom:8px!important}
 }
+
+/* Nocturne V0.76 normal Live visual controls */
+.telemetry-grid .toggle-label{display:flex!important;align-items:center;gap:9px;min-height:46px;padding:9px 11px;border:1px solid #30223a;border-radius:12px;background:#09060e;color:#cbb9d7}
+.telemetry-grid .toggle-label input{width:18px;height:18px;accent-color:#bd87f5}
+body.tool-wire #trajectory .tool{background:transparent!important;border:2px solid #cbb9d7!important;box-shadow:0 0 10px #9d72bd55!important}
+body.tool-wire #trajectory .tool::before{background:#0b0711!important;border:1px solid #cbb9d7!important}
+#trajectory .tool{transition:left .06s linear,transform .12s ease,opacity .15s ease}
+@media(max-width:699px){.telemetry-grid .toggle-label{min-height:42px}}
