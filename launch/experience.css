@@ -330,3 +330,10 @@ body.tool-wire #trajectory .tool::before{background:#0b0711!important;border:1px
 #avatar.avatar-3d-mode::after{content:"Realtime spatial avatar renders in VR";position:absolute;right:10px;bottom:10px;z-index:9;padding:5px 8px;border:1px solid #ffffff17;border-radius:999px;background:#08050bcc;color:#bca8ca;font:700 6.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;pointer-events:none}
 #trajectory .tool{transition:left .04s linear,transform .08s linear,opacity .15s ease!important}
 #trajectory .depth-stop{z-index:4}
+
+/* Nocturne V0.76.3 HD import control */
+@media(max-width:699px){
+  #avatar-display-controls{grid-template-columns:auto repeat(3,minmax(0,1fr))!important}
+  #avatar-display-controls button{padding-left:5px!important;padding-right:5px!important;font-size:6.4px!important}
+}
+#avatar-hd-import{border-color:#52607a!important}
