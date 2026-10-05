@@ -101,9 +101,10 @@ export const server=http.createServer(async(req,res)=>{
   return reply(404,'text/plain','Not found');
  }catch{return reply(500,'text/plain','Staging page unavailable');}
 });
-function localSelfRequest(port,route,{method='GET',headers={}}={}){
+function localSelfRequest(port,route,{method='GET',headers={},body=null,timeout=6000}={}){
  return new Promise((resolve,reject)=>{
-  const req=http.request({host:'127.0.0.1',port,path:route,method,headers},res=>{const chunks=[];let n=0;res.on('data',d=>{n+=d.length;if(n<=512*1024)chunks.push(d)});res.on('end',()=>resolve({status:res.statusCode||0,headers:res.headers,body:Buffer.concat(chunks)}));});req.setTimeout(6000,()=>req.destroy(Error('timeout')));req.on('error',reject);req.end();
+  const payload=body==null?null:(Buffer.isBuffer(body)?body:Buffer.from(String(body)));const h={...headers};if(payload&&!h['content-length'])h['content-length']=String(payload.length);
+  const req=http.request({host:'127.0.0.1',port,path:route,method,headers:h},res=>{const chunks=[];let n=0;res.on('data',d=>{n+=d.length;if(n<=512*1024)chunks.push(d)});res.on('end',()=>resolve({status:res.statusCode||0,headers:res.headers,body:Buffer.concat(chunks)}));});req.setTimeout(timeout,()=>req.destroy(Error('timeout')));req.on('error',reject);if(payload)req.write(payload);req.end();
  });
 }
 async function startupSelfTest(port){
@@ -115,8 +116,10 @@ async function startupSelfTest(port){
  await check('LIVE_RUNTIME','/experience-mobile-safe.js',['function speakGuide','tool.style.left','fetchAvatarBlob']);
  await check('VR_RUNTIME','/vr.js',['vr-wave-scale','voiceGuidance','position-next']);
  await check('VR_RENDERER','/vr-fallback.js',['function mannequinGeometry','visualCfg.toolSolid','renderMannequinTexture']);
- try{const d=await localSelfRequest(port,'/v1/director/status'),j=JSON.parse(d.body.toString('utf8'));const ok=d.status===200&&j.ok===true;checks.push({name:'DIRECTOR_STATUS',ok,status:d.status});console.log('NOCTURNE_SELF_TEST DIRECTOR_STATUS='+(ok?'PASS':'FAIL')+' OPENAI_CONFIGURED='+Boolean(j.openAIConfigured)+' MODEL='+(j.model||'unknown'))}catch(e){checks.push({name:'DIRECTOR_STATUS',ok:false,status:0});console.log('NOCTURNE_SELF_TEST DIRECTOR_STATUS=FAIL ERROR='+String(e.message).slice(0,80))}
- try{const d=await localSelfRequest(port,'/media/A01.mp4',{method:'HEAD'}),bytes=Number(d.headers['content-length']||0),ok=d.status===200&&bytes>0;checks.push({name:'MEDIA_A01',ok,status:d.status});console.log('NOCTURNE_SELF_TEST MEDIA_A01='+(ok?'PASS':'FAIL')+' STATUS='+d.status+' BYTES='+bytes)}catch(e){checks.push({name:'MEDIA_A01',ok:false,status:0});console.log('NOCTURNE_SELF_TEST MEDIA_A01=FAIL ERROR='+String(e.message).slice(0,80))}
+ let directorSession='';
+ try{const d=await localSelfRequest(port,'/v1/director/status'),j=JSON.parse(d.body.toString('utf8'));directorSession=j.sessionToken||'';const ok=d.status===200&&j.ok===true&&j.openAIConfigured===true;checks.push({name:'DIRECTOR_STATUS',ok,status:d.status});console.log('NOCTURNE_SELF_TEST DIRECTOR_STATUS='+(ok?'PASS':'FAIL')+' OPENAI_CONFIGURED='+Boolean(j.openAIConfigured)+' MODEL='+(j.model||'unknown'))}catch(e){checks.push({name:'DIRECTOR_STATUS',ok:false,status:0});console.log('NOCTURNE_SELF_TEST DIRECTOR_STATUS=FAIL ERROR='+String(e.message).slice(0,80))}
+ try{const payload=JSON.stringify({text:'Self-test: keep telemetry unchanged and reply with a brief confirmation.',context:{mode:'vr-live',chart:{activePort:'V',lead:'AVATAR',pace:.4,depth:.4,force:.2,intensity:.3,rhythm:'steady',position:'back',videoState:'A01',autopilot:false}}}),d=await localSelfRequest(port,'/v1/director/respond',{method:'POST',headers:{'content-type':'application/json','x-nocturne-session':directorSession},body:payload,timeout:30000}),j=JSON.parse(d.body.toString('utf8')),provider=j.director?.provider||'none',speech=String(j.director?.speech||''),ok=d.status===200&&j.ok===true&&provider==='openai'&&speech.length>0;checks.push({name:'DIRECTOR_RESPOND',ok,status:d.status});console.log('NOCTURNE_SELF_TEST DIRECTOR_RESPOND='+(ok?'PASS':'FAIL')+' PROVIDER='+provider+' SPEECH_LEN='+speech.length+' DEGRADED='+Boolean(j.director?.degraded))}catch(e){checks.push({name:'DIRECTOR_RESPOND',ok:false,status:0});console.log('NOCTURNE_SELF_TEST DIRECTOR_RESPOND=FAIL ERROR='+String(e.message).slice(0,80))}
+ try{const d=await localSelfRequest(port,'/media/A01.mp4',{method:'HEAD'}),bytes=Number(d.headers['content-length']||0),ok=d.status===200&&bytes>0;checks.push({name:'MEDIA_A01',ok,status:d.status});console.log('NOCTURNE_SELF_TEST MEDIA_A01='+(ok?'PASS':'FAIL')+' STATUS='+d.status+' BYTES='+bytes+' QUALITY='+(bytes<100000?'PREVIEW_LOW':'NORMAL'))}catch(e){checks.push({name:'MEDIA_A01',ok:false,status:0});console.log('NOCTURNE_SELF_TEST MEDIA_A01=FAIL ERROR='+String(e.message).slice(0,80))}
  const passed=checks.filter(x=>x.ok).length;console.log('NOCTURNE_SELF_TEST SUMMARY='+passed+'/'+checks.length+' '+(passed===checks.length?'PASS':'FAIL'));
 }
 server.requestTimeout=15000;server.headersTimeout=10000;
