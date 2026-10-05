@@ -33,3 +33,34 @@ body[data-ai-state="recovering"] #avatar .aura{opacity:.38!important}
 #control-rail{grid-template-columns:1.4fr 1fr!important}
 #next-chart{display:block!important}
 #climax-toggle{pointer-events:none;opacity:.65}
+
+/* Nocturne V0.74.1 — let intrinsic video quality control mobile avatar size */
+@media(max-width:699px){
+  #avatar.embodied-presence.video-state-stage{
+    width:var(--anna-video-width,120px)!important;
+    max-width:42vw!important;
+    height:auto!important;
+    aspect-ratio:var(--anna-video-ratio,.5625)!important;
+    flex:0 0 auto!important;
+    margin:10px auto 12px!important;
+    display:block!important;
+    position:relative!important;
+    overflow:hidden!important;
+    border-radius:20px!important;
+    background:#09050d!important;
+    box-shadow:0 0 0 1px #3a2647,0 18px 50px #0008!important;
+  }
+  #avatar.embodied-presence.video-state-stage #performance{
+    display:block!important;
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    object-fit:cover!important;
+    object-position:50% 24%!important;
+    image-rendering:auto!important;
+    z-index:2!important;
+  }
+  #avatar.embodied-presence.video-state-stage #empty{display:none!important}
+  #avatar.embodied-presence.video-state-stage .aura{opacity:.18!important}
+}
