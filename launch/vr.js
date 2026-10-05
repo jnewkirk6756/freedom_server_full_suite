@@ -87,3 +87,4 @@ setInterval(()=>autopilotTick(false),20000);
 refreshAvailableVideoStates().then(()=>{setVrVideoState(currentVideoState,'boot');setEmbodiedState(embodiedState,'boot')});
 syncHUD();bootDirector();(async()=>{if(!navigator.xr){text('xr-status','WEBXR UNAVAILABLE');return}try{const ok=await navigator.xr.isSessionSupported('immersive-vr');text('xr-status',ok?'VR READY':'IMMERSIVE VR UNSUPPORTED');if(!ok)text('message','This browser reports that immersive-vr is unsupported. Open the page in Meta Quest Browser.')}catch{text('xr-status','XR CHECK FAILED')}})();
 window.addEventListener('nocturne:suspend',()=>{if(!xrSession)return;try{allPulse(0,1)}catch{}});
+window.__NOCTURNE_VR_MODULE_READY__=true;
