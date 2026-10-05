@@ -64,3 +64,52 @@ body[data-ai-state="recovering"] #avatar .aura{opacity:.38!important}
   #avatar.embodied-presence.video-state-stage #empty{display:none!important}
   #avatar.embodied-presence.video-state-stage .aura{opacity:.18!important}
 }
+
+
+/* Nocturne V0.76.1 — mobile avatar switch, native-resolution video, dimensional presence */
+#avatar-display-controls{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin:0 auto 8px;position:relative;z-index:8;
+}
+#avatar-display-controls button{
+  min-height:32px;padding:7px 13px;border:1px solid #463252;border-radius:999px;
+  background:#09060e;color:#9f91aa;font:700 7px/1 ui-monospace,monospace;
+  letter-spacing:.12em;touch-action:manipulation;
+}
+#avatar-display-controls button.active,
+#avatar-display-controls button[aria-pressed="true"]{
+  color:#f2e7fb;border-color:#a66cce;background:#24152f;
+  box-shadow:0 0 18px #a45bdb2b;
+}
+#avatar.avatar-video-mode #empty{display:none!important}
+#avatar.avatar-3d-mode #performance{display:none!important}
+#avatar.avatar-3d-mode #empty{display:flex!important}
+#avatar.avatar-3d-mode #presence-orb{
+  position:relative!important;width:118px!important;height:158px!important;
+  border-radius:52% 52% 44% 44%!important;
+  background:
+    radial-gradient(ellipse at 42% 32%,#f1d8ff 0 3%,transparent 4%),
+    radial-gradient(ellipse at 58% 32%,#f1d8ff 0 3%,transparent 4%),
+    radial-gradient(ellipse at 50% 46%,#e0b7f34d 0 5%,transparent 6%),
+    radial-gradient(ellipse at 50% 35%,#ad72d5 0 29%,#4e276d 49%,#160b22 72%)!important;
+  box-shadow:inset -14px -8px 26px #050208b8,inset 10px 2px 20px #e3b7ff26,0 0 44px #9b52dc72!important;
+  transform:perspective(420px) rotateY(-7deg);animation:anna3DBreathe 3s ease-in-out infinite!important;
+}
+#avatar.avatar-3d-mode #presence-orb:after{
+  content:"";position:absolute;left:-25px;right:-25px;bottom:-22px;height:68px;
+  border-radius:50% 50% 22% 22%;z-index:-1;
+  background:radial-gradient(ellipse at 50% 20%,#8150a9,#2a153a 58%,#08040d 76%);
+  box-shadow:inset 0 10px 20px #d8a7f31c,0 18px 34px #000a;
+}
+#avatar.avatar-3d-mode #presence-orb i{opacity:.22}
+#avatar.avatar-3d-mode #orb-state{position:absolute;left:50%;bottom:13px;transform:translateX(-50%);white-space:nowrap}
+#avatar.avatar-3d-mode #orb-cue{margin-top:30px!important;color:#c4aecf!important}
+@keyframes anna3DBreathe{
+  0%,100%{transform:perspective(420px) rotateY(-7deg) translateY(0)}
+  50%{transform:perspective(420px) rotateY(7deg) translateY(-4px)}
+}
+@media(max-width:699px){
+  #avatar-display-controls{width:100%;margin-top:0;margin-bottom:8px}
+  #avatar-display-controls button{min-width:104px;min-height:36px;font-size:8px}
+  #avatar.embodied-presence.video-state-stage{max-width:32vw!important}
+}
