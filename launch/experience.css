@@ -369,3 +369,43 @@ body.tool-wire #trajectory .tool::before{background:#0b0711!important;border:1px
   transition:opacity .12s ease!important;
 }
 #empty{z-index:3!important}
+
+/* Nocturne V0.76.7 — touch routing + literal telemetry display */
+#waveform{pointer-events:none!important}
+#change-toast,#heat-meter,#wave-readout,#wave-legend{pointer-events:none!important}
+#quick-commands,#pattern-bar,#control-rail,.actions{pointer-events:auto!important;position:relative}
+#quick-commands button,#pattern-bar button,#control-rail button,.actions button{pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}
+#quick-commands{z-index:30!important}
+#pattern-bar{z-index:30!important}
+#trajectory .trajectory-readout b{
+  position:static!important;
+  right:auto!important;
+  bottom:auto!important;
+  display:inline!important;
+  font-size:inherit!important;
+  color:#eadcf7!important;
+}
+#trajectory .live-depth-stop{
+  position:absolute;
+  top:18%;
+  bottom:18%;
+  width:2px;
+  margin-left:-1px;
+  background:#fff;
+  box-shadow:0 0 9px #fff,0 0 16px #bd88f7;
+  z-index:6;
+  pointer-events:none;
+}
+#trajectory .depth-stop{
+  background:#bd88f7!important;
+  opacity:.8;
+}
+#trajectory .tool{
+  z-index:5!important;
+  will-change:left,transform!important;
+}
+.control-flash{filter:brightness(1.45)!important;transform:translateY(1px) scale(.985)!important}
+@media(max-width:699px){
+  #quick-commands button,#pattern-bar button{min-height:44px!important}
+  #trajectory .trajectory-readout{font-size:6px!important}
+}
