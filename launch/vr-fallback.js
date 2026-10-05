@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id),set=(id,v)=>{const e=$(id);if(e)e.textContent=v},clamp=v=>Math.max(0,Math.min(1,Number(v)||0));
 let session=null,gl=null,layer=null,refSpace=null,refMode='local-floor';
 let worldProgram=null,worldBuf=null,uiProgram=null,uiBuf=null,uiTex=null,annaTex=null,menuCanvas=null,menuCtx=null,lastMenu=0;
-let mediaCorePromise=null,annaVideo=null,annaVideoState='A01',annaVideoLoadSeq=0,annaCanvas=null,annaCtx=null,annaVideoReady=false,annaVideoError='',aiStatus='AI CONNECTING',annaTexReady=false,annaTexW=0,annaTexH=0,annaLastUpload=0,lastMotionCycle=-1,lastMotionEvent=0,lastControllerEvent=0,pendingRoute=null,lastEscapePressed=false;
+let mediaCorePromise=null,annaVideo=null,annaVideoUrl='',annaVideoState='A01',annaVideoLoadSeq=0,annaCanvas=null,annaCtx=null,annaVideoReady=false,annaVideoError='',aiStatus='AI CONNECTING',annaTexReady=false,annaTexW=0,annaTexH=0,annaLastUpload=0,lastMotionCycle=-1,lastMotionEvent=0,lastControllerEvent=0,pendingRoute=null,lastEscapePressed=false;
 const ANNA_POSTER_DATA='data:image/jpeg;base64,/9j//gAQTGF2YzYxLjE5LjEwMQD/2wBDAAgKCgsKCw0NDQ0NDRAPEBAQEBAQEBAQEBASEhIVFRUSEhIQEBISFBQVFRcXFxUVFRUXFxkZGR4eHBwjIyQrKzP/xACFAAABBQEBAQAAAAAAAAAAAAAEBQIDBgEHAAgBAAIDAQAAAAAAAAAAAAAAAAQBAAMCBRAAAQQABQMCBAQFBAMBAAAAAQACAxESMUEhBAVRYSITgTKRcbHhUkJywaEz8BRiI9EGU/EVEQEBAAIDAQEBAQEAAAAAAAAAAQIRAzEhEkEyImH/wAARCADUAHgDASIAAhEAAxEA/9oADAMBAAIRAxEAPwDjkoQ4Rs4pCBWXtcfSaQpApWROkOFospGEq07BQs7AqeYsh9INu18JPdLvsTXndLadD2Qe4CQ6h+o5X2/+pj4sGoI7hAe7J3tR246pM7gkhYoLcpg680ieTCnWFtJkaoypFGVCYvLV5Qi1yM0O0IqfNQsFlWXtcJ48D53tYxpcXGgBqUq9RMfTWHjxuDpj/de39vga+Ns80dxK4HHMra96Swxx2bG2vU8nyNh8aVI5MnvSPdZdubcc3HusVZ/OP/aEc4uTc15OaN1kP22qXmkKV7bUTmuGiiC214HxCx7Bmg8s0bG5pyv/AD7pGEdspGm1PIxpF6/RBi2lOHpOoyFJmLTSmyjXk5YoRdmzTuK0vlYKB3F2mzZouEe1E+c7Bo28uI2VlESeoupcsyPdCw+nInLbt/mSrrnDJuX4/kpHuNknNyhAVKvO7rwbeeyJjj39NlMawuNBXTgcFtDZZuWjww+qRoenvkouCsMfRsTd1Z4OIxg2CWI4h4Q9zoqcU/XMuT0B1FzVVJuPJx304EL6BdAC1U7rHTRLGSBuFqZ39TLjmvHNfmagnol4dCS0hRO9QV8CVEw0pCh1OMltlixasUZWF7C97QNTX17DUpR5gDeO2Kx6PVIAbDa2AJyLieyEDnMcC00d99R9kP1DkFsUUQcP1Fo1P6idfAVmQn8ILjicfK8MwO5UaljF7/p3VSnsdxGXNR0K6LwwAAue8WRscrnOyNFW/i9V4jKxF4+FofMTx6i9xNsIxgpV/jdW4Upwtk38ilYGvDvl3VAkc1mIbJH5roIWH3XtaPP/AEkrn87nAmHjDB3eVVh/pRIZObyH8h+dXTfiVv5jNuiH1WPjumuGRrrs0Mwe1HdV2ir7yH9O5bHRxRtDhuHNG4PfFe6qPKgdD6jt38+fir8aF5J+kgqRhUtMfrRQ+RVijSYrFqxaZWlrcUzB3KSepgNloOxVtYFNz07pZ9z2HNIouccLQdL1KrHJc90ji42bIyofCtFrKicv5oVFwEYXIROaS0qsPB3FLWvDnDEG6HdWNnUBJbWcVjgNjsEjcBrZX0dSrLx+mSMJwuOF2iqys2Jwl14lbA10YlMAiF1e2ZANWNd9QrN0Pl4pHRS5t2Q7YPai3/qgenOwc0+btVZeiMdzsv8APhc/3MJrx3VYbwi51thwmsJd6jYIo6ahXs4STr/NEshArRZl0dx2pkPRx7plc0DagGih/RJ3WOH/AMDtt2jXsujPa1oVP6y4OheBrtt5U3blD+ZMa46dlgCL5jBDKYxoB/VRxAHZGOd+t0TVI6hsExaZqwvAdsdddW0bB+qSeYLfZ2P7qytWbi8d80vpGWbj8rBq4pB6iGsnLRl/maeYmz/NJDW3nsvPINAbALcyvPbSwHH9PdglafK6pw5GubW1rjUcpjIK6D0zk4sJvsqOSC+GrhN6mV2Cq/EmZFyccmwcS0HyrOJGuCRXcWJ0w7YrI0KqEVZH8iLFGGiT1fuAxAHyRkldjnUOyTYZONGC0YQ0H0EnPujRKwjYgrLSOd53VK6w9zePI4Gi0Eg9irdKbCpvXnBnCk7u2+pTx7jGfmNcxke+Vxe8lxdmSsaaKeR6BooQjXN2JG62l5ooJyaWL1FOIYDiIa07kDxl93OPwAVY5kbqM8npc8+hvjvXbsld04aC1gaSBReRbWnwP3O7aBIs2J1ue4vPcn8fySy7F3+SUwjXROkUJTbUCGkJf6XPXo1b+CRmr1ujcHtO47LNm43jfmuq8eQvoWkh8s5mczZu+eYQPA5zZGjejkR2S7HE2V1lUa+RmN3prOPJtctDxmlTjcU4rMkhaP8AdV/RH8bgQurNKskTIhsFm3xfbAMhpv2XM/8AyDliSdsINiP1O/iOn0V26hysLS2P5q+i5FyCTNISTZO/la4p6G5sv86QOdiKcxtrB5RGGrB+4RIRriGilHiCjc7F8ExJC3eCJtHS8v3IZz7alCSEio+52H6b3SRMx8Lix4ojYqXtbegpzTnNpZSKw4wPA3KakIE7T8Uw7u8WpGmnVoVET8U4XVkrXBy3QuGKyFVI/TIPurpFxxLED4VOfi/jWqHqUbmjDd/ZFTTzSjYYR5KSOBABnorGGCkPRiu8iEMhd3o7rlM/9133K7J1BtxGs6K5Dy2n3Dt3V3FQvN0EDq2zCnLgWgdsu6HqgvIgNt45rFuadSSLrNyeLG58cLTM57R6z8zXDIgjL4KvzjGC6Rwx38vb+d/dHzdRZC32uLGGGqdLQDj/AAD9v3NuSE84vVY+2agjPKBzmnucaoKJy1hsqBkuzRZ+bQf9qI5p7xRpM+ZMxQPqB+xV96VIJWV22VAZvXjZXHpQMb/BVWa/i8q7xx+2Ue0p7IwWA+EG51StahBiLmtxCvC5t1Hi1iIGR/FdUkZiJ8Ks8zj5mrGq3jdMZzccsc1RZFWTldPLTbMjokd0RaRYI+CKlgK46NIa4CkzB5WYa7L1FbZR5m1MZBVNbXnVRLWsxFQkO5zUkextPc2r8KEWSoye93ZOj3UmEYUNkoex8bDiA8q6dN9WL0k5AHwqfBITRdvRF/mumdLhHttdtvv+Sp5BXFFngkHtUdAkZ8oPLB0CNl/2iknNgtxJ1QwoU/kPN4Rmk2V8rsm2l5kQLU4wsTJUDxZ5DoB9U3/8dhFyuJ8Zfgrc7C0UAkyV92tb0zqEIdO4sY2YPivf6Pjf+tv0SgQXJuBa+mbI5LuU/Hh+XPumaJrdyi3PFNFjc+SUMc9k9ztEylETseHitU3DvuoQN0QDZF+Emihxos7FghX/AKLKXcYC8tlUnNEMIw5mgPNq59Mi9uBjaqhv980PmMwmi6NwnhoUTVIVQvS3hUTpVA5xUBdaaJHPtCO3UpXsKhBwE9PpeUJxrQpjM05zu2oUaPcw6rKnIyAQyJjdha46nZI4jI3PhOw0LXh6j2GvlE4cTmtqgk0sfTuO7kFkkm4Hyj+a6BFGA2hskHpbcHGjsZj6Kyxm0LlfR2E8SNjTnN2RQbsgpX0sLA7gEOUx0ihxWoghSIZqnaoTTkok55oFD4wojj7G35TH9k/FQ22TGiyjnLaxt2NdE9oxClh2dYUjDT/uocSRBoJx5jRLPEhPIkADddz2CToYg+Rt5WuhcHjiNooVaqyq/DHZQhjEbA0aBGtdSaGrDsh7djIV2PxBInKmomip4pPUq9LIXyu31USpg4uRbQh4gj2NUJoapgFKxtqQtpRCfLkg0ZMgrU0zXJG7law+orzfmWMzKNc5INypGAOlYDqaTG5qWP8AvR/xBJqLEyNokjFbYqXQI2gV4VDZ/ei/jV+jQ+QzAZhGFDuARf7UM5VLya9xYbCQYnEvcT3KXJc0gw/OfimVLkKUWBJ0OSUmpkLjCyTZOYmSqIReW4i0l+45KPM1SUtRmv/Z';const annaPoster=new Image();let annaPosterReady=false;annaPoster.onload=()=>{annaPosterReady=true};annaPoster.src=ANNA_POSTER_DATA;
 let editTarget='anna',annaPose={x:1.42,y:1.48,z:-2.05,scale:1,yaw:0},toolPose={x:0,y:0,z:0,scale:1,yaw:0},wavePose={x:0,y:0,z:0,scale:1,yaw:0},mannequinPose={x:0,y:0,z:0,scale:1,yaw:0};
 let currentPosition=localStorage.getItem('nocturne.vr.position.v1')||'back',visualCfg={videoEnabled:localStorage.getItem('nocturne.vr.video-enabled.v1')!=='off',toolSolid:localStorage.getItem('nocturne.vr.tool-solid.v1')!=='off',mannequinTexture:localStorage.getItem('nocturne.vr.mannequin-texture.v1')!=='off',voiceGuidance:localStorage.getItem('nocturne.vr.voice-guidance.v1')!=='off',waveScale:Math.max(.5,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-scale.v1'))||1)),waveMotion:Math.max(.35,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-motion.v1'))||1))};
@@ -21,33 +21,34 @@ async function resolveAnnaState(id){
 }
 async function loadAnnaVideoState(id){
   const seq=++annaVideoLoadSeq,core=await mediaCore(),requested=String(id||'A01').toUpperCase(),state=core.stateById(requested);
-  const ids=state?[...core.familyCandidates(requested,[]),'A01','A02','A00']:['A01','A02','A00'];
+  const ids=state?[...core.familyCandidates(requested,[]),...core.semanticFallbackCandidates(requested),'A01','A02','A00']:['A01','A02','A00'];
   if(!annaVideo){
-    annaVideo=document.createElement('video');annaVideo.muted=true;annaVideo.playsInline=true;annaVideo.autoplay=true;annaVideo.preload='auto';annaVideo.setAttribute('playsinline','');annaVideo.setAttribute('webkit-playsinline','');
+    annaVideo=document.createElement('video');annaVideo.muted=true;annaVideo.playsInline=true;annaVideo.autoplay=false;annaVideo.preload='auto';annaVideo.setAttribute('playsinline','');annaVideo.setAttribute('webkit-playsinline','');
     annaVideo.style.cssText='position:fixed;width:2px;height:2px;opacity:.001;pointer-events:none;left:-20px;top:-20px';document.body.appendChild(annaVideo);
     annaCanvas=document.createElement('canvas');annaCanvas.width=360;annaCanvas.height=640;annaCtx=annaCanvas.getContext('2d',{alpha:false});
   }
   annaVideoReady=false;annaVideoError='loading';set('vr-video-state','LOADING');
   for(const candidate of [...new Set(ids)]){
     if(seq!==annaVideoLoadSeq)return false;
+    let url='';
     try{
-      const head=await fetch('/media/'+candidate+'.mp4?v=0730',{method:'HEAD',cache:'no-store'});if(!head.ok)continue;
+      const row=await core.getClipSynced(candidate);if(!row?.blob)continue;url=URL.createObjectURL(row.blob);
       const ok=await new Promise(resolve=>{
         let settled=false;const done=v=>{if(settled)return;settled=true;clearTimeout(timer);resolve(v)};
-        const timer=setTimeout(()=>done(false),7000);
+        const timer=setTimeout(()=>done(false),9000);
         annaVideo.onloadeddata=()=>done(true);annaVideo.onerror=()=>done(false);
-        annaVideo.src='/media/'+candidate+'.mp4?v=0730';annaVideo.loop=core.playbackMode(candidate)==='loop';annaVideo.load();try{annaVideo.play()}catch{}
+        annaVideo.pause();annaVideo.src=url;annaVideo.loop=core.playbackMode(candidate)==='loop';annaVideo.load();if(visualCfg.videoEnabled)try{const p=annaVideo.play();if(p?.catch)p.catch(()=>{})}catch{}
       });
-      if(!ok)continue;
-      annaVideoState=candidate;annaVideoReady=true;annaVideoError='';try{localStorage.setItem('nocturne.vr.video-state.v1',candidate)}catch{}
+      if(!ok){try{URL.revokeObjectURL(url)}catch{}continue}
+      if(annaVideoUrl&&annaVideoUrl!==url)try{URL.revokeObjectURL(annaVideoUrl)}catch{}
+      annaVideoUrl=url;annaVideoState=candidate;annaVideoReady=true;annaVideoError='';try{localStorage.setItem('nocturne.vr.video-state.v1',candidate)}catch{}
       const vw=annaVideo.videoWidth||360,vh=annaVideo.videoHeight||640;if(vw>0&&vh>0){annaCanvas.width=Math.max(180,Math.min(720,vw));annaCanvas.height=Math.max(320,Math.min(1280,vh))}
       annaVideo.onended=()=>{const next=core.transitionAfterState(annaVideoState);if(next)loadAnnaVideoState(next)};
-      set('vr-video-state',candidate);actionLine='Anna '+candidate+' ready · '+vw+'×'+vh;lastMenu=0;try{await annaVideo.play()}catch{}return true;
-    }catch{}
+      set('vr-video-state',candidate);actionLine='Anna '+candidate+' synced · '+vw+'×'+vh;lastMenu=0;if(visualCfg.videoEnabled)try{await annaVideo.play()}catch{}else try{annaVideo.pause()}catch{}return true;
+    }catch{if(url)try{URL.revokeObjectURL(url)}catch{}}
   }
-  annaVideoReady=false;annaVideoError='missing';set('vr-video-state','MISSING');actionLine='Anna media unavailable in Quest.';lastMenu=0;return false;
+  annaVideoReady=false;annaVideoError='missing';set('vr-video-state','MISSING');actionLine='Anna media cache has no usable avatar clip.';lastMenu=0;return false;
 }
-
 function activeDevice(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');if(!Array.isArray(lib.devices))return null;return lib.devices.find(d=>d.id===lib.activeId)||(lib.devices.length===1?lib.devices[0]:null)}catch{return null}}
 function hexRgb(hex){const m=/^#([0-9a-f]{6})$/i.exec(String(hex||''));if(!m)return[.36,1,.84,1];const n=parseInt(m[1],16);return[((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255,1]}
 function embodiedColor(){const m={calm:[.48,.35,.72,1],attentive:[.62,.43,.86,1],curious:[.32,.68,.95,1],focused:[.46,.82,.82,1],playful:[.86,.42,.95,1],assertive:[.92,.48,.62,1],intense:[1,.28,.74,1],irritated:[.94,.25,.38,1],withdrawn:[.28,.25,.42,1],recovering:[.4,.62,.86,1]};return m[embodiedState]||m.attentive}
