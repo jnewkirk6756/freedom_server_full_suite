@@ -3,8 +3,9 @@
 var $=function(id){return document.getElementById(id)}, clamp=function(v){v=Number(v)||0;return Math.max(0,Math.min(1,v))};
 var SESSION_KEY='nocturne.mobile.session.v0710', TOKEN_KEY='nocturne.staging.token';
 var AVAILABLE_VIDEO_STATES=['A00','A01','A02','A05','A10','A16','A16B','A17','A17B','A18','A18B','A18C','A18D','A18E','A18F','A19B','A19C'];
-var state={running:false,initialized:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,pattern:'steady',phase:0,cycle:0,chart:1,strokes:0,target:40,auto:false,videoState:'A03',embodied:'attentive',startedAt:0,lastTs:0};
-var token=sessionStorage.getItem(TOKEN_KEY)||'', videoUrl='', autoTimer=0, directorBusy=false, lastAuto=0, explicitLocks={};
+var state={running:false,initialized:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,pattern:'steady',phase:0,cycle:0,chart:1,strokes:0,target:40,auto:false,videoState:'A03',embodied:'attentive',position:'back',startedAt:0,lastTs:0};
+var token=sessionStorage.getItem(TOKEN_KEY)||'', videoUrl='', autoTimer=0, directorBusy=false, lastAuto=0, explicitLocks={}, lastSpokenAt=0;
+var visuals={videoEnabled:localStorage.getItem('nocturne.vr.video-enabled.v1')!=='off',voiceGuidance:localStorage.getItem('nocturne.vr.voice-guidance.v1')!=='off',toolSolid:localStorage.getItem('nocturne.vr.tool-solid.v1')!=='off',waveScale:Math.max(.5,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-scale.v1'))||1)),waveMotion:Math.max(.35,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-motion.v1'))||1))};
 var EMBODIED_KEY='nocturne.embodied.state.v071';
 var EMBODIED={calm:{pace:.24,depth:.34,force:.22,intensity:.24,pattern:'steady',pulse:3600},attentive:{pace:.34,depth:.44,force:.28,intensity:.34,pattern:'steady',pulse:3000},curious:{pace:.42,depth:.48,force:.27,intensity:.42,pattern:'wave',pulse:2500},focused:{pace:.46,depth:.56,force:.44,intensity:.50,pattern:'steady',pulse:2200},playful:{pace:.50,depth:.50,force:.33,intensity:.56,pattern:'variable',pulse:1900},assertive:{pace:.57,depth:.62,force:.58,intensity:.65,pattern:'pulse',pulse:1600},intense:{pace:.70,depth:.76,force:.66,intensity:.82,pattern:'build',pulse:1250},irritated:{pace:.48,depth:.42,force:.67,intensity:.60,pattern:'pulse',pulse:1450},withdrawn:{pace:.12,depth:.14,force:.11,intensity:.16,pattern:'steady',pulse:4400},recovering:{pace:.21,depth:.27,force:.15,intensity:.23,pattern:'wave',pulse:3800}};
 
@@ -15,6 +16,9 @@ function lockTelemetry(k,ms){explicitLocks[k]=Date.now()+(ms||45000)}
 function telemetryLocked(k){return Number(explicitLocks[k]||0)>Date.now()}
 function applyEmbodiedBias(dt){if(!state.running||!state.auto)return;var p=EMBODIED[state.embodied]||EMBODIED.attentive;['pace','depth','force','intensity'].forEach(function(k){if(telemetryLocked(k))return;state[k]+=(p[k]-state[k])*Math.min(1,dt*.18)});if(!telemetryLocked('pattern'))state.pattern=p.pattern;state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3))}
 function line(t){var e=$('last-line');if(e)e.textContent=String(t||'')}
+function persistVisuals(){try{localStorage.setItem('nocturne.vr.video-enabled.v1',visuals.videoEnabled?'on':'off');localStorage.setItem('nocturne.vr.voice-guidance.v1',visuals.voiceGuidance?'on':'off');localStorage.setItem('nocturne.vr.tool-solid.v1',visuals.toolSolid?'on':'off');localStorage.setItem('nocturne.vr.wave-scale.v1',String(visuals.waveScale));localStorage.setItem('nocturne.vr.wave-motion.v1',String(visuals.waveMotion));localStorage.setItem('nocturne.vr.position.v1',state.position||'back')}catch(e){}}
+function applyVisuals(){var v=$('performance'),empty=$('empty');if(v){v.style.visibility=visuals.videoEnabled?'visible':'hidden';try{if(visuals.videoEnabled&&v.getAttribute('src')){var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause()}catch(e){}}if(empty)empty.hidden=visuals.videoEnabled&&v&&v.readyState>=2;document.body.classList.toggle('tool-wire',!visuals.toolSolid);persistVisuals()}
+function speakGuide(t,force){var s=String(t||'').trim(),now=Date.now();if(!visuals.voiceGuidance||!s||!('speechSynthesis'in window))return false;if(!force&&now-lastSpokenAt<7000)return false;lastSpokenAt=now;try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s.slice(0,220));u.rate=.96;u.pitch=.94;u.volume=.92;speechSynthesis.speak(u);return true}catch(e){return false}}
 function status(t,on){var e=$('presence');if(!e)return;var b=e.querySelector('b');if(b)b.textContent=t;e.classList.toggle('live',!!on)}
 function save(){
   state.updatedAt=Date.now();try{sessionStorage.setItem(SESSION_KEY,JSON.stringify(state));localStorage.setItem('nocturne.telemetry.v1',JSON.stringify({pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,pattern:state.pattern,cadence:Math.round(state.pace*100),videoState:state.videoState,updatedAt:state.updatedAt}))}catch(e){}
@@ -40,7 +44,7 @@ function sync(){
   var lc=$('ls-cycles');if(lc)lc.textContent=state.cycle+' CYCLES';
   var ab=$('auto-mode');if(ab){ab.textContent=state.auto?'AUTOPILOT ON':'AUTOPILOT';ab.setAttribute('aria-pressed',String(state.auto))}
   var sb=$('live-start');if(sb)sb.textContent=state.running?'PAUSE LIVE':'START LIVE';setEmbodied(state.embodied||'attentive','boot');
-  document.querySelectorAll('[data-pattern]').forEach(function(b){b.classList.toggle('active',b.dataset.pattern===state.pattern)});
+  document.querySelectorAll('[data-pattern]').forEach(function(b){b.classList.toggle('active',b.dataset.pattern===state.pattern)});if($('position'))$('position').value=state.position||'back';
 }
 function showSetup(){
   var d=$('setup');if(d&&d.showModal&&!d.open)d.showModal();
@@ -49,7 +53,7 @@ function initializeFromSetup(){
   var entry=Math.max(.5,Math.min(10,Number($('setup-entry-speed')&&$('setup-entry-speed').value)||3));
   var depth=Math.max(0,Math.min(100,Number($('setup-depth')&&$('setup-depth').value)||50))/100;
   var cycle=Math.max(.7,Math.min(10,Number($('setup-stroke-speed')&&$('setup-stroke-speed').value)||3));
-  state.entrySpeedS=entry;state.depth=depth;state.cycleTimeS=cycle;state.pace=paceFromCycle(cycle);state.force=0;state.intensity=.2;state.pattern='steady';state.phase=0;state.cycle=0;state.strokes=0;state.startedAt=0;state.initialized=true;state.running=false;setEmbodied('attentive','boot');
+  state.entrySpeedS=entry;state.depth=depth;state.cycleTimeS=cycle;state.pace=paceFromCycle(cycle);state.force=0;state.intensity=.2;state.pattern='steady';state.position=$('setup-position')?$('setup-position').value:(state.position||'back');state.phase=0;state.cycle=0;state.strokes=0;state.startedAt=0;state.initialized=true;state.running=false;setEmbodied('attentive','boot');
   try{if(window.NocturneSession)window.NocturneSession.initialize({entrySpeedS:entry,cycleTimeS:cycle,depth:depth,force:0,intensity:.2,pattern:'steady',videoState:state.videoState,embodied:state.embodied},'mobile-setup')}catch(e){}
   save();sync();line('Session ready · entry '+entry.toFixed(1)+'s · depth '+Math.round(depth*100)+'% · stroke '+cycle.toFixed(1)+'s.');
 }
