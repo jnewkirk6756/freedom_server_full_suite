@@ -4,7 +4,7 @@ var $=function(id){return document.getElementById(id)}, clamp=function(v){v=Numb
 var SESSION_KEY='nocturne.mobile.session.v0710', TOKEN_KEY='nocturne.staging.token';
 var AVAILABLE_VIDEO_STATES=['A00','A01','A02','A05','A10','A16','A16B','A17','A17B','A18','A18B','A18C','A18D','A18E','A18F','A19B','A19C'];
 var state={running:false,initialized:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,pattern:'steady',tool:'white',phase:0,cycle:0,chart:1,strokes:0,target:40,auto:false,videoState:'A03',embodied:'attentive',position:'back',startedAt:0,lastTs:0};
-var token=sessionStorage.getItem(TOKEN_KEY)||'', videoUrl='', autoTimer=0, directorBusy=false, lastAuto=0, explicitLocks={}, lastSpokenAt=0;
+var token=sessionStorage.getItem(TOKEN_KEY)||'', mediaToken=sessionStorage.getItem('nocturne.media.session.v067')||'', videoUrl='', avatarObjectUrl='', autoTimer=0, directorBusy=false, lastAuto=0, explicitLocks={}, lastSpokenAt=0;
 var visuals={videoEnabled:localStorage.getItem('nocturne.vr.video-enabled.v1')!=='off',voiceGuidance:localStorage.getItem('nocturne.vr.voice-guidance.v1')!=='off',toolSolid:localStorage.getItem('nocturne.vr.tool-solid.v1')!=='off',waveScale:Math.max(.5,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-scale.v1'))||1)),waveMotion:Math.max(.35,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-motion.v1'))||1))};
 var EMBODIED_KEY='nocturne.embodied.state.v071';
 var EMBODIED={calm:{pace:.24,depth:.34,force:.22,intensity:.24,pattern:'steady',pulse:3600},attentive:{pace:.34,depth:.44,force:.28,intensity:.34,pattern:'steady',pulse:3000},curious:{pace:.42,depth:.48,force:.27,intensity:.42,pattern:'wave',pulse:2500},focused:{pace:.46,depth:.56,force:.44,intensity:.50,pattern:'steady',pulse:2200},playful:{pace:.50,depth:.50,force:.33,intensity:.56,pattern:'variable',pulse:1900},assertive:{pace:.57,depth:.62,force:.58,intensity:.65,pattern:'pulse',pulse:1600},intense:{pace:.70,depth:.76,force:.66,intensity:.82,pattern:'build',pulse:1250},irritated:{pace:.48,depth:.42,force:.67,intensity:.60,pattern:'pulse',pulse:1450},withdrawn:{pace:.12,depth:.14,force:.11,intensity:.16,pattern:'steady',pulse:4400},recovering:{pace:.21,depth:.27,force:.15,intensity:.23,pattern:'wave',pulse:3800}};
@@ -120,18 +120,21 @@ function sizeAvatarFromVideo(v,id){
   host.dataset.videoResolution=w+'x'+h;
   host.dataset.videoQuality=w<120?'preview-low':w<240?'preview':'sync-hq';
 }
+async function ensureMediaSession(){try{var r=await fetch('/v1/media/status',{headers:mediaToken?{'x-nocturne-session':mediaToken}:{}}),d=await r.json();if(!r.ok)return null;if(d.sessionToken){mediaToken=d.sessionToken;sessionStorage.setItem('nocturne.media.session.v067',mediaToken)}return d}catch(e){return null}}
+async function fetchAvatarBlob(id){var s=await ensureMediaSession();if(!s||!s.connected)return null;try{var r=await fetch('/v1/media/'+encodeURIComponent(id),{headers:{'x-nocturne-session':mediaToken}});if(!r.ok)return null;return await r.blob()}catch(e){return null}}
 async function loadVideo(id,reason){
   id=String(id||'A01').toUpperCase();if(!/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(id))id='A01';id=resolveVideoState(id);
-  var v=$('performance');if(!v)return false;if(state.videoState===id&&v.getAttribute('src')&&v.readyState>=2)return true;
-  var os=$('orb-state'),empty=$('empty'),cue=$('orb-cue'),requested=id;
-  if(os)os.textContent=id+' · LOADING';if(cue)cue.textContent='Loading Anna from the server…';
-  return await new Promise(function(resolve){
-    var settled=false,timer=setTimeout(function(){if(settled)return;settled=true;if(requested!=='A01'){loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media did not decode in this browser.';resolve(false)},10000);
-    function done(ok){if(settled)return;settled=true;clearTimeout(timer);resolve(ok)}
-    v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=!isOneShotVideo(requested);v.onended=function(){if(/^A18/.test(requested))loadVideo('A19C','recovery');else if(/^A19/.test(requested)||requested==='A20')loadVideo('A01','idle')};sizeAvatarFromVideo(v,requested);if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();applyVisuals();done(true)};
-    v.onerror=function(){if(requested!=='A01'){clearTimeout(timer);settled=true;loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media could not load.';done(false)};
-    v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0741';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
-  });
+  var v=$('performance');if(!v)return false;if(state.videoState===id&&v.getAttribute('src')&&v.readyState>=2){applyVisuals();return true}
+  var os=$('orb-state'),empty=$('empty'),cue=$('orb-cue'),candidates=[id];['A01','A02','A00'].forEach(function(x){if(candidates.indexOf(x)<0)candidates.push(x)});
+  if(os)os.textContent=id+' · SYNCING';if(cue)cue.textContent='Syncing Anna video…';
+  for(var ci=0;ci<candidates.length;ci++){
+    var requested=candidates[ci],blob=await fetchAvatarBlob(requested);if(!blob)continue;var url=URL.createObjectURL(blob);
+    var ok=await new Promise(function(resolve){var settled=false,timer=setTimeout(function(){done(false)},10000);function done(vv){if(settled)return;settled=true;clearTimeout(timer);resolve(vv)}v.onloadeddata=function(){done(true)};v.onerror=function(){done(false)};try{v.pause();v.src=url;v.load();if(visuals.videoEnabled){var p=v.play();if(p&&p.catch)p.catch(function(){})}}catch(e){done(false)}});
+    if(!ok){try{URL.revokeObjectURL(url)}catch(e){}continue}
+    if(avatarObjectUrl&&avatarObjectUrl!==url)try{URL.revokeObjectURL(avatarObjectUrl)}catch(e){}
+    avatarObjectUrl=url;state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=!isOneShotVideo(requested);v.onended=function(){var current=state.videoState;if(/^A18/.test(current))loadVideo('A19C','recovery');else if(/^A19/.test(current)||current==='A20')loadVideo('A01','idle')};sizeAvatarFromVideo(v,requested);if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();applyVisuals();return true;
+  }
+  if(os)os.textContent=id+' · MEDIA MISSING';if(cue)cue.textContent='Anna video is not present in the shared media cache.';if(empty)empty.hidden=false;return false;
 }
 function applyDirector(q){
   if(!q)return;
