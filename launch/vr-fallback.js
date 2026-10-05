@@ -53,7 +53,8 @@ function renderEmbodiedPresence(mvp,t){const col=embodiedColor(),pulse=embodiedP
 
 function loadTelemetry(){
   try{
-    const s=JSON.parse(sessionStorage.getItem('nocturne.vr.session.v070')||'{}');
+    const shared=window.NocturneSession?.snapshot?.();
+    const s=shared?.initialized?shared:JSON.parse(sessionStorage.getItem('nocturne.vr.session.v070')||'{}');
     if(s.initialized){
       telemetry={...telemetry,pace:clamp(s.pace),depth:clamp(s.depth),force:clamp(s.force),intensity:clamp(s.intensity),angle:Math.max(-45,Math.min(45,Number(s.angle)||0)),cadence:Math.max(0,Math.min(100,Number(s.cadence)||0)),entrySpeedS:Math.max(.5,Math.min(10,Number(s.entrySpeedS)||3)),cycleTimeS:Math.max(.7,Math.min(10,Number(s.cycleTimeS)||3)),initialized:true,startedAt:Number(s.startedAt)||0};
     }else telemetry={...telemetry,pace:0,depth:0,force:0,intensity:0,cadence:0,initialized:false,startedAt:0};
@@ -67,7 +68,7 @@ function commitFallbackVrSession(){
   const depth=Math.max(0,Math.min(100,Number($('vr-start-depth')?.value)||50))/100;
   const cycle=Math.max(.7,Math.min(10,Number($('vr-stroke-speed')?.value)||3));
   const s={initialized:true,pace:fallbackPaceFromCycle(cycle),depth,force:0,intensity:.2,entrySpeedS:entry,cycleTimeS:cycle,cadence:Math.round(fallbackPaceFromCycle(cycle)*100),pattern:'steady',startedAt:Date.now()};
-  try{sessionStorage.setItem(VR_SESSION_KEY_FALLBACK,JSON.stringify(s))}catch{}
+  try{sessionStorage.setItem(VR_SESSION_KEY_FALLBACK,JSON.stringify(s));window.NocturneSession?.initialize?.({entrySpeedS:entry,cycleTimeS:cycle,depth,force:0,intensity:.2,pattern:'steady',videoState:annaVideoState,embodied:embodiedState},'vr-fallback-setup')}catch{}
   telemetry={...telemetry,...s};set('diag-session','READY');set('pace',Math.round(s.pace*100));set('depth',Math.round(s.depth*100));set('force',0);set('energy',20);
   actionLine='Session ready · enter '+entry.toFixed(1)+'s · depth '+Math.round(depth*100)+'% · cycle '+cycle.toFixed(1)+'s';lastMenu=0;
   window.dispatchEvent(new CustomEvent('nocturne:vr-session-configured',{detail:s}));
