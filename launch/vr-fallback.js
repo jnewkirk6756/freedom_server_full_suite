@@ -107,7 +107,7 @@ function motionState(){
 }
 function aiLinkColor(){const s=String(aiStatus).toUpperCase();if(s.includes('ERROR'))return[1,.28,.34,.9];if(s.includes('THINK')||s.includes('CHOOS'))return[.77,.45,1,.92];if(s.includes('APPLIED'))return[.42,1,.72,.92];if(s.includes('AUTO'))return[.36,.82,1,.9];return[.72,.6,.9,.72]}
 function syncMotionRuntime(t,motion){
-  const tel=loadTelemetry();window.__NOCTURNE_VR_SYNC__={phase:motion.phase,cycle:motion.cycle,direction:motion.direction,envelope:motion.envelope,telemetry:{...tel},videoState:annaVideoState,aiStatus,at:Date.now()};
+  const tel=loadTelemetry(),device=activeDevice();window.__NOCTURNE_VR_SYNC__={phase:motion.phase,cycle:motion.cycle,direction:motion.direction,envelope:motion.envelope,seated:motion.envelope>=.94,telemetry:{...tel},tool:device?{id:device.id,name:device.name,lengthMm:device.lengthMm,widthMm:device.widthMm,travelMm:device.travelMm,shape:device.shape,texture:device.texture}:null,videoState:annaVideoState,videoReady:annaVideoReady,videoSound:visualCfg.videoSound,aiStatus,at:Date.now()};
   if(motion.cycle!==lastMotionCycle){if(lastMotionCycle>=0&&session){const amp=clamp(.28+tel.intensity*.34+tel.force*.2);for(const src of session.inputSources||[])pulseSource(src,amp,40+tel.depth*65);window.dispatchEvent(new CustomEvent('nocturne:vr-cycle',{detail:{...window.__NOCTURNE_VR_SYNC__}}))}lastMotionCycle=motion.cycle}
   if(t-lastMotionEvent>120){lastMotionEvent=t;window.dispatchEvent(new CustomEvent('nocturne:vr-motion',{detail:{...window.__NOCTURNE_VR_SYNC__}}))}
   if(session&&t-lastControllerEvent>240){lastControllerEvent=t;const controllers=[...session.inputSources].filter(s=>s.gamepad).map(s=>({hand:s.handedness,trigger:s.gamepad.buttons?.[0]?.value||0,grip:s.gamepad.buttons?.[1]?.value||0,axes:[...(s.gamepad.axes||[])].slice(0,4)}));window.dispatchEvent(new CustomEvent('nocturne:vr-controller-state',{detail:{controllers}}))}
@@ -116,8 +116,8 @@ async function run(){
   set('diag-secure',window.isSecureContext?'YES':'NO');set('diag-xr',navigator.xr?'YES':'NO');
   let glok=false;try{const c=document.createElement('canvas');glok=!!c.getContext('webgl')}catch{}set('diag-gl',glok?'YES':'NO');
   let immersive=false,err='';if(navigator.xr){try{immersive=await navigator.xr.isSessionSupported('immersive-vr')}catch(e){err=String(e&&e.message||e)}}set('diag-immersive',immersive?'YES':'NO');
-  const cfg=loadTelemetry();set('diag-session',cfg.initialized?'READY':'ZERO');set('diag-media','EMBODIED');
-  set('diag-line',[(window.isSecureContext?'HTTPS secure':'HTTPS not secure'),(navigator.xr?'WebXR exposed':'WebXR missing'),(immersive?'immersive-vr supported':'immersive-vr not supported'),(glok?'WebGL ready':'WebGL missing'),('AI state '+embodiedState),(cfg.initialized?'session initialized':'session zero')].join(' · ')+(err?' · '+err.slice(0,90):''));
+  const cfg=loadTelemetry();set('diag-session',cfg.initialized?'READY':'ZERO');set('diag-media',annaVideoReady?('VIDEO '+annaVideoState):(annaVideoError==='missing'?'MEDIA MISSING':'VIDEO SYNC'));
+  set('diag-line',[(window.isSecureContext?'HTTPS secure':'HTTPS not secure'),(navigator.xr?'WebXR exposed':'WebXR missing'),(immersive?'immersive-vr supported':'immersive-vr not supported'),(glok?'WebGL ready':'WebGL missing'),('video '+(annaVideoReady?annaVideoState:'syncing')),('AI '+embodiedState),(cfg.initialized?'session initialized':'session zero')].join(' · ')+(err?' · '+err.slice(0,90):''));
   return{immersive,mediaOk:true};
 }
 function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s)||'shader');return s}
