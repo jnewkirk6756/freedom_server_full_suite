@@ -17,10 +17,11 @@ function applyEmbodiedBias(dt){if(!state.running||!state.auto)return;var p=EMBOD
 function line(t){var e=$('last-line');if(e)e.textContent=String(t||'')}
 function status(t,on){var e=$('presence');if(!e)return;var b=e.querySelector('b');if(b)b.textContent=t;e.classList.toggle('live',!!on)}
 function save(){
-  try{sessionStorage.setItem(SESSION_KEY,JSON.stringify(state));localStorage.setItem('nocturne.telemetry.v1',JSON.stringify({pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,pattern:state.pattern,cadence:Math.round(state.pace*100),videoState:state.videoState,updatedAt:Date.now()}))}catch(e){}
+  state.updatedAt=Date.now();try{sessionStorage.setItem(SESSION_KEY,JSON.stringify(state));localStorage.setItem('nocturne.telemetry.v1',JSON.stringify({pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,pattern:state.pattern,cadence:Math.round(state.pace*100),videoState:state.videoState,updatedAt:state.updatedAt}))}catch(e){}
+  try{if(window.NocturneSession)window.NocturneSession.commit({initialized:state.initialized,running:state.running,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,videoState:state.videoState,embodied:state.embodied,startedAt:state.startedAt,updatedAt:state.updatedAt},'mobile-live')}catch(e){}
 }
 function restore(){
-  try{var s=JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null');if(s&&s.initialized){Object.assign(state,s);state.running=false;state.lastTs=0}}catch(e){}try{var es=localStorage.getItem(EMBODIED_KEY);if(es&&EMBODIED[es])state.embodied=es}catch(e){}
+  try{var shared=window.NocturneSession&&window.NocturneSession.snapshot();if(shared&&shared.initialized){Object.assign(state,shared);state.running=false;state.lastTs=0}else{var s=JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null');if(s&&s.initialized){Object.assign(state,s);state.running=false;state.lastTs=0}}}catch(e){}try{var es=localStorage.getItem(EMBODIED_KEY);if(es&&EMBODIED[es])state.embodied=es}catch(e){}
 }
 function paceFromCycle(sec){sec=Math.max(.7,Math.min(10,Number(sec)||3));return clamp((5-sec)/4.3)}
 function sync(){
@@ -49,6 +50,7 @@ function initializeFromSetup(){
   var depth=Math.max(0,Math.min(100,Number($('setup-depth')&&$('setup-depth').value)||50))/100;
   var cycle=Math.max(.7,Math.min(10,Number($('setup-stroke-speed')&&$('setup-stroke-speed').value)||3));
   state.entrySpeedS=entry;state.depth=depth;state.cycleTimeS=cycle;state.pace=paceFromCycle(cycle);state.force=0;state.intensity=.2;state.pattern='steady';state.phase=0;state.cycle=0;state.strokes=0;state.startedAt=0;state.initialized=true;state.running=false;setEmbodied('attentive','boot');
+  try{if(window.NocturneSession)window.NocturneSession.initialize({entrySpeedS:entry,cycleTimeS:cycle,depth:depth,force:0,intensity:.2,pattern:'steady',videoState:state.videoState,embodied:state.embodied},'mobile-setup')}catch(e){}
   save();sync();line('Session ready · entry '+entry.toFixed(1)+'s · depth '+Math.round(depth*100)+'% · stroke '+cycle.toFixed(1)+'s.');
 }
 function toggleLive(){
@@ -155,7 +157,7 @@ async function send(){
 }
 function routeVr(){
   if(!state.initialized){showSetup();return}
-  try{sessionStorage.setItem('nocturne.vr.session.v070',JSON.stringify({initialized:true,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,startedAt:state.startedAt||Date.now()}));localStorage.setItem('nocturne.vr.video-state.v1',state.videoState);localStorage.setItem(EMBODIED_KEY,state.embodied)}catch(e){}
+  try{if(window.NocturneSession)window.NocturneSession.commit({initialized:true,running:state.running,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,videoState:state.videoState,embodied:state.embodied,startedAt:state.startedAt||Date.now()},'mobile-to-vr');sessionStorage.setItem('nocturne.vr.session.v070',JSON.stringify({initialized:true,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,startedAt:state.startedAt||Date.now()}));localStorage.setItem('nocturne.vr.video-state.v1',state.videoState);localStorage.setItem(EMBODIED_KEY,state.embodied)}catch(e){}
   location.href='/vr/?mode=live';
 }
 function draw(ts){
