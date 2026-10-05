@@ -100,9 +100,12 @@ function applyVrQuick(action){
   if(action==='faster'){telemetry.cycleTimeS=Math.max(.7,telemetry.cycleTimeS-.3);telemetry.pace=paceFromCycle(telemetry.cycleTimeS)}
   else if(action==='slower'){telemetry.cycleTimeS=Math.min(10,telemetry.cycleTimeS+.3);telemetry.pace=paceFromCycle(telemetry.cycleTimeS)}
   else if(action==='deeper')telemetry.depth=clamp(telemetry.depth+.1);
+  else if(action==='shallower')telemetry.depth=clamp(telemetry.depth-.1);
   else if(action==='ease')telemetry.intensity=clamp(telemetry.intensity-.1);
   else if(action==='force-up')telemetry.force=clamp(telemetry.force+.1);
+  else if(action==='force-down')telemetry.force=clamp(telemetry.force-.1);
   else if(action==='energy-up')telemetry.intensity=clamp(telemetry.intensity+.1);
+  else if(action==='energy-down')telemetry.intensity=clamp(telemetry.intensity-.1);
   saveTelemetry();syncHUD();text('message',action.toUpperCase()+' applied.');vrAiStatus('AI READY');
   if(autopilot)setTimeout(()=>autopilotTick(true),120);
 }
@@ -110,28 +113,40 @@ window.addEventListener('nocturne:vr-ui-action',e=>{
   const action=String(e.detail?.action||'');
   if(action==='toggle-auto'){document.getElementById('vr-auto')?.click();return}
   if(action==='ai-choose'){autopilotTick(true);return}
-  if(action==='position-next'){position=POSITION_VALUES[(POSITION_VALUES.indexOf(position)+1)%POSITION_VALUES.length];saveTelemetry();persistVisual();text('message','Position · '+position.toUpperCase());return}
-  if(action==='video-toggle'){visualCfg.videoEnabled=!visualCfg.videoEnabled;persistVisual();return}
+  if(action==='chart-prev'){prevChart();return}
+  if(action==='chart-next'){nextChart('manual');return}
+  if(action==='user-peak'){registerUserPeak('vr-menu');return}
+  if(action==='mic-chat'){startMicChat();return}
+  if(action==='position-next'){position=POSITION_VALUES[(POSITION_VALUES.indexOf(position)+1)%POSITION_VALUES.length];saveTelemetry();persistVisual();rememberVr('position','Position changed to '+position+'.',['vr','position'],.25);text('message','Position · '+position.toUpperCase());return}
+  if(action==='video-toggle'){visualCfg.videoEnabled=!visualCfg.videoEnabled;persistVisual();window.dispatchEvent(new CustomEvent('nocturne:vr-video-state',{detail:{id:currentVideoState,reason:'video-toggle',videoSound:visualCfg.videoSound}}));return}
+  if(action==='video-sound'){visualCfg.videoSound=!visualCfg.videoSound;persistVisual();window.dispatchEvent(new CustomEvent('nocturne:vr-video-sound',{detail:{enabled:visualCfg.videoSound}}));return}
+  if(action==='voice-toggle'){visualCfg.voiceGuidance=!visualCfg.voiceGuidance;if(!visualCfg.voiceGuidance&&'speechSynthesis'in window)try{speechSynthesis.cancel()}catch{}persistVisual();return}
+  if(action==='command-toggle'){visualCfg.commandMode=!visualCfg.commandMode;persistVisual();return}
   if(action==='tool-solid'){visualCfg.toolSolid=!visualCfg.toolSolid;persistVisual();return}
-  if(['faster','slower','deeper','ease','force-up','energy-up'].includes(action))applyVrQuick(action);
+  if(action==='hold'){telemetry.startedAt=Date.now();saveTelemetry();chatState('done','Hold.');rememberVr('hold','User held the VR pattern on chart '+chartState.index+'.',['vr','hold'],.3);return}
+  if(['faster','slower','deeper','shallower','ease','force-up','force-down','energy-up','energy-down'].includes(action))applyVrQuick(action);
 });
 const autoButton=$('vr-auto');function syncAutoButton(){if(!autoButton)return;autoButton.setAttribute('aria-pressed',autopilot?'true':'false');autoButton.textContent=autopilot?'AUTOPILOT ON':'AUTOPILOT OFF';vrAiStatus(autopilot?'AI AUTO ON':'AI READY')}if(autoButton){autoButton.addEventListener('click',()=>{if(!telemetry.initialized){showSessionSetup();text('message','Initialize Entry Speed, Depth and Stroke Speed before Autopilot.');return}autopilot=!autopilot;localStorage.setItem('nocturne.vr.autopilot.v1',autopilot?'on':'off');syncAutoButton();window.dispatchEvent(new CustomEvent('nocturne:vr-video-state',{detail:{id:currentVideoState,reason:'autopilot-toggle'}}));if(autopilot)autopilotTick(true)});syncAutoButton()}
 function requireSessionControl(){if(telemetry.initialized)return true;showSessionSetup();text('message','Initialize Entry Speed, Depth and Stroke Speed first.');syncHUD();return false}
 for(const [id,key]of[['vr-pace-range','pace'],['vr-depth-range','depth'],['vr-force-range','force'],['vr-energy-range','intensity']]){$(id)?.addEventListener('input',e=>{if(!requireSessionControl())return;telemetry[key]=clamp(Number(e.target.value)/100);if(key==='pace'){telemetry.cycleTimeS=Math.max(.7,Math.min(10,5-telemetry.pace*4.3));cadence=Math.round(telemetry.pace*100)}saveTelemetry();syncHUD()})}
 $('vr-position')?.addEventListener('change',e=>{const v=String(e.target.value);if(POSITION_VALUES.includes(v)){position=v;saveTelemetry();persistVisual();text('message','Position · '+e.target.selectedOptions[0].textContent)}});
-$('vr-video-toggle')?.addEventListener('click',()=>{visualCfg.videoEnabled=!visualCfg.videoEnabled;persistVisual()});
+$('vr-video-toggle')?.addEventListener('click',()=>{visualCfg.videoEnabled=!visualCfg.videoEnabled;persistVisual();window.dispatchEvent(new CustomEvent('nocturne:vr-video-state',{detail:{id:currentVideoState,reason:'video-toggle',videoSound:visualCfg.videoSound}}))});
+$('vr-video-sound')?.addEventListener('click',()=>{visualCfg.videoSound=!visualCfg.videoSound;persistVisual();window.dispatchEvent(new CustomEvent('nocturne:vr-video-sound',{detail:{enabled:visualCfg.videoSound}}))});
 $('vr-tool-solid')?.addEventListener('click',()=>{visualCfg.toolSolid=!visualCfg.toolSolid;persistVisual()});
-$('vr-mannequin-texture')?.addEventListener('click',()=>{visualCfg.mannequinTexture=!visualCfg.mannequinTexture;persistVisual()});
 $('vr-voice')?.addEventListener('click',()=>{visualCfg.voiceGuidance=!visualCfg.voiceGuidance;if(!visualCfg.voiceGuidance&&'speechSynthesis'in window)try{speechSynthesis.cancel()}catch{}persistVisual()});
+$('vr-command-mode')?.addEventListener('click',()=>{visualCfg.commandMode=!visualCfg.commandMode;persistVisual()});
+$('vr-chart-prev')?.addEventListener('click',prevChart);
+$('vr-chart-next')?.addEventListener('click',()=>nextChart('browser'));
+$('vr-user-peak')?.addEventListener('click',()=>registerUserPeak('browser'));
 $('vr-wave-scale')?.addEventListener('input',e=>{visualCfg.waveScale=Math.max(.5,Math.min(2,Number(e.target.value)/100));persistVisual()});
-$('vr-wave-motion')?.addEventListener('input',e=>{visualCfg.waveMotion=Math.max(.35,Math.min(2,Number(e.target.value)/100));persistVisual()});
+$('vr-wave-motion')?.addEventListener('input',e=>{visualCfg.waveMotion=Math.max(.5,Math.min(1.8,Number(e.target.value)/100));persistVisual()});
 persistVisual();
 window.addEventListener('nocturne:vr-motion',e=>{vrMotion={...vrMotion,...(e.detail||{})};});
 window.addEventListener('nocturne:vr-controller-state',e=>{vrControllers=Array.isArray(e.detail?.controllers)?e.detail.controllers.slice(0,4):[];});
-window.addEventListener('nocturne:vr-cycle',e=>{vrMotion={...vrMotion,...(e.detail||{})};const cycle=Number(vrMotion.cycle)||0,now=Date.now();if(autopilot&&vrImmersiveActive&&cycle!==lastCycleDecision&&cycle>0&&cycle%2===0&&now-lastCycleDecisionAt>5500){lastCycleDecision=cycle;lastCycleDecisionAt=now;setTimeout(()=>autopilotTick(true),80)}});
+window.addEventListener('nocturne:vr-cycle',e=>{vrMotion={...vrMotion,...(e.detail||{})};const cycle=Number(vrMotion.cycle)||0,now=Date.now();if(cycle>0&&cycle!==Number(chartState.lastCycle||0)){chartState.lastCycle=cycle;chartState.strokes++;if(chartState.strokes>=chartState.target){rememberVr('chart','Chart '+chartState.index+' reached '+chartState.target+' strokes.',['vr','chart'],.5);if(autopilot){saveChartState();setTimeout(()=>nextChart('stroke-target'),120)}else saveChartState()}else saveChartState()}if(autopilot&&vrImmersiveActive&&cycle!==lastCycleDecision&&cycle>0&&cycle%2===0&&now-lastCycleDecisionAt>5500){lastCycleDecision=cycle;lastCycleDecisionAt=now;setTimeout(()=>autopilotTick(true),80)}});
 window.addEventListener('nocturne:vr-session',e=>{vrImmersiveActive=Boolean(e.detail?.active);loadVrSession();syncHUD();if(vrImmersiveActive&&autopilot)autopilotTick(true)});window.addEventListener('nocturne:vr-session-configured',()=>{loadVrSession();syncHUD()});
 setInterval(()=>autopilotTick(false),20000);
 refreshAvailableVideoStates().then(()=>{setVrVideoState(currentVideoState,'boot');setEmbodiedState(embodiedState,'boot')});
-syncHUD();persistVisual();bootDirector();(async()=>{if(!navigator.xr){text('xr-status','WEBXR UNAVAILABLE');return}try{const ok=await navigator.xr.isSessionSupported('immersive-vr');text('xr-status',ok?'VR READY':'IMMERSIVE VR UNSUPPORTED');if(!ok)text('message','This browser reports that immersive-vr is unsupported. Open the page in Meta Quest Browser.')}catch{text('xr-status','XR CHECK FAILED')}})();
+syncChartHUD();syncHUD();persistVisual();bootDirector();(async()=>{if(!navigator.xr){text('xr-status','WEBXR UNAVAILABLE');return}try{const ok=await navigator.xr.isSessionSupported('immersive-vr');text('xr-status',ok?'VR READY':'IMMERSIVE VR UNSUPPORTED');if(!ok)text('message','This browser reports that immersive-vr is unsupported. Open the page in Meta Quest Browser.')}catch{text('xr-status','XR CHECK FAILED')}})();
 window.addEventListener('nocturne:suspend',()=>{if(!xrSession)return;try{allPulse(0,1)}catch{}});
 window.__NOCTURNE_VR_MODULE_READY__=true;
