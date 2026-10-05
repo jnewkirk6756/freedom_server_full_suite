@@ -319,37 +319,50 @@ function dispatchVrAction(action){window.dispatchEvent(new CustomEvent('nocturne
 function selectTile(i,src){
   if(i===0)dispatchVrAction('toggle-auto');
   else if(i===1)dispatchVrAction('ai-choose');
-  else if(i===2)dispatchVrAction('faster');
-  else if(i===3)dispatchVrAction('slower');
-  else if(i===4)dispatchVrAction('deeper');
-  else if(i===5)dispatchVrAction('force-up');
-  else if(i===6)dispatchVrAction('energy-up');
-  else if(i===7)dispatchVrAction('position-next');
-  else if(i===8)dispatchVrAction('video-toggle');
-  else if(i===9)dispatchVrAction('tool-solid');
-  else if(i===10){const order=['anna','tool','wave','mannequin','panel'];editTarget=order[(order.indexOf(editTarget)+1)%order.length];actionLine='Editing '+(editTarget==='anna'?'PRESENCE':editTarget.toUpperCase())+' · grip + aim to move';lastMenu=0}
-  else if(i===11){navigateOut('/')}
-  pulseSource(src);lastMenu=0;
+  else if(i===2)dispatchVrAction('chart-prev');
+  else if(i===3)dispatchVrAction('chart-next');
+  else if(i===4)dispatchVrAction('user-peak');
+  else if(i===5)dispatchVrAction('faster');
+  else if(i===6)dispatchVrAction('slower');
+  else if(i===7)dispatchVrAction('deeper');
+  else if(i===8)dispatchVrAction('shallower');
+  else if(i===9)dispatchVrAction('hold');
+  else if(i===10)dispatchVrAction('force-up');
+  else if(i===11)dispatchVrAction('force-down');
+  else if(i===12)dispatchVrAction('energy-up');
+  else if(i===13)dispatchVrAction('energy-down');
+  else if(i===14)dispatchVrAction('position-next');
+  else if(i===15){const d=cycleTool();if(d)window.dispatchEvent(new CustomEvent('nocturne:vr-tool-changed',{detail:{id:d.id,name:d.name,lengthMm:d.lengthMm,widthMm:d.widthMm,travelMm:d.travelMm}}))}
+  else if(i===16)dispatchVrAction('video-toggle');
+  else if(i===17)dispatchVrAction('video-sound');
+  else if(i===18)dispatchVrAction('voice-toggle');
+  else if(i===19)dispatchVrAction('mic-chat');
+  else if(i===20){const order=['anna','tool','wave','mannequin','panel'];editTarget=order[(order.indexOf(editTarget)+1)%order.length];actionLine='Editing '+(editTarget==='anna'?'ANNA':editTarget.toUpperCase())+' · grip + aim move · stick rotate/scale';lastMenu=0}
+  else if(i===21)dispatchVrAction('tool-solid');
+  else if(i===22)dispatchVrAction('command-toggle');
+  else if(i===23)resetSpatialView();
+  else if(i===24)navigateOut('/');
+  pulseSource(src,i===4?.95:.45,i===4?160:75);lastMenu=0;
 }
 function controllerInteraction(frame){
   hovered=-1;const rays=[];if(!session||!refSpace)return rays;let nearest=Infinity,chosen=null;
-  for(const src of session.inputSources){if(!src.gamepad)continue;const pose=frame.getPose(src.targetRaySpace,refSpace);if(!pose)continue;const m=pose.transform.matrix,o=[m[12],m[13],m[14]],d=[-m[8],-m[9],-m[10]],den=d[2],tr=src.gamepad.buttons?.[0]?.value||0,gr=src.gamepad.buttons?.[1]?.value||0,ax=src.gamepad.axes?.[2]??src.gamepad.axes?.[0]??0,ay=src.gamepad.axes?.[3]??src.gamepad.axes?.[1]??0,escapePressed=Boolean(src.gamepad.buttons?.[5]?.pressed||src.gamepad.buttons?.[5]?.value>.7);if(escapePressed&&!lastEscapePressed){lastEscapePressed=true;navigateOut('/vr/');return rays}if(!escapePressed)lastEscapePressed=false;
+  for(const src of session.inputSources){if(!src.gamepad)continue;const pose=frame.getPose(src.targetRaySpace,refSpace);if(!pose)continue;const m=pose.transform.matrix,o=[m[12],m[13],m[14]],d=[-m[8],-m[9],-m[10]],tr=src.gamepad.buttons?.[0]?.value||0,gr=src.gamepad.buttons?.[1]?.value||0,ax=src.gamepad.axes?.[2]??src.gamepad.axes?.[0]??0,ay=src.gamepad.axes?.[3]??src.gamepad.axes?.[1]??0,escapePressed=Boolean(src.gamepad.buttons?.[5]?.pressed||src.gamepad.buttons?.[5]?.value>.7);if(escapePressed&&!lastEscapePressed){lastEscapePressed=true;navigateOut('/vr/');return rays}if(!escapePressed)lastEscapePressed=false;
     if(gr>.72&&tr<.45){
       const dd=2.25,px=o[0]+d[0]*dd,py=o[1]+d[1]*dd,pz=o[2]+d[2]*dd;
-      if(editTarget==='panel'){panelOffset.x=Math.max(-1.8,Math.min(1.8,px-basePanelX()));panelOffset.y=Math.max(-1.1,Math.min(1.1,py-basePanelY()));panelOffset.z=Math.max(-1.4,Math.min(.8,pz-PANEL_Z))}
-      else if(editTarget==='anna'){annaPose.x=Math.max(-2.2,Math.min(2.2,px));annaPose.y=Math.max(.55,Math.min(2.6,py-floorY()));annaPose.z=Math.max(-4.5,Math.min(-.7,pz));annaPose.yaw=Math.max(-1.2,Math.min(1.2,annaPose.yaw+ax*.018));annaPose.scale=Math.max(.45,Math.min(1.8,annaPose.scale-ay*.012))}
-      else if(editTarget==='tool'){toolPose.x=Math.max(-2,Math.min(2,px));toolPose.y=Math.max(-1,Math.min(1.6,py-(floorY()+1.15)));toolPose.z=Math.max(-2.2,Math.min(1.2,pz+.62));toolPose.yaw=Math.max(-1.2,Math.min(1.2,toolPose.yaw+ax*.018));toolPose.scale=Math.max(.55,Math.min(1.8,toolPose.scale-ay*.012))}
-      else if(editTarget==='wave'){wavePose.x=Math.max(-2.2,Math.min(2.2,px));wavePose.y=Math.max(-1.2,Math.min(1.5,py-(floorY()+1.22)));wavePose.z=Math.max(-2.2,Math.min(1.1,pz+1.58));wavePose.yaw=Math.max(-1.25,Math.min(1.25,wavePose.yaw+ax*.018));wavePose.scale=Math.max(.45,Math.min(2.4,wavePose.scale-ay*.012))}
-      else if(editTarget==='mannequin'){mannequinPose.x=Math.max(-2.2,Math.min(2.2,px));mannequinPose.y=Math.max(-.4,Math.min(1.8,py-floorY()));mannequinPose.z=Math.max(-2.2,Math.min(1.4,pz+2.78));mannequinPose.yaw=Math.max(-1.5,Math.min(1.5,mannequinPose.yaw+ax*.018));mannequinPose.scale=Math.max(.6,Math.min(1.55,mannequinPose.scale-ay*.012))}
-      actionLine='Moving '+(editTarget==='anna'?'PRESENCE':editTarget.toUpperCase())+' · stick X rotate · Y scale';lastMenu=0;
+      if(editTarget==='panel'){panelOffset.x=Math.max(-1.8,Math.min(1.8,px-basePanelX()));panelOffset.y=Math.max(-1.1,Math.min(1.1,py-basePanelY()));panelOffset.z=Math.max(-1.4,Math.min(.8,pz-PANEL_Z));panelPose.yaw=Math.max(-1.35,Math.min(1.35,panelPose.yaw+ax*.018));panelPose.scale=Math.max(.62,Math.min(1.7,panelPose.scale-ay*.012))}
+      else if(editTarget==='anna'){annaPose.x=Math.max(-2.2,Math.min(2.2,px));annaPose.y=Math.max(.55,Math.min(2.6,py-floorY()));annaPose.z=Math.max(-4.5,Math.min(-.7,pz));annaPose.yaw=Math.max(-1.5,Math.min(1.5,annaPose.yaw+ax*.018));annaPose.scale=Math.max(.45,Math.min(1.8,annaPose.scale-ay*.012))}
+      else if(editTarget==='tool'){toolPose.x=Math.max(-2,Math.min(2,px));toolPose.y=Math.max(-1,Math.min(1.6,py-(floorY()+1.15)));toolPose.z=Math.max(-2.2,Math.min(1.2,pz+.62));toolPose.yaw=Math.max(-1.5,Math.min(1.5,toolPose.yaw+ax*.018));toolPose.scale=Math.max(.45,Math.min(2.2,toolPose.scale-ay*.012))}
+      else if(editTarget==='wave'){wavePose.x=Math.max(-2.2,Math.min(2.2,px));wavePose.y=Math.max(-1.2,Math.min(1.5,py-(floorY()+1.22)));wavePose.z=Math.max(-2.2,Math.min(1.1,pz+1.58));wavePose.yaw=Math.max(-1.5,Math.min(1.5,wavePose.yaw+ax*.018));wavePose.scale=Math.max(.4,Math.min(2.6,wavePose.scale-ay*.012))}
+      else if(editTarget==='mannequin'){mannequinPose.x=Math.max(-2.2,Math.min(2.2,px));mannequinPose.y=Math.max(-.4,Math.min(1.8,py-floorY()));mannequinPose.z=Math.max(-2.2,Math.min(1.4,pz+2.78));mannequinPose.yaw=Math.max(-1.6,Math.min(1.6,mannequinPose.yaw+ax*.018));mannequinPose.scale=Math.max(.5,Math.min(1.8,mannequinPose.scale-ay*.012))}
+      actionLine='Moving '+(editTarget==='anna'?'ANNA':editTarget.toUpperCase())+' · stick X rotates · Y scales';lastMenu=0;
     }
     let end=[o[0]+d[0]*3,o[1]+d[1]*3,o[2]+d[2]*3],idx=-1,dist=3;
-    if(Math.abs(den)>.0001){const tt=(panelZ()-o[2])/den;if(tt>0&&tt<6){const hx=o[0]+d[0]*tt,hy=o[1]+d[1]*tt,lx=(hx-panelX())/PANEL_W+.5,ly=.5-(hy-panelY())/PANEL_H;if(lx>=0&&lx<=1&&ly>=0&&ly<=1){end=[hx,hy,panelZ()+.008];dist=tt;idx=menuTileIndex(lx,ly);if(idx>=0&&dist<nearest){nearest=dist;chosen=idx}}}}
+    const pc=panelCenter(),pn=panelNormal(),den=d[0]*pn[0]+d[1]*pn[1]+d[2]*pn[2];
+    if(Math.abs(den)>.0001){const tt=((pc[0]-o[0])*pn[0]+(pc[1]-o[1])*pn[1]+(pc[2]-o[2])*pn[2])/den;if(tt>0&&tt<6){const hit=[o[0]+d[0]*tt,o[1]+d[1]*tt,o[2]+d[2]*tt],local=inverseTransformPoint(hit,panelPose,pc),lx=(local[0]-pc[0])/PANEL_W+.5,ly=.5-(local[1]-pc[1])/PANEL_H;if(lx>=0&&lx<=1&&ly>=0&&ly<=1){end=[hit[0]+pn[0]*.008,hit[1]+pn[1]*.008,hit[2]+pn[2]*.008];dist=tt;idx=menuTileIndex(lx,ly);if(idx>=0&&dist<nearest){nearest=dist;chosen=idx}}}}
     rays.push(o[0],o[1],o[2],end[0],end[1],end[2]);const was=triggerDown.get(src)||false,down=tr>.62;if(down&&!was&&idx>=0)selectTile(idx,src);triggerDown.set(src,down);
   }
   hovered=chosen??-1;return rays;
 }
-
 function drawControllerOverlay(mvp,rays){if(!rays.length)return;const tips=[];for(let i=0;i<rays.length;i+=6)tips.push(rays[i+3],rays[i+4],rays[i+5]);gl.disable(gl.DEPTH_TEST);drawWorld(mvp,rays,[.96,.82,1,1],gl.LINES,3);drawWorld(mvp,tips,[1,.96,1,1],gl.POINTS,11);gl.enable(gl.DEPTH_TEST)}
 async function enterFallback(e){
   if(e){e.preventDefault();e.stopImmediatePropagation()}if(session){set('diag-line','Immersive session is already active.');return}
@@ -362,7 +375,7 @@ async function enterFallback(e){
     layer=new XRWebGLLayer(session,gl);session.updateRenderState({baseLayer:layer,depthNear:.04,depthFar:60});
     try{refSpace=await session.requestReferenceSpace('local-floor');refMode='local-floor'}catch{refSpace=await session.requestReferenceSpace('local');refMode='local'}
     session.addEventListener('end',()=>{session=null;layer=null;refSpace=null;hovered=-1;triggerDown.clear();window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:false}}));set('xr-status','VR READY');set('diag-line','Immersive session ended normally.');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}const exit=$('exit');if(exit)exit.disabled=true;const route=pendingRoute;pendingRoute=null;if(route)setTimeout(()=>location.assign(route),40)},{once:true});
-    sceneMode='live';panelOffset={x:0,y:0,z:0};actionLine='Live workspace · telemetry + waveform + tool + mannequin + AI.';lastMenu=0;if(annaVideo){try{if(visualCfg.videoEnabled)annaVideo.play();else annaVideo.pause()}catch{}}window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:true,mode:sceneMode}}));set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');const exit=$('exit');if(exit)exit.disabled=false;
+    sceneMode='live';panelOffset={x:0,y:0,z:0};panelPose={scale:1,yaw:0};actionLine='Immersive control deck · AI + video + chart + tool + waveform.';lastMenu=0;loadAnnaVideoState(localStorage.getItem('nocturne.vr.video-state.v1')||annaVideoState);if(annaVideo){annaVideo.muted=!visualCfg.videoSound;try{if(visualCfg.videoEnabled)annaVideo.play();else annaVideo.pause()}catch{}}window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:true,mode:sceneMode}}));set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');const exit=$('exit');if(exit)exit.disabled=false;
     const frame=(t,f)=>{if(!session)return;const motion=motionState();syncMotionRuntime(t,motion);updateAvatarRuntime(t);updateAnnaTexture(t);const pose=f.getViewerPose(refSpace),rays=controllerInteraction(f);gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(pose)for(const view of pose.views){const vp=layer.getViewport(view);gl.viewport(vp.x,vp.y,vp.width,vp.height);gl.scissor(vp.x,vp.y,vp.width,vp.height);gl.enable(gl.SCISSOR_TEST);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(f,view,t,rays,motion);const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix);renderMenu(mvp,t);drawControllerOverlay(mvp,rays);gl.disable(gl.SCISSOR_TEST)}session.requestAnimationFrame(frame)};session.requestAnimationFrame(frame);
   }catch(err){set('diag-line','Direct VR start failed: '+String(err&&err.message||err).slice(0,140));set('xr-status','VR START FAILED');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}session=null}
 }
