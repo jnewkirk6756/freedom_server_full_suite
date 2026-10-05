@@ -151,14 +151,15 @@ function constellation(t){
   return{nodes,edges,stars};
 }
 function telemetryPath(t,motion=motionState()){
-  const y0=floorY(),lines=[],points=[];const tel=loadTelemetry(),amp=tel.initialized?(.08+tel.depth*.36):0,cycles=1.5,scroll=tel.initialized?(motion.phase*Math.PI*2):0,z=-1.58;
-  for(let i=0;i<84;i++){const q=i/83,x=-1.3+q*2.6,y=y0+1.22+Math.sin(q*Math.PI*2*cycles+scroll)*amp*(.74+.26*Math.sin(q*Math.PI));if(i)lines.push(points[points.length-3],points[points.length-2],points[points.length-1],x,y,z);points.push(x,y,z)}
-  return{lines,points,motion};
+  const y0=floorY(),rawLines=[],rawPoints=[];const tel=loadTelemetry(),amp=tel.initialized?(.08+tel.depth*.36):0,cycles=1.5,scroll=tel.initialized?(motion.phase*Math.PI*2*visualCfg.waveMotion):0,z=-1.58;
+  for(let i=0;i<84;i++){const q=i/83,x=-1.3+q*2.6,y=y0+1.22+Math.sin(q*Math.PI*2*cycles+scroll)*amp*(.74+.26*Math.sin(q*Math.PI));if(i)rawLines.push(rawPoints[rawPoints.length-3],rawPoints[rawPoints.length-2],rawPoints[rawPoints.length-1],x,y,z);rawPoints.push(x,y,z)}
+  const pose={...wavePose,scale:(wavePose.scale||1)*visualCfg.waveScale},pivot=[0,y0+1.22,z];
+  return{lines:transformVerts(rawLines,pose,pivot),points:transformVerts(rawPoints,pose,pivot),motion};
 }
 function waveVolumeGeometry(path){const back=[],front=[],ribs=[],pts=path.points,n=pts.length/3;for(let i=1;i<n;i++){for(const dz of[-.09,.09])back.push(pts[(i-1)*3],pts[(i-1)*3+1],pts[(i-1)*3+2]+dz,pts[i*3],pts[i*3+1],pts[i*3+2]+dz)}for(let i=0;i<n;i+=7)ribs.push(pts[i*3],pts[i*3+1],pts[i*3+2]-.09,pts[i*3],pts[i*3+1],pts[i*3+2]+.09);const idx=Math.max(0,Math.min(n-1,Math.round(path.motion.phase*(n-1))));front.push(pts[idx*3],pts[idx*3+1],pts[idx*3+2]);return{layers:back,ribs,marker:front}}
 function liveHudGeometry(){const tel=loadTelemetry(),y=floorY()+1.82,z=-1.62,x0=.62,x1=1.82,xf=x0+(x1-x0)*tel.force;return{track:[x0,y,z,x1,y,z],fill:[x0,y,z+.002,xf,y,z+.002],marker:[xf,y,z+.004],frame:[x0,y-.08,z,x1,y-.08,z,x1,y-.08,z,x1,y+.08,z,x1,y+.08,z,x0,y+.08,z,x0,y+.08,z,x0,y-.08,z]}}
 function toolGeometry(t,motion=motionState()){
-  const tel=loadTelemetry(),device=activeDevice(),baseY=floorY()+1.15,angle=tel.angle*Math.PI/180,dir=[0,Math.sin(angle),-Math.cos(angle)],u=[1,0,0],v=[0,-Math.cos(angle),-Math.sin(angle)],q=tel.initialized?motion.envelope:0,travel=tel.initialized?(.3+tel.depth*1.05):0,anchor=[0,baseY,-.62],center=[anchor[0]+dir[0]*travel*q,anchor[1]+dir[1]*travel*q,anchor[2]+dir[2]*travel*q],length=device?Math.max(.48,Math.min(1.25,Number(device.lengthMm||180)/180)):.72,radius=device?Math.max(.055,Math.min(.17,Number(device.widthMm||30)/280)):.09,color=hexRgb(device?.color||'#62e0c0'),shell=[],tip=[],baseRing=[];
+  const tel=loadTelemetry(),device=activeDevice(),baseY=floorY()+1.15,angle=tel.angle*Math.PI/180,dir=[0,Math.sin(angle),-Math.cos(angle)],u=[1,0,0],v=[0,-Math.cos(angle),-Math.sin(angle)],q=tel.initialized?motion.envelope:0,travel=tel.initialized?(.3+tel.depth*1.05):0,anchor=[0,baseY,-.62],center=[anchor[0]+dir[0]*travel*q,anchor[1]+dir[1]*travel*q,anchor[2]+dir[2]*travel*q],length=device?Math.max(.48,Math.min(1.25,Number(device.lengthMm||180)/180)):.72,radius=device?Math.max(.055,Math.min(.17,Number(device.widthMm||30)/280)):.09,color=hexRgb(device?.color||'#62e0c0'),shell=[],tip=[],baseRing=[],solid=[];
   const point=(offset,rad,a)=>[center[0]+dir[0]*offset+u[0]*rad*Math.cos(a)+v[0]*rad*Math.sin(a),center[1]+dir[1]*offset+u[1]*rad*Math.cos(a)+v[1]*rad*Math.sin(a),center[2]+dir[2]*offset+u[2]*rad*Math.cos(a)+v[2]*rad*Math.sin(a)];
   const ringAt=(offset,rad,store)=>{let prev=null;for(let i=0;i<=24;i++){const a=i/24*Math.PI*2,p=point(offset,rad,a);if(prev)store.push(...prev,...p);prev=p}};
   for(const off of[-length/2,0,length/2])ringAt(off,radius,shell);
@@ -166,9 +167,33 @@ function toolGeometry(t,motion=motionState()){
   for(let step=1;step<=4;step++){const q2=step/4,rr=radius*Math.cos(q2*Math.PI/2);ringAt(length/2+radius*q2,rr,tip)}
   ringAt(-length/2-.028,radius*1.55,baseRing);
   for(let i=0;i<10;i++){const a=i/10*Math.PI*2,b0=point(-length/2,radius,a),b1=point(-length/2-.028,radius*1.55,a);baseRing.push(...b0,...b1)}
+  const seg=24,backCenter=point(-length/2,0,0),nose=point(length/2+radius*.95,0,0);
+  for(let i=0;i<seg;i++){const a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2,b0=point(-length/2,radius,a0),b1=point(-length/2,radius,a1),f0=point(length/2,radius,a0),f1=point(length/2,radius,a1);solid.push(...b0,...f0,...b1,...b1,...f0,...f1,...f0,...nose,...f1,...backCenter,...b1,...b0)}
   const target=[anchor[0]+dir[0]*travel,anchor[1]+dir[1]*travel,anchor[2]+dir[2]*travel],axis=[...anchor,...target],targetRing=[],save=[...center];center[0]=target[0];center[1]=target[1];center[2]=target[2];ringAt(0,radius,targetRing);center[0]=save[0];center[1]=save[1];center[2]=save[2];
-  return{shell,tip,baseRing,axis,targetRing,marker:center,color,name:device?.name||'Default',anchor,dir,maxTravel:travel,envelope:q};
+  return{shell,tip,baseRing,solid,axis,targetRing,marker:center,color,name:device?.name||'Default',anchor,dir,maxTravel:travel,envelope:q};
 }
+function mannequinGeometry(positionName=currentPosition){
+  const fy=floorY(),z0=-2.78,J={},setJ=(n,x,y,z)=>J[n]=[x,fy+y,z],bones=[],bone=(a,b)=>{if(J[a]&&J[b])bones.push(...J[a],...J[b])};
+  if(positionName==='standing'){
+    setJ('head',0,1.62,z0);setJ('neck',0,1.43,z0);setJ('sl',-.22,1.34,z0);setJ('sr',.22,1.34,z0);setJ('hl',-.18,.88,z0);setJ('hr',.18,.88,z0);setJ('el',-.34,1.08,z0);setJ('er',.34,1.08,z0);setJ('handl',-.30,.78,z0);setJ('handr',.30,.78,z0);setJ('kl',-.13,.48,z0);setJ('kr',.13,.48,z0);setJ('al',-.11,.05,z0);setJ('ar',.11,.05,z0)
+  }else if(positionName==='squat'){
+    setJ('head',0,1.34,z0-.08);setJ('neck',0,1.18,z0-.05);setJ('sl',-.22,1.10,z0);setJ('sr',.22,1.10,z0);setJ('hl',-.18,.67,z0+.08);setJ('hr',.18,.67,z0+.08);setJ('el',-.34,.88,z0-.12);setJ('er',.34,.88,z0-.12);setJ('handl',-.30,.64,z0-.28);setJ('handr',.30,.64,z0-.28);setJ('kl',-.33,.43,z0-.12);setJ('kr',.33,.43,z0-.12);setJ('al',-.24,.05,z0+.13);setJ('ar',.24,.05,z0+.13)
+  }else if(positionName==='doggy'){
+    setJ('head',0,1.02,z0-.63);setJ('neck',0,.86,z0-.50);setJ('sl',-.22,.80,z0-.38);setJ('sr',.22,.80,z0-.38);setJ('hl',-.20,.78,z0+.25);setJ('hr',.20,.78,z0+.25);setJ('el',-.25,.43,z0-.54);setJ('er',.25,.43,z0-.54);setJ('handl',-.25,.08,z0-.62);setJ('handr',.25,.08,z0-.62);setJ('kl',-.22,.34,z0+.24);setJ('kr',.22,.34,z0+.24);setJ('al',-.22,.06,z0+.48);setJ('ar',.22,.06,z0+.48)
+  }else if(positionName==='side'){
+    setJ('head',-.02,.28,z0-.68);setJ('neck',0,.25,z0-.51);setJ('sl',-.11,.25,z0-.38);setJ('sr',.11,.25,z0-.38);setJ('hl',-.13,.22,z0+.18);setJ('hr',.13,.22,z0+.18);setJ('el',-.15,.18,z0-.16);setJ('er',.18,.35,z0-.05);setJ('handl',-.17,.10,z0+.07);setJ('handr',.22,.28,z0+.16);setJ('kl',-.12,.33,z0+.55);setJ('kr',.13,.24,z0+.54);setJ('al',-.10,.08,z0+.93);setJ('ar',.12,.08,z0+.93)
+  }else{
+    setJ('head',0,.25,z0-.72);setJ('neck',0,.22,z0-.52);setJ('sl',-.22,.22,z0-.38);setJ('sr',.22,.22,z0-.38);setJ('hl',-.18,.20,z0+.18);setJ('hr',.18,.20,z0+.18);setJ('el',-.34,.18,z0-.16);setJ('er',.34,.18,z0-.16);setJ('handl',-.40,.11,z0+.12);setJ('handr',.40,.11,z0+.12);setJ('kl',-.20,.48,z0+.55);setJ('kr',.20,.48,z0+.55);setJ('al',-.16,.08,z0+.93);setJ('ar',.16,.08,z0+.93)
+  }
+  for(const [a,b]of[['head','neck'],['neck','sl'],['neck','sr'],['sl','hl'],['sr','hr'],['hl','hr'],['sl','sr'],['sl','el'],['el','handl'],['sr','er'],['er','handr'],['hl','kl'],['kl','al'],['hr','kr'],['kr','ar']])bone(a,b);
+  const torso=[...J.sl,...J.sr,...J.hl,...J.sr,...J.hr,...J.hl],points=Object.values(J).flat(),pivot=[0,fy,z0];
+  return{bones:transformVerts(bones,mannequinPose,pivot),torso:transformVerts(torso,mannequinPose,pivot),points:transformVerts(points,mannequinPose,pivot),corners:[transformPoint(J.sl,mannequinPose,pivot),transformPoint(J.sr,mannequinPose,pivot),transformPoint(J.hr,mannequinPose,pivot),transformPoint(J.hl,mannequinPose,pivot)]};
+}
+function renderMannequinTexture(mvp,g){
+  if(!visualCfg.mannequinTexture||!annaTexReady||!g?.corners?.length)return;const [sl,sr,hr,hl]=g.corners,verts=new Float32Array([...sl,0,0,...sr,1,0,...hl,0,1,...hl,0,1,...sr,1,0,...hr,1,1]);
+  gl.useProgram(uiProgram);gl.bindBuffer(gl.ARRAY_BUFFER,uiBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.DYNAMIC_DRAW);const p=gl.getAttribLocation(uiProgram,'p'),uv=gl.getAttribLocation(uiProgram,'uv');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,20,0);gl.enableVertexAttribArray(uv);gl.vertexAttribPointer(uv,2,gl.FLOAT,false,20,12);gl.uniformMatrix4fv(gl.getUniformLocation(uiProgram,'m'),false,mvp);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.uniform1i(gl.getUniformLocation(uiProgram,'t'),0);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.drawArrays(gl.TRIANGLES,0,6);gl.disable(gl.BLEND)
+}
+
 function drawScene(frame,view,t,rays,motion=motionState()){
   const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix),lat=staticLattice(),c=constellation(t),mc=modeColor();
   gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
