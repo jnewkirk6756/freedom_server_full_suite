@@ -164,7 +164,7 @@ async function autopilotTick(force=false){
 
 function showSetup(){const d=$('setup');if(d?.showModal&&!d.open)d.showModal()}
 function initializeSession(){
-  const entry=Math.max(.5,Math.min(10,Number($('setup-entry-speed')?.value)||3)),depth=Math.max(0,Math.min(100,Number($('setup-depth')?.value)||50))/100,stroke=Math.max(.7,Math.min(10,Number($('setup-stroke-speed')?.value)||3);
+  const entry=Math.max(.5,Math.min(10,Number($('setup-entry-speed')?.value)||3)),depth=Math.max(0,Math.min(100,Number($('setup-depth')?.value)||50))/100,stroke=Math.max(.7,Math.min(10,Number($('setup-stroke-speed')?.value)||3));
   session={entrySpeedS:entry,cycleTimeS:stroke,startedAt:Date.now()};current={pace:paceFromCycle(stroke),depth,force:.18,energy:.24};target={...current};sessionInitialized=true;state='attentive';setAiState('attentive','boot');pattern='steady';saveSession();updateReadout();line('Session ready · Anna is attentive.');
 }
 
