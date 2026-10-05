@@ -215,6 +215,10 @@ function routeVr(){
   location.href='/vr/?mode=live';
 }
 function strokeEnvelope(q,pattern){q=((Number(q)||0)%1+1)%1;var v=(1-Math.cos(q*Math.PI*2))/2;if(pattern==='pulse')v=Math.pow(v,.45);else if(pattern==='build')v=v*(.35+.65*q);else if(pattern==='variable')v=clamp(v*(.75+.25*Math.sin(q*Math.PI*6)));return clamp(v)}
+function trajectoryGeometry(depth,envelope){
+  var entry=8,target=92,setDepth=clamp(depth),motion=clamp(envelope),liveDepth=setDepth*motion,available=target-entry;
+  return{entry:entry,target:target,setDepth:setDepth,liveDepth:liveDepth,setStop:entry+available*setDepth,tip:entry+available*liveDepth,insertedSpan:available*liveDepth};
+}
 function draw(ts){
   if(!state.lastDrawTs)state.lastDrawTs=ts;var frameDt=Math.min(.08,Math.max(0,(ts-state.lastDrawTs)/1000));state.lastDrawTs=ts;applyEmbodiedBias(frameDt);var c=$('waveform'),ctx=c&&c.getContext&&c.getContext('2d'),active=0,visualActive=0,renderPhase=0;if(ctx){
     var w=c.clientWidth||600,h=c.clientHeight||180,dpr=Math.min(window.devicePixelRatio||1,2);if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr)}
@@ -227,7 +231,24 @@ function draw(ts){
     for(var i=0;i<=120;i++){var q=i/120,v=strokeEnvelope(q,state.pattern);var x=q*w,y=y0-amp*v;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
     active=strokeEnvelope(strokePhase,state.pattern);visualActive=active;var px=renderPhase*w,py=y0-amp*visualActive;ctx.fillStyle='#fff';ctx.font='10px system-ui';ctx.fillText('AI STATE · '+String(state.embodied||'attentive').toUpperCase()+' · '+String(state.position||'back').toUpperCase(),40,14);ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
   }
-  var tool=document.querySelector('#trajectory .tool'),stop=document.querySelector('#trajectory .depth-stop'),liveStop=document.querySelector('#trajectory .live-depth-stop'),entry=8,target=92,setDepth=clamp(state.depth),liveDepth=state.initialized?setDepth*visualActive:0,tipPos=entry+(target-entry)*liveDepth,stopPos=entry+(target-entry)*setDepth,angle=Math.max(-45,Math.min(45,Number(state.angle)||0)),force=clamp(state.force);if(tool){tool.style.left=tipPos+'%';tool.style.opacity=state.initialized?'1':'.45';tool.style.transform='translate(-100%,-50%) rotate('+angle+'deg) scale('+(visuals.toolSolid?'1':'.96')+')';tool.style.setProperty('--tool-force',String(force));tool.style.boxShadow='inset 0 1px 2px #ffffff55,0 0 '+(8+Math.round(force*16))+'px rgba(200,120,255,'+(.12+force*.42)+')';tool.dataset.profile=state.tool||'white'}if(stop)stop.style.left=stopPos+'%';if(liveStop){liveStop.style.left=tipPos+'%';liveStop.style.opacity=state.initialized?'1':'.25'}if($('traj-depth'))$('traj-depth').textContent=Math.round(setDepth*100)+'%';if($('traj-live-depth'))$('traj-live-depth').textContent=Math.round(liveDepth*100)+'%';if($('traj-angle'))$('traj-angle').textContent=Math.round(angle)+'°';if($('traj-tool'))$('traj-tool').textContent=String(state.tool||'white').toUpperCase()+' · '+(visuals.toolSolid?'SOLID':'WIRE');
+  var tool=document.querySelector('#trajectory .tool'),stop=document.querySelector('#trajectory .depth-stop'),liveStop=document.querySelector('#trajectory .live-depth-stop'),angle=Math.max(-45,Math.min(45,Number(state.angle)||0)),force=clamp(state.force),energy=clamp(state.intensity),g=trajectoryGeometry(state.depth,state.initialized?visualActive:0);
+  if(tool){
+    tool.style.left=g.entry+'%';
+    tool.style.width=g.insertedSpan+'%';
+    tool.style.height=(8+force*7)+'px';
+    tool.style.opacity=state.initialized?'1':'.45';
+    tool.style.transform='translateY(-50%)';
+    tool.style.setProperty('--tool-force',String(force));
+    tool.style.setProperty('--tool-energy',String(energy));
+    tool.style.boxShadow='inset 0 1px 2px #ffffff55,0 0 '+(5+Math.round(energy*18))+'px rgba(200,120,255,'+(.10+energy*.40)+')';
+    tool.dataset.profile=state.tool||'white';
+  }
+  if(stop)stop.style.left=g.setStop+'%';
+  if(liveStop){liveStop.style.left=g.tip+'%';liveStop.style.opacity=state.initialized?'1':'.25'}
+  if($('traj-depth'))$('traj-depth').textContent=Math.round(g.setDepth*100)+'%';
+  if($('traj-live-depth'))$('traj-live-depth').textContent=Math.round(g.liveDepth*100)+'%';
+  if($('traj-angle'))$('traj-angle').textContent=Math.round(angle)+'°';
+  if($('traj-tool'))$('traj-tool').textContent=String(state.tool||'white').toUpperCase()+' · '+(visuals.toolSolid?'SOLID':'WIRE');
   requestAnimationFrame(draw);
 }
 function bind(id,fn){var e=$(id);if(!e)return;e.addEventListener('click',function(ev){ev.preventDefault();fn(ev)});e.style.touchAction='manipulation'}
