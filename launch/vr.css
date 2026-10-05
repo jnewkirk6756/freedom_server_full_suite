@@ -33,3 +33,24 @@ html.xr-active .vr-escape-nav{position:sticky;top:0;z-index:50;background:#08050
 .vr-slider-grid input[type=range]{width:100%;accent-color:#bd87f5;min-height:24px}.vr-mode-grid{display:grid;grid-template-columns:1.35fr repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}.vr-mode-grid select,.vr-mode-grid button{width:100%;min-height:42px;border:1px solid #4b3658;border-radius:10px;background:#15101d;color:#eadff3;padding:8px;font:800 9px system-ui}.vr-mode-grid select{font-size:11px}.vr-mode-grid button[aria-pressed="true"]{border-color:#9b67c9;background:#2a1738;color:#f2dcff;box-shadow:0 0 18px #9a58d72a}
 @media(max-width:700px){.vr-slider-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.vr-slider-grid.visual{grid-template-columns:1fr 1fr}.vr-mode-grid{grid-template-columns:1fr 1fr}.vr-mode-grid label{grid-column:1/-1}.vr-mode-grid button{min-height:44px}}
 html.xr-active #xr-overlay .vr-live-controls{background:#07040bd9}
+
+/* Nocturne V0.80 immersive control deck polish */
+.vr-control-note{margin:7px 0 10px;color:#887b95;font:10px/1.45 system-ui}
+.vr-chart-controls{width:100%;margin:10px 0 14px;padding:13px;border:1px solid #3b2947;border-radius:14px;background:#07040ba8}
+.vr-chart-state{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.vr-chart-state>*,.vr-chart-actions button{min-height:42px;border:1px solid #35273f;border-radius:10px;background:#0b0711;color:#d9c9e5;padding:9px;font:800 10px ui-monospace,SFMono-Regular,Menlo,monospace}
+.vr-chart-state span,.vr-chart-state>b{display:flex;align-items:center;justify-content:center;gap:6px}
+.vr-chart-actions{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:8px;margin-top:8px}
+.vr-chart-actions .peak{border-color:#a660b8;background:#2d1435;color:#ffdfff;box-shadow:0 0 20px #c75fff24}
+#vr-mic[aria-pressed="true"],#vr-mic-chat[aria-pressed="true"]{border-color:#74d9b0!important;background:#102a21!important;color:#caffea!important}
+#vr-video-sound[aria-pressed="true"],#vr-command-mode[aria-pressed="true"]{border-color:#9b67c9;background:#2a1738;color:#f2dcff}
+.vr-composer{grid-template-columns:minmax(0,1fr) auto auto!important}
+#vr-mic-chat{min-width:62px}
+html.xr-active #vr-live-controls .vr-slider-grid{display:none}
+html.xr-active #vr-live-controls .vr-control-note{display:none}
+html.xr-active #vr-live-controls{padding:8px 10px}
+@media(max-width:700px){
+ .vr-chart-state{grid-template-columns:1fr}
+ .vr-chart-actions{grid-template-columns:1fr}
+ .vr-mode-grid{grid-template-columns:1fr 1fr}
+}
