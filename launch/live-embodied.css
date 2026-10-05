@@ -27,3 +27,9 @@ body[data-ai-state="recovering"] #avatar .aura{opacity:.38!important}
   #wave{height:320px!important;min-height:320px!important;flex-basis:320px!important}
   #conversation{padding-bottom:calc(180px + env(safe-area-inset-bottom))!important}
 }
+
+/* Hide legacy controls not yet part of V0.71 runtime so every visible control is functional. */
+#custom-telemetry,#pattern-record,#pattern-play,#report,#user-peak,#tease{display:none!important}
+#control-rail{grid-template-columns:1.4fr 1fr!important}
+#next-chart{display:block!important}
+#climax-toggle{pointer-events:none;opacity:.65}
