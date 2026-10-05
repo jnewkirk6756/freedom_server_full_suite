@@ -25,3 +25,11 @@
 .vr-escape-nav #vr-home,.vr-escape-nav #vr-exit-now{border-color:#8f5db6;background:#241432;color:#f0ddff}
 html.xr-active .vr-escape-nav{position:sticky;top:0;z-index:50;background:#08050dcc;padding:6px;border-radius:12px;backdrop-filter:blur(12px)}
 @media(max-width:560px){.vr-escape-nav{grid-template-columns:1fr 1fr}.vr-escape-nav button{min-height:44px}}
+
+/* Nocturne V0.76 immersive live control deck */
+#xr-overlay .vr-live-controls{width:100%;margin:12px 0 14px;padding:13px;border:1px solid #3b2947;border-radius:14px;background:#07040ba8;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.vr-slider-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.vr-slider-grid.visual{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px}
+.vr-slider-grid label,.vr-mode-grid label{display:grid;gap:6px;padding:9px;border:1px solid #33263c;border-radius:11px;background:#09060e;color:#9f90aa;font:700 9px system-ui;letter-spacing:.05em}.vr-slider-grid b{color:#eadcf7;font:800 12px ui-monospace,SFMono-Regular,Menlo,monospace}
+.vr-slider-grid input[type=range]{width:100%;accent-color:#bd87f5;min-height:24px}.vr-mode-grid{display:grid;grid-template-columns:1.35fr repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}.vr-mode-grid select,.vr-mode-grid button{width:100%;min-height:42px;border:1px solid #4b3658;border-radius:10px;background:#15101d;color:#eadff3;padding:8px;font:800 9px system-ui}.vr-mode-grid select{font-size:11px}.vr-mode-grid button[aria-pressed="true"]{border-color:#9b67c9;background:#2a1738;color:#f2dcff;box-shadow:0 0 18px #9a58d72a}
+@media(max-width:700px){.vr-slider-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.vr-slider-grid.visual{grid-template-columns:1fr 1fr}.vr-mode-grid{grid-template-columns:1fr 1fr}.vr-mode-grid label{grid-column:1/-1}.vr-mode-grid button{min-height:44px}}
+html.xr-active #xr-overlay .vr-live-controls{background:#07040bd9}
