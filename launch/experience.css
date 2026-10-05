@@ -322,3 +322,11 @@ body.tool-wire #trajectory .tool::before{background:#0b0711!important;border:1px
   #anna-chat-dock #last-line{order:1!important}
   #anna-chat-dock .talk{order:2!important}
 }
+
+/* Nocturne V0.76.3 mobile 3D preview cleanup + stroke sync */
+#avatar.avatar-3d-mode #empty{display:none!important}
+#avatar.avatar-3d-mode #performance{visibility:visible!important;opacity:1!important}
+#avatar.avatar-3d-mode::before{content:"3D VR MODE";position:absolute;left:10px;top:10px;z-index:9;padding:5px 8px;border:1px solid #a56ed1;border-radius:999px;background:#120a19dc;color:#f0ddff;font:800 7px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;pointer-events:none}
+#avatar.avatar-3d-mode::after{content:"Realtime spatial avatar renders in VR";position:absolute;right:10px;bottom:10px;z-index:9;padding:5px 8px;border:1px solid #ffffff17;border-radius:999px;background:#08050bcc;color:#bca8ca;font:700 6.5px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;pointer-events:none}
+#trajectory .tool{transition:left .04s linear,transform .08s linear,opacity .15s ease!important}
+#trajectory .depth-stop{z-index:4}
