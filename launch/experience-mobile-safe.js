@@ -128,7 +128,7 @@ async function loadVideo(id,reason){
   return await new Promise(function(resolve){
     var settled=false,timer=setTimeout(function(){if(settled)return;settled=true;if(requested!=='A01'){loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media did not decode in this browser.';resolve(false)},10000);
     function done(ok){if(settled)return;settled=true;clearTimeout(timer);resolve(ok)}
-    v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=!isOneShotVideo(requested);v.onended=function(){if(/^A18/.test(requested))loadVideo('A19C','recovery');else if(/^A19/.test(requested)||requested==='A20')loadVideo('A01','idle')};sizeAvatarFromVideo(v,requested);if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}done(true)};
+    v.onloadeddata=function(){state.videoState=requested;v.muted=true;v.playsInline=true;v.loop=!isOneShotVideo(requested);v.onended=function(){if(/^A18/.test(requested))loadVideo('A19C','recovery');else if(/^A19/.test(requested)||requested==='A20')loadVideo('A01','idle')};sizeAvatarFromVideo(v,requested);if(os)os.textContent=requested+' · LIVE';if(empty)empty.hidden=true;save();applyVisuals();done(true)};
     v.onerror=function(){if(requested!=='A01'){clearTimeout(timer);settled=true;loadVideo('A01').then(resolve);return}if(os)os.textContent='A01 · VIDEO ERROR';if(cue)cue.textContent='Anna media could not load.';done(false)};
     v.pause();v.removeAttribute('src');v.load();v.src='/media/'+encodeURIComponent(requested)+'.mp4?v=0741';v.load();try{var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){}
   });
@@ -142,6 +142,7 @@ function applyDirector(q){
   if(Number.isFinite(q.paceTarget)||Number(q.paceDelta||0))state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3));
   if(q.pattern&&q.pattern!=='keep')setPattern(q.pattern);
   if(q.videoState&&q.videoState!=='keep'){setEmbodied(embodiedFromVideo(q.videoState),'director');loadVideo(q.videoState,'director').catch(function(){})}else if(state.running)adaptiveFace('director-fallback');
+  if(q.position&&q.position!=='keep'&&['back','doggy','side','standing','squat'].indexOf(q.position)>=0)state.position=q.position;
   if(q.hold)state.running=false;
   save();sync();
 }
@@ -149,19 +150,20 @@ async function director(text,auto){
   if(directorBusy)return null;directorBusy=true;
   try{
     if(!token)await bootDirector();
-    var context={mode:'live',recent:[],experience:{availableVideoStates:AVAILABLE_VIDEO_STATES.slice()},chart:{activePort:'V',lead:'AVATAR',pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,rhythm:state.pattern,position:'keep',videoState:state.videoState,autopilot:!!auto,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS},about:'Nocturne mobile Live. Anna is perceived through telemetry and immersion rather than a visible avatar. Apply exact numeric telemetry requests exactly. Use videoState only as an affect-state signal. Let that state shape pace, depth, force, intensity, pattern, holds and waveform character. Keep continuity.'};
-    var r=await fetch('/v1/director/respond',{method:'POST',headers:{'content-type':'application/json','x-nocturne-session':token||''},body:JSON.stringify({text:text,context:context})}),d=await r.json();if(!r.ok)throw new Error((d.error&&d.error.message)||'Director failed');applyDirector(d.director||{});return d.director||{};
+    var context={mode:'live',recent:[],experience:{availableVideoStates:AVAILABLE_VIDEO_STATES.slice(),visuals:{videoEnabled:visuals.videoEnabled,voiceGuidance:visuals.voiceGuidance,toolSolid:visuals.toolSolid,waveScale:visuals.waveScale,waveMotion:visuals.waveMotion}},chart:{activePort:'V',lead:'AVATAR',pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,rhythm:state.pattern,position:state.position||'back',videoState:state.videoState,autopilot:!!auto,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS},about:'Nocturne Live. Keep telemetry, waveform, position, visual state and guidance synchronized. Apply exact numeric requests exactly. When automation is active, use one short spoken cue only when a meaningful pattern transition or chart moment calls for guidance; otherwise keep speech minimal.'};
+    var r=await fetch('/v1/director/respond',{method:'POST',headers:{'content-type':'application/json','x-nocturne-session':token||''},body:JSON.stringify({text:text,context:context})}),d=await r.json();if(!r.ok)throw new Error((d.error&&d.error.message)||'Director failed');var out=d.director||{};applyDirector(out);if(auto&&out.speech)speakGuide(out.speech,false);return out;
   }finally{directorBusy=false}
 }
 async function send(){
   var input=$('message'),text=input?input.value.trim():'';if(!text)return;
   var explicit=explicitTelemetry(text);line(explicit.length?'Applied · '+explicit.join(' · ')+' · Anna is thinking…':'Message received · Anna is thinking…');
   document.body.classList.add('director-thinking');var b=$('send');if(b)b.disabled=true;
-  try{var q=await director(text,false);line((q&&q.speech)||'Applied.');if(input)input.value=''}catch(e){line('Director error · '+String(e.message||e).slice(0,120))}finally{document.body.classList.remove('director-thinking');if(b)b.disabled=false}
+  try{var q=await director(text,false);line((q&&q.speech)||'Applied.');if(q&&q.speech)speakGuide(q.speech,true);if(input)input.value=''}catch(e){line('Director error · '+String(e.message||e).slice(0,120))}finally{document.body.classList.remove('director-thinking');if(b)b.disabled=false}
 }
 function routeVr(){
   if(!state.initialized){showSetup();return}
-  try{if(window.NocturneSession)window.NocturneSession.commit({initialized:true,running:state.running,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,videoState:state.videoState,embodied:state.embodied,startedAt:state.startedAt||Date.now()},'mobile-to-vr');sessionStorage.setItem('nocturne.vr.session.v070',JSON.stringify({initialized:true,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,startedAt:state.startedAt||Date.now()}));localStorage.setItem('nocturne.vr.video-state.v1',state.videoState);localStorage.setItem(EMBODIED_KEY,state.embodied)}catch(e){}
+  persistVisuals();
+  try{var payload={initialized:true,running:state.running,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,position:state.position||'back',videoState:state.videoState,embodied:state.embodied,visuals:{videoEnabled:visuals.videoEnabled,voiceGuidance:visuals.voiceGuidance,toolSolid:visuals.toolSolid,waveScale:visuals.waveScale,waveMotion:visuals.waveMotion},startedAt:state.startedAt||Date.now()};if(window.NocturneSession)window.NocturneSession.commit(payload,'mobile-to-vr');sessionStorage.setItem('nocturne.vr.session.v070',JSON.stringify(payload));localStorage.setItem('nocturne.vr.video-state.v1',state.videoState);localStorage.setItem(EMBODIED_KEY,state.embodied)}catch(e){}
   location.href='/vr/?mode=live';
 }
 function draw(ts){
