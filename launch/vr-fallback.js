@@ -279,9 +279,13 @@ function selectTile(i,src){
   else if(i===2)dispatchVrAction('faster');
   else if(i===3)dispatchVrAction('slower');
   else if(i===4)dispatchVrAction('deeper');
-  else if(i===5)dispatchVrAction('ease');
-  else if(i===6){editTarget=editTarget==='anna'?'tool':editTarget==='tool'?'panel':'anna';actionLine='Editing '+editTarget.toUpperCase()+' · grip + aim to move';lastMenu=0}
-  else if(i===7){navigateOut('/')}
+  else if(i===5)dispatchVrAction('force-up');
+  else if(i===6)dispatchVrAction('energy-up');
+  else if(i===7)dispatchVrAction('position-next');
+  else if(i===8)dispatchVrAction('video-toggle');
+  else if(i===9)dispatchVrAction('tool-solid');
+  else if(i===10){const order=['anna','tool','wave','mannequin','panel'];editTarget=order[(order.indexOf(editTarget)+1)%order.length];actionLine='Editing '+(editTarget==='anna'?'PRESENCE':editTarget.toUpperCase())+' · grip + aim to move';lastMenu=0}
+  else if(i===11){navigateOut('/')}
   pulseSource(src);lastMenu=0;
 }
 function controllerInteraction(frame){
@@ -291,11 +295,13 @@ function controllerInteraction(frame){
       const dd=2.25,px=o[0]+d[0]*dd,py=o[1]+d[1]*dd,pz=o[2]+d[2]*dd;
       if(editTarget==='panel'){panelOffset.x=Math.max(-1.8,Math.min(1.8,px-basePanelX()));panelOffset.y=Math.max(-1.1,Math.min(1.1,py-basePanelY()));panelOffset.z=Math.max(-1.4,Math.min(.8,pz-PANEL_Z))}
       else if(editTarget==='anna'){annaPose.x=Math.max(-2.2,Math.min(2.2,px));annaPose.y=Math.max(.55,Math.min(2.6,py-floorY()));annaPose.z=Math.max(-4.5,Math.min(-.7,pz));annaPose.yaw=Math.max(-1.2,Math.min(1.2,annaPose.yaw+ax*.018));annaPose.scale=Math.max(.45,Math.min(1.8,annaPose.scale-ay*.012))}
-      else {toolPose.x=Math.max(-2,Math.min(2,px));toolPose.y=Math.max(-1,Math.min(1.6,py-(floorY()+1.15)));toolPose.z=Math.max(-2.2,Math.min(1.2,pz+.62));toolPose.yaw=Math.max(-1.2,Math.min(1.2,toolPose.yaw+ax*.018));toolPose.scale=Math.max(.55,Math.min(1.8,toolPose.scale-ay*.012))}
+      else if(editTarget==='tool'){toolPose.x=Math.max(-2,Math.min(2,px));toolPose.y=Math.max(-1,Math.min(1.6,py-(floorY()+1.15)));toolPose.z=Math.max(-2.2,Math.min(1.2,pz+.62));toolPose.yaw=Math.max(-1.2,Math.min(1.2,toolPose.yaw+ax*.018));toolPose.scale=Math.max(.55,Math.min(1.8,toolPose.scale-ay*.012))}
+      else if(editTarget==='wave'){wavePose.x=Math.max(-2.2,Math.min(2.2,px));wavePose.y=Math.max(-1.2,Math.min(1.5,py-(floorY()+1.22)));wavePose.z=Math.max(-2.2,Math.min(1.1,pz+1.58));wavePose.yaw=Math.max(-1.25,Math.min(1.25,wavePose.yaw+ax*.018));wavePose.scale=Math.max(.45,Math.min(2.4,wavePose.scale-ay*.012))}
+      else if(editTarget==='mannequin'){mannequinPose.x=Math.max(-2.2,Math.min(2.2,px));mannequinPose.y=Math.max(-.4,Math.min(1.8,py-floorY()));mannequinPose.z=Math.max(-2.2,Math.min(1.4,pz+2.78));mannequinPose.yaw=Math.max(-1.5,Math.min(1.5,mannequinPose.yaw+ax*.018));mannequinPose.scale=Math.max(.6,Math.min(1.55,mannequinPose.scale-ay*.012))}
       actionLine='Moving '+(editTarget==='anna'?'PRESENCE':editTarget.toUpperCase())+' · stick X rotate · Y scale';lastMenu=0;
     }
     let end=[o[0]+d[0]*3,o[1]+d[1]*3,o[2]+d[2]*3],idx=-1,dist=3;
-    if(Math.abs(den)>.0001){const tt=(panelZ()-o[2])/den;if(tt>0&&tt<6){const hx=o[0]+d[0]*tt,hy=o[1]+d[1]*tt,lx=(hx-panelX())/PANEL_W+.5,ly=.5-(hy-panelY())/PANEL_H;if(lx>=0&&lx<=1&&ly>=0&&ly<=1){end=[hx,hy,panelZ()+.008];dist=tt;if(ly>=.34&&ly<=.79){const col=Math.max(0,Math.min(3,Math.floor(lx*4))),row=ly<.565?0:1;idx=row*4+col;if(dist<nearest){nearest=dist;chosen=idx}}}}}
+    if(Math.abs(den)>.0001){const tt=(panelZ()-o[2])/den;if(tt>0&&tt<6){const hx=o[0]+d[0]*tt,hy=o[1]+d[1]*tt,lx=(hx-panelX())/PANEL_W+.5,ly=.5-(hy-panelY())/PANEL_H;if(lx>=0&&lx<=1&&ly>=0&&ly<=1){end=[hx,hy,panelZ()+.008];dist=tt;idx=menuTileIndex(lx,ly);if(idx>=0&&dist<nearest){nearest=dist;chosen=idx}}}}
     rays.push(o[0],o[1],o[2],end[0],end[1],end[2]);const was=triggerDown.get(src)||false,down=tr>.62;if(down&&!was&&idx>=0)selectTile(idx,src);triggerDown.set(src,down);
   }
   hovered=chosen??-1;return rays;
