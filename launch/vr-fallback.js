@@ -61,7 +61,12 @@ async function loadAnnaVideoState(id){
   }
   annaVideoReady=false;annaVideoError='missing';set('vr-video-state','MISSING');actionLine='Anna media cache has no usable avatar clip.';lastMenu=0;return false;
 }
-function activeDevice(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');if(!Array.isArray(lib.devices))return null;return lib.devices.find(d=>d.id===lib.activeId)||(lib.devices.length===1?lib.devices[0]:null)}catch{return null}}
+function deviceLibrary(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');return Array.isArray(lib.devices)?lib:{devices:[],activeId:null,revision:0}}catch{return{devices:[],activeId:null,revision:0}}}
+function activeDevice(){const lib=deviceLibrary();return lib.devices.find(d=>d.id===lib.activeId)||(lib.devices.length===1?lib.devices[0]:null)}
+function cycleTool(){
+  const lib=deviceLibrary();if(!lib.devices.length){actionLine='No saved tool profiles · add dimensions in Devices.';lastMenu=0;return null}
+  const at=Math.max(-1,lib.devices.findIndex(d=>d.id===lib.activeId)),next=lib.devices[(at+1)%lib.devices.length];lib.activeId=next.id;lib.revision=(Number(lib.revision)||0)+1;try{localStorage.setItem('nocturne.devices.v1',JSON.stringify(lib));window.dispatchEvent(new Event('nocturne:devices-changed'))}catch{}actionLine='Tool · '+next.name+' · '+Math.round(next.lengthMm)+'×'+Math.round(next.widthMm)+'mm · travel '+Math.round(next.travelMm)+'mm';lastMenu=0;return next
+}
 function hexRgb(hex){const m=/^#([0-9a-f]{6})$/i.exec(String(hex||''));if(!m)return[.36,1,.84,1];const n=parseInt(m[1],16);return[((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255,1]}
 function embodiedColor(){const m={calm:[.48,.35,.72,1],attentive:[.62,.43,.86,1],curious:[.32,.68,.95,1],focused:[.46,.82,.82,1],playful:[.86,.42,.95,1],assertive:[.92,.48,.62,1],intense:[1,.28,.74,1],irritated:[.94,.25,.38,1],withdrawn:[.28,.25,.42,1],recovering:[.4,.62,.86,1]};return m[embodiedState]||m.attentive}
 function embodiedPulse(t){const speed=embodiedState==='intense'?.0048:embodiedState==='assertive'?.004:embodiedState==='playful'?.0036:embodiedState==='withdrawn'?.0012:embodiedState==='recovering'?.0018:.0024;return .72+.28*((Math.sin(t*speed)+1)/2)}
@@ -164,26 +169,28 @@ function constellation(t){
   return{nodes,edges,stars};
 }
 function telemetryPath(t,motion=motionState()){
-  const y0=floorY(),rawLines=[],rawPoints=[];const tel=loadTelemetry(),amp=tel.initialized?(.08+tel.depth*.36):0,cycles=1.5,scroll=tel.initialized?(motion.phase*Math.PI*2*visualCfg.waveMotion):0,z=-1.58;
-  for(let i=0;i<84;i++){const q=i/83,x=-1.3+q*2.6,y=y0+1.22+Math.sin(q*Math.PI*2*cycles+scroll)*amp*(.74+.26*Math.sin(q*Math.PI));if(i)rawLines.push(rawPoints[rawPoints.length-3],rawPoints[rawPoints.length-2],rawPoints[rawPoints.length-1],x,y,z);rawPoints.push(x,y,z)}
-  const pose={...wavePose,scale:(wavePose.scale||1)*visualCfg.waveScale},pivot=[0,y0+1.22,z];
-  return{lines:transformVerts(rawLines,pose,pivot),points:transformVerts(rawPoints,pose,pivot),motion};
+  const y0=floorY(),rawLines=[],rawPoints=[],tel=loadTelemetry(),base=y0+1.22,z=-1.58,amp=tel.initialized?(.10+tel.depth*.42):0,phase=motion.phase*Math.PI*2;
+  for(let i=0;i<101;i++){const q=i/100,x=(-1.35+q*2.7)*visualCfg.waveMotion,wave=(1-Math.cos((q-.5)*Math.PI*2+phase))/2,y=base+amp*wave;if(i)rawLines.push(rawPoints[rawPoints.length-3],rawPoints[rawPoints.length-2],rawPoints[rawPoints.length-1],x,y,z);rawPoints.push(x,y,z)}
+  const pose={...wavePose,scale:(wavePose.scale||1)*visualCfg.waveScale},pivot=[0,base,z],centerIndex=50;
+  return{lines:transformVerts(rawLines,pose,pivot),points:transformVerts(rawPoints,pose,pivot),motion,centerIndex,seated:motion.envelope>=.94};
 }
-function waveVolumeGeometry(path){const back=[],front=[],ribs=[],pts=path.points,n=pts.length/3;for(let i=1;i<n;i++){for(const dz of[-.09,.09])back.push(pts[(i-1)*3],pts[(i-1)*3+1],pts[(i-1)*3+2]+dz,pts[i*3],pts[i*3+1],pts[i*3+2]+dz)}for(let i=0;i<n;i+=7)ribs.push(pts[i*3],pts[i*3+1],pts[i*3+2]-.09,pts[i*3],pts[i*3+1],pts[i*3+2]+.09);const idx=Math.max(0,Math.min(n-1,Math.round(path.motion.phase*(n-1))));front.push(pts[idx*3],pts[idx*3+1],pts[idx*3+2]);return{layers:back,ribs,marker:front}}
+function waveVolumeGeometry(path){const back=[],front=[],ribs=[],pts=path.points,n=pts.length/3;for(let i=1;i<n;i++){for(const dz of[-.09,.09])back.push(pts[(i-1)*3],pts[(i-1)*3+1],pts[(i-1)*3+2]+dz,pts[i*3],pts[i*3+1],pts[i*3+2]+dz)}for(let i=0;i<n;i+=8)ribs.push(pts[i*3],pts[i*3+1],pts[i*3+2]-.09,pts[i*3],pts[i*3+1],pts[i*3+2]+.09);const idx=Math.max(0,Math.min(n-1,Number(path.centerIndex)||Math.floor(n/2)));front.push(pts[idx*3],pts[idx*3+1],pts[idx*3+2]);return{layers:back,ribs,marker:front,seated:path.seated}}
 function liveHudGeometry(){const tel=loadTelemetry(),y=floorY()+1.82,z=-1.62,x0=.62,x1=1.82,xf=x0+(x1-x0)*tel.force;return{track:[x0,y,z,x1,y,z],fill:[x0,y,z+.002,xf,y,z+.002],marker:[xf,y,z+.004],frame:[x0,y-.08,z,x1,y-.08,z,x1,y-.08,z,x1,y+.08,z,x1,y+.08,z,x0,y+.08,z,x0,y+.08,z,x0,y-.08,z]}}
 function toolGeometry(t,motion=motionState()){
-  const tel=loadTelemetry(),device=activeDevice(),baseY=floorY()+1.15,angle=tel.angle*Math.PI/180,dir=[0,Math.sin(angle),-Math.cos(angle)],u=[1,0,0],v=[0,-Math.cos(angle),-Math.sin(angle)],q=tel.initialized?motion.envelope:0,travel=tel.initialized?(.3+tel.depth*1.05):0,anchor=[0,baseY,-.62],center=[anchor[0]+dir[0]*travel*q,anchor[1]+dir[1]*travel*q,anchor[2]+dir[2]*travel*q],length=device?Math.max(.48,Math.min(1.25,Number(device.lengthMm||180)/180)):.72,radius=device?Math.max(.055,Math.min(.17,Number(device.widthMm||30)/280)):.09,color=hexRgb(device?.color||'#62e0c0'),shell=[],tip=[],baseRing=[],solid=[];
+  const tel=loadTelemetry(),device=activeDevice(),baseY=floorY()+1.15,angle=tel.angle*Math.PI/180,dir=[0,Math.sin(angle),-Math.cos(angle)],u=[1,0,0],v=[0,-Math.cos(angle),-Math.sin(angle)],q=tel.initialized?motion.envelope:0;
+  const lengthMm=device?Number(device.lengthMm)||180:180,widthMm=device?Number(device.widthMm)||30:30,travelMm=device?Number(device.travelMm)||Math.min(lengthMm,150):150;
+  const length=Math.max(.06,Math.min(.65,lengthMm/1000)),radius=Math.max(.006,Math.min(.075,widthMm/2000)),maxTravel=tel.initialized?Math.max(0,Math.min(.65,travelMm/1000))*tel.depth:0,anchor=[0,baseY,-.62],center=[anchor[0]+dir[0]*maxTravel*q,anchor[1]+dir[1]*maxTravel*q,anchor[2]+dir[2]*maxTravel*q],color=hexRgb(device?.color||'#e9e5ee'),shell=[],tip=[],baseRing=[],solid=[];
   const point=(offset,rad,a)=>[center[0]+dir[0]*offset+u[0]*rad*Math.cos(a)+v[0]*rad*Math.sin(a),center[1]+dir[1]*offset+u[1]*rad*Math.cos(a)+v[1]*rad*Math.sin(a),center[2]+dir[2]*offset+u[2]*rad*Math.cos(a)+v[2]*rad*Math.sin(a)];
-  const ringAt=(offset,rad,store)=>{let prev=null;for(let i=0;i<=24;i++){const a=i/24*Math.PI*2,p=point(offset,rad,a);if(prev)store.push(...prev,...p);prev=p}};
+  const ringAt=(offset,rad,store)=>{let prev=null;for(let i=0;i<=28;i++){const a=i/28*Math.PI*2,p=point(offset,rad,a);if(prev)store.push(...prev,...p);prev=p}};
   for(const off of[-length/2,0,length/2])ringAt(off,radius,shell);
-  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,s0=point(-length/2,radius,a),s1=point(length/2,radius,a);shell.push(...s0,...s1)}
-  for(let step=1;step<=4;step++){const q2=step/4,rr=radius*Math.cos(q2*Math.PI/2);ringAt(length/2+radius*q2,rr,tip)}
-  ringAt(-length/2-.028,radius*1.55,baseRing);
-  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,b0=point(-length/2,radius,a),b1=point(-length/2-.028,radius*1.55,a);baseRing.push(...b0,...b1)}
-  const seg=24,backCenter=point(-length/2,0,0),nose=point(length/2+radius*.95,0,0);
+  for(let i=0;i<12;i++){const a=i/12*Math.PI*2,s0=point(-length/2,radius,a),s1=point(length/2,radius,a);shell.push(...s0,...s1)}
+  for(let step=1;step<=8;step++){const f=step/8,theta=f*Math.PI/2,rr=radius*Math.cos(theta),off=length/2+radius*Math.sin(theta);ringAt(off,rr,tip)}
+  ringAt(-length/2-.018,radius*1.38,baseRing);
+  for(let i=0;i<12;i++){const a=i/12*Math.PI*2,b0=point(-length/2,radius,a),b1=point(-length/2-.018,radius*1.38,a);baseRing.push(...b0,...b1)}
+  const seg=28,backCenter=point(-length/2,0,0),nose=point(length/2+radius,0,0);
   for(let i=0;i<seg;i++){const a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2,b0=point(-length/2,radius,a0),b1=point(-length/2,radius,a1),f0=point(length/2,radius,a0),f1=point(length/2,radius,a1);solid.push(...b0,...f0,...b1,...b1,...f0,...f1,...f0,...nose,...f1,...backCenter,...b1,...b0)}
-  const target=[anchor[0]+dir[0]*travel,anchor[1]+dir[1]*travel,anchor[2]+dir[2]*travel],axis=[...anchor,...target],targetRing=[],save=[...center];center[0]=target[0];center[1]=target[1];center[2]=target[2];ringAt(0,radius,targetRing);center[0]=save[0];center[1]=save[1];center[2]=save[2];
-  return{shell,tip,baseRing,solid,axis,targetRing,marker:center,color,name:device?.name||'Default',anchor,dir,maxTravel:travel,envelope:q};
+  const targetCenter=[anchor[0]+dir[0]*maxTravel,anchor[1]+dir[1]*maxTravel,anchor[2]+dir[2]*maxTravel],targetTip=[targetCenter[0]+dir[0]*(length/2+radius),targetCenter[1]+dir[1]*(length/2+radius),targetCenter[2]+dir[2]*(length/2+radius)],axis=[...anchor,...targetTip],targetRing=[],save=[...center];center[0]=targetTip[0];center[1]=targetTip[1];center[2]=targetTip[2];ringAt(0,radius*.8,targetRing);center[0]=save[0];center[1]=save[1];center[2]=save[2];const marker=point(length/2+radius,0,0);
+  return{shell,tip,baseRing,solid,axis,targetRing,marker,color,name:device?.name||'Default Preview',device,lengthMm,widthMm,travelMm,anchor,dir,maxTravel,envelope:q};
 }
 function mannequinGeometry(positionName=currentPosition){
   const fy=floorY(),z0=-2.78,J={},setJ=(n,x,y,z)=>J[n]=[x,fy+y,z],bones=[],bone=(a,b)=>{if(J[a]&&J[b])bones.push(...J[a],...J[b])};
