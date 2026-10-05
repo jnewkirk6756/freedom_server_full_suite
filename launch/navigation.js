@@ -60,4 +60,4 @@ document.addEventListener('click', e => {
 });
 window.addEventListener('pagehide', suspend);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') suspend(); });
-window.addEventListener('pageshow', e => { if (e.persisted && menu) menu.open = false; });
+window.addEventListener('pageshow', e => { if(e.persisted){ location.reload(); return; } if(menu) menu.open=false; });
