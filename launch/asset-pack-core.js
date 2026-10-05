@@ -88,6 +88,6 @@ export async function assetPackSummary(){
   return{
     ...status,
     label:status.local.clips+' clips · '+mb(status.local.bytes)+' MB on device',
-    detail:status.hdLocal>0?status.local.hdClips+' HD clips local':'Local pack contains preview media only'
+    detail:status.local.hdClips>0?status.local.hdClips+' HD clips local':'Local pack contains preview media only'
   };
 }
