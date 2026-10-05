@@ -112,7 +112,7 @@ async function startupSelfTest(port){
  const check=async(name,route,needles=[])=>{try{const r=await localSelfRequest(port,route),text=r.body.toString('utf8'),ok=r.status===200&&needles.every(x=>text.includes(x));checks.push({name,ok,status:r.status});console.log('NOCTURNE_SELF_TEST '+name+'='+(ok?'PASS':'FAIL')+' STATUS='+r.status);return r}catch(e){checks.push({name,ok:false,status:0});console.log('NOCTURNE_SELF_TEST '+name+'=FAIL ERROR='+String(e.message).slice(0,80));return null}};
  await check('HOME_ROUTE','/experience/',['NOCTURNE']);
  await check('LIVE_ROUTE','/live/',['experience-mobile-safe.js?v=0760','ct-wave-scale','ct-video']);
- await check('VR_ROUTE','/vr/',['vr.js?v=0760','vr-mannequin-texture','vr-wave-motion']);
+ await check('VR_ROUTE','/vr/',['vr.js?v=0761','anna-avatar-runtime.js?v=0761','vr-mannequin-texture','vr-wave-motion']);
  await check('LIVE_RUNTIME','/experience-mobile-safe.js',['function speakGuide','tool.style.left','fetchAvatarBlob']);
  await check('VR_RUNTIME','/vr.js',['vr-wave-scale','voiceGuidance','position-next']);
  await check('AVATAR_RUNTIME','/anna-avatar-runtime.js',['NocturneAvatarRuntime','poseMix','setExpression']);
