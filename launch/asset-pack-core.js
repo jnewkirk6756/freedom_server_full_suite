@@ -1,24 +1,24 @@
 import {listClips,cloudManifest,syncCloudToLocal,storageEstimate} from './video-state-core.js';
 
-export const ASSET_PACK_VERSION='NOCTURNE-ASSET-PACK-0.77.0';
-export const SHELL_CACHE='nocturne-shell-0770';
+export const ASSET_PACK_VERSION='NOCTURNE-ASSET-PACK-0.77.1';
+export const SHELL_CACHE='nocturne-shell-0771';
 export const SHELL_ASSETS=[
   '/',
   '/live/',
   '/vr/',
-  '/experience.css?v=0770',
-  '/live-embodied.css?v=0770',
-  '/experience-mobile-safe.js?v=0770',
-  '/video-state-core.js?v=0770',
-  '/asset-pack-core.js?v=0770',
-  '/anna-avatar-runtime.js?v=0770',
-  '/vr.js?v=0770',
-  '/vr-fallback.js?v=0770',
-  '/vr.css?v=0770',
-  '/navigation.css?v=0770',
-  '/navigation.js?v=0770',
-  '/session-core.js?v=0770',
-  '/app.webmanifest?v=0770'
+  '/experience.css?v=0771',
+  '/live-embodied.css?v=0771',
+  '/experience-mobile-safe.js?v=0771',
+  '/video-state-core.js?v=0771',
+  '/asset-pack-core.js?v=0771',
+  '/anna-avatar-runtime.js?v=0771',
+  '/vr.js?v=0771',
+  '/vr-fallback.js?v=0771',
+  '/vr.css?v=0771',
+  '/navigation.css?v=0771',
+  '/navigation.js?v=0771',
+  '/session-core.js?v=0771',
+  '/app.webmanifest?v=0771'
 ];
 
 export async function requestPersistentStorage(){
@@ -32,7 +32,7 @@ export async function requestPersistentStorage(){
 export async function installServiceWorker(){
   if(!('serviceWorker'in navigator))return{supported:false,registered:false};
   try{
-    const reg=await navigator.serviceWorker.register('/nocturne-sw.js?v=0770',{scope:'/'});
+    const reg=await navigator.serviceWorker.register('/nocturne-sw.js?v=0771',{scope:'/'});
     return{supported:true,registered:true,scope:reg.scope};
   }catch(error){return{supported:true,registered:false,error:String(error?.message||error)}}
 }
