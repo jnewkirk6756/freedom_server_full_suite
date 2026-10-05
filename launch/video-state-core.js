@@ -1,5 +1,5 @@
 /** Nocturne V0.67 video-state library. Local IndexedDB + shared staging sync cache. */
-export const VIDEO_STATE_VERSION='0.74.2';
+export const VIDEO_STATE_VERSION='0.77.0';
 export const VIDEO_DB_NAME='nocturne-video-states-v1';
 export const VIDEO_DB_STORE='clips';
 export const VIDEO_ANCHOR_SECONDS=.7;
@@ -175,11 +175,13 @@ export async function fetchCloudClip(id){
 }
 export async function getClipSynced(id){
   const state=stateById(id);if(!state)return null;
+  const local=await getClip(state.id).catch(()=>null);
+  if(local?.blob)return local;
   try{
     const remote=await fetchCloudClip(state.id);
     if(remote?.blob)return remote;
   }catch{}
-  return await getClip(state.id);
+  return null;
 }
 export async function publishClipToCloud(id){
   const state=stateById(id);if(!state)throw Error('Unknown video state.');const local=await getClip(state.id);if(!local?.blob)throw Error('Import this clip locally first.');
