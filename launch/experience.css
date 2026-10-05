@@ -302,3 +302,23 @@ body.tool-wire #trajectory .tool{background:transparent!important;border:2px sol
 body.tool-wire #trajectory .tool::before{background:#0b0711!important;border:1px solid #cbb9d7!important}
 #trajectory .tool{transition:left .06s linear,transform .12s ease,opacity .15s ease}
 @media(max-width:699px){.telemetry-grid .toggle-label{min-height:42px}}
+
+/* Nocturne V0.76.2 mobile avatar-mode visibility + trajectory calibration */
+#avatar-display-controls{display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;width:min(94vw,520px);margin:0 auto 2px;position:relative;z-index:14}
+#avatar-display-controls::before{content:"AVATAR MODE";font:700 7px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;color:#776a80;margin-right:2px}
+#avatar-display-controls button{min-height:38px;padding:8px 13px;border:1px solid #473356;border-radius:999px;background:#0d0914;color:#a999b5;font:800 8px system-ui;letter-spacing:.06em;touch-action:manipulation}
+#avatar-display-controls button.active,#avatar-display-controls button[aria-pressed="true"]{background:#2b1839;border-color:#a26bd0;color:#f0ddff;box-shadow:0 0 16px #9c5bd12c}
+#avatar.avatar-3d-mode #empty{display:flex!important;background:radial-gradient(ellipse at 50% 45%,#4b27623d,#09050d 62%);z-index:5}
+#avatar.avatar-3d-mode #presence-orb{transform:scale(.9)}
+#avatar.avatar-3d-mode #performance{visibility:hidden!important}
+#trajectory .depth-stop{box-shadow:0 0 10px #bd88f7}
+#trajectory .tool{will-change:left,transform}
+@media(max-width:699px){
+  #avatar-display-controls{display:grid!important;grid-template-columns:auto 1fr 1fr!important;gap:6px!important;width:calc(100% - 22px)!important;margin:0 11px 4px!important;min-height:44px!important}
+  #avatar-display-controls::before{font-size:6.5px!important;white-space:nowrap}
+  #avatar-display-controls button{min-height:42px!important;padding:7px 8px!important;font-size:7px!important}
+  #anna-chat-dock{gap:8px!important}
+  #anna-chat-dock #avatar-display-controls{order:0!important}
+  #anna-chat-dock #last-line{order:1!important}
+  #anna-chat-dock .talk{order:2!important}
+}
