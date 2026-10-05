@@ -1,5 +1,6 @@
 (function(g){
 'use strict';
+if(g.NocturneSession&&g.NocturneSession.VERSION==='0.75.0')return;
 var VERSION='0.75.0',KEY='nocturne.session.v0750',MOBILE='nocturne.mobile.session.v0710',VR='nocturne.vr.session.v070',TELEMETRY='nocturne.telemetry.v1';
 var clamp=function(v){v=Number(v)||0;return Math.max(0,Math.min(1,v))};
 function defaults(){return{schema:1,version:VERSION,initialized:false,running:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,cadence:0,pattern:'steady',videoState:'A01',embodied:'attentive',position:'back',startedAt:0,updatedAt:0,source:'boot'};}
