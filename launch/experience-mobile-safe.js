@@ -3,16 +3,24 @@
 var $=function(id){return document.getElementById(id)}, clamp=function(v){v=Number(v)||0;return Math.max(0,Math.min(1,v))};
 var SESSION_KEY='nocturne.mobile.session.v0710', TOKEN_KEY='nocturne.staging.token';
 var AVAILABLE_VIDEO_STATES=['A00','A01','A02','A05','A10','A16','A16B','A17','A17B','A18','A18B','A18C','A18D','A18E','A18F','A19B','A19C'];
-var state={running:false,initialized:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,pattern:'steady',phase:0,cycle:0,chart:1,strokes:0,target:40,auto:false,videoState:'A01',startedAt:0,lastTs:0};
-var token=sessionStorage.getItem(TOKEN_KEY)||'', videoUrl='', autoTimer=0, directorBusy=false, lastAuto=0;
+var state={running:false,initialized:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,pattern:'steady',phase:0,cycle:0,chart:1,strokes:0,target:40,auto:false,videoState:'A03',embodied:'attentive',startedAt:0,lastTs:0};
+var token=sessionStorage.getItem(TOKEN_KEY)||'', videoUrl='', autoTimer=0, directorBusy=false, lastAuto=0, explicitLocks={};
+var EMBODIED_KEY='nocturne.embodied.state.v071';
+var EMBODIED={calm:{pace:.24,depth:.34,force:.22,intensity:.24,pattern:'steady',pulse:3600},attentive:{pace:.34,depth:.44,force:.28,intensity:.34,pattern:'steady',pulse:3000},curious:{pace:.42,depth:.48,force:.27,intensity:.42,pattern:'wave',pulse:2500},focused:{pace:.46,depth:.56,force:.44,intensity:.50,pattern:'steady',pulse:2200},playful:{pace:.50,depth:.50,force:.33,intensity:.56,pattern:'variable',pulse:1900},assertive:{pace:.57,depth:.62,force:.58,intensity:.65,pattern:'pulse',pulse:1600},intense:{pace:.70,depth:.76,force:.66,intensity:.82,pattern:'build',pulse:1250},irritated:{pace:.48,depth:.42,force:.67,intensity:.60,pattern:'pulse',pulse:1450},withdrawn:{pace:.12,depth:.14,force:.11,intensity:.16,pattern:'steady',pulse:4400},recovering:{pace:.21,depth:.27,force:.15,intensity:.23,pattern:'wave',pulse:3800}};
 
+function embodiedFromVideo(id){id=String(id||'').toUpperCase();if(/^A18/.test(id))return'intense';if(/^A19/.test(id)||id==='A20')return'recovering';var m={A00:'calm',A01:'calm',A02:'attentive',A03:'attentive',A04:'curious',A05:'focused',A06:'focused',A07:'attentive',A08:'playful',A09:'playful',A10:'assertive',A11:'attentive',A12:'irritated',A13:'withdrawn',A14:'recovering',A15:'attentive',A16:'focused',A17:'intense'};return m[id]||'attentive'}
+function videoFromEmbodied(s){var m={calm:'A01',attentive:'A03',curious:'A04',focused:'A05',playful:'A09',assertive:'A10',intense:'A17',irritated:'A12',withdrawn:'A13',recovering:'A19'};return m[s]||'A03'}
+function setEmbodied(next,reason){if(!EMBODIED[next])next='attentive';state.embodied=next;state.videoState=videoFromEmbodied(next);try{localStorage.setItem(EMBODIED_KEY,next)}catch(e){}document.body.dataset.aiState=next;document.documentElement.style.setProperty('--ai-pulse-ms',EMBODIED[next].pulse+'ms');var o=$('orb-state');if(o)o.textContent=next.toUpperCase();var f=$('feeling');if(f){var s=f.querySelector('span');if(s)s.textContent=next.toUpperCase()}var p=$('presence');if(p){var b=p.querySelector('b');if(b)b.textContent='AI '+next.toUpperCase()}if(reason&&reason!=='boot'){var t=$('change-toast'),x=$('change-text');if(t&&x){x.textContent='STATE · '+next.toUpperCase();t.hidden=false;setTimeout(function(){t.hidden=true},1200)}}save()}
+function lockTelemetry(k,ms){explicitLocks[k]=Date.now()+(ms||45000)}
+function telemetryLocked(k){return Number(explicitLocks[k]||0)>Date.now()}
+function applyEmbodiedBias(dt){if(!state.running||!state.auto)return;var p=EMBODIED[state.embodied]||EMBODIED.attentive;['pace','depth','force','intensity'].forEach(function(k){if(telemetryLocked(k))return;state[k]+=(p[k]-state[k])*Math.min(1,dt*.18)});if(!telemetryLocked('pattern'))state.pattern=p.pattern;state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3))}
 function line(t){var e=$('last-line');if(e)e.textContent=String(t||'')}
 function status(t,on){var e=$('presence');if(!e)return;var b=e.querySelector('b');if(b)b.textContent=t;e.classList.toggle('live',!!on)}
 function save(){
   try{sessionStorage.setItem(SESSION_KEY,JSON.stringify(state));localStorage.setItem('nocturne.telemetry.v1',JSON.stringify({pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,pattern:state.pattern,cadence:Math.round(state.pace*100),videoState:state.videoState,updatedAt:Date.now()}))}catch(e){}
 }
 function restore(){
-  try{var s=JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null');if(s&&s.initialized){Object.assign(state,s);state.running=false;state.lastTs=0}}catch(e){}
+  try{var s=JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null');if(s&&s.initialized){Object.assign(state,s);state.running=false;state.lastTs=0}}catch(e){}try{var es=localStorage.getItem(EMBODIED_KEY);if(es&&EMBODIED[es])state.embodied=es}catch(e){}
 }
 function paceFromCycle(sec){sec=Math.max(.7,Math.min(10,Number(sec)||3));return clamp((5-sec)/4.3)}
 function sync(){
@@ -30,7 +38,7 @@ function sync(){
   var lp=$('ls-pattern');if(lp)lp.textContent=state.pattern.toUpperCase();
   var lc=$('ls-cycles');if(lc)lc.textContent=state.cycle+' CYCLES';
   var ab=$('auto-mode');if(ab){ab.textContent=state.auto?'AUTOPILOT ON':'AUTOPILOT';ab.setAttribute('aria-pressed',String(state.auto))}
-  var sb=$('live-start');if(sb)sb.textContent=state.running?'PAUSE LIVE':'START LIVE';
+  var sb=$('live-start');if(sb)sb.textContent=state.running?'PAUSE LIVE':'START LIVE';setEmbodied(state.embodied||'attentive','boot');
   document.querySelectorAll('[data-pattern]').forEach(function(b){b.classList.toggle('active',b.dataset.pattern===state.pattern)});
 }
 function showSetup(){
@@ -40,7 +48,7 @@ function initializeFromSetup(){
   var entry=Math.max(.5,Math.min(10,Number($('setup-entry-speed')&&$('setup-entry-speed').value)||3));
   var depth=Math.max(0,Math.min(100,Number($('setup-depth')&&$('setup-depth').value)||50))/100;
   var cycle=Math.max(.7,Math.min(10,Number($('setup-stroke-speed')&&$('setup-stroke-speed').value)||3));
-  state.entrySpeedS=entry;state.depth=depth;state.cycleTimeS=cycle;state.pace=paceFromCycle(cycle);state.force=0;state.intensity=.2;state.pattern='steady';state.phase=0;state.cycle=0;state.strokes=0;state.startedAt=0;state.initialized=true;state.running=false;
+  state.entrySpeedS=entry;state.depth=depth;state.cycleTimeS=cycle;state.pace=paceFromCycle(cycle);state.force=0;state.intensity=.2;state.pattern='steady';state.phase=0;state.cycle=0;state.strokes=0;state.startedAt=0;state.initialized=true;state.running=false;setEmbodied('attentive','boot');
   save();sync();line('Session ready · entry '+entry.toFixed(1)+'s · depth '+Math.round(depth*100)+'% · stroke '+cycle.toFixed(1)+'s.');
 }
 function toggleLive(){
@@ -50,19 +58,19 @@ function toggleLive(){
 function setPattern(p){if(['steady','wave','pulse','build','variable'].indexOf(p)<0)return;state.pattern=p;save();sync();if(state.running)adaptiveFace('pattern');line('Pattern · '+p.toUpperCase())}
 function quick(cmd){
   if(!state.initialized){showSetup();return}
-  if(cmd==='faster'){state.cycleTimeS=Math.max(.7,state.cycleTimeS-.3);state.pace=paceFromCycle(state.cycleTimeS)}
-  if(cmd==='slower'){state.cycleTimeS=Math.min(10,state.cycleTimeS+.3);state.pace=paceFromCycle(state.cycleTimeS)}
-  if(cmd==='more')state.intensity=clamp(state.intensity+.1);
-  if(cmd==='ease')state.intensity=clamp(state.intensity-.1);
+  if(cmd==='faster'){state.cycleTimeS=Math.max(.7,state.cycleTimeS-.3);state.pace=paceFromCycle(state.cycleTimeS);lockTelemetry('pace')}
+  if(cmd==='slower'){state.cycleTimeS=Math.min(10,state.cycleTimeS+.3);state.pace=paceFromCycle(state.cycleTimeS);lockTelemetry('pace')}
+  if(cmd==='more'){state.intensity=clamp(state.intensity+.1);lockTelemetry('intensity')}
+  if(cmd==='ease'){state.intensity=clamp(state.intensity-.1);lockTelemetry('intensity')}
   save();sync();adaptiveFace('quick-command');line(cmd.toUpperCase()+' applied.');
 }
 function explicitTelemetry(text){
   var t=String(text||'').toLowerCase().replace(/percent/g,'%'), changed=[];
   [['depth','depth'],['pace','(?:pace|speed)'],['force','force'],['intensity','(?:energy|intensity)']].forEach(function(spec){
     var re=new RegExp('(?:set|make|put)?\\s*(?:the\\s+)?'+spec[1]+'\\s*(?:at|to|=|of)?\\s*(\\d{1,3})\\s*%?');
-    var m=t.match(re);if(!m)return;var v=Math.max(0,Math.min(100,Number(m[1])))/100;state[spec[0]]=v;if(spec[0]==='pace')state.cycleTimeS=Math.max(.7,Math.min(10,5-v*4.3));changed.push(spec[0]+' '+Math.round(v*100)+'%');
+    var m=t.match(re);if(!m)return;var v=Math.max(0,Math.min(100,Number(m[1])))/100;state[spec[0]]=v;lockTelemetry(spec[0]);if(spec[0]==='pace')state.cycleTimeS=Math.max(.7,Math.min(10,5-v*4.3));changed.push(spec[0]+' '+Math.round(v*100)+'%');
   });
-  var pm=t.match(/(?:use|switch to|change to|set)\s+(?:the\s+)?(steady|wave|pulse|build|variable)/);if(pm){state.pattern=pm[1];changed.push('pattern '+pm[1])}
+  var pm=t.match(/(?:use|switch to|change to|set)\s+(?:the\s+)?(steady|wave|pulse|build|variable)/);if(pm){state.pattern=pm[1];lockTelemetry('pattern');changed.push('pattern '+pm[1])}
   if(changed.length){state.initialized=true;save();sync()}
   return changed;
 }
@@ -93,7 +101,7 @@ function bestVideoState(){
   if(drive<.88)return state.pattern==='pulse'?'A18B':'A18';
   return ['A18C','A18E','A18F'][state.cycle%3];
 }
-function adaptiveFace(reason){var next=bestVideoState();if(next&&next!==state.videoState)loadVideo(next,reason||'adaptive');return next}
+function adaptiveFace(reason){var next=bestVideoState();var embodied=embodiedFromVideo(next);if(embodied!==state.embodied)setEmbodied(embodied,reason||'adaptive');return next}
 function isOneShotVideo(id){return /^A18/.test(id)||/^A19/.test(id)||id==='A20'}
 function sizeAvatarFromVideo(v,id){
   var host=$('avatar');if(!host||!v)return;
@@ -127,7 +135,7 @@ function applyDirector(q){
   });
   if(Number.isFinite(q.paceTarget)||Number(q.paceDelta||0))state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3));
   if(q.pattern&&q.pattern!=='keep')setPattern(q.pattern);
-  if(q.videoState&&q.videoState!=='keep')loadVideo(q.videoState,'director');else if(state.running)adaptiveFace('director-fallback');
+  if(q.videoState&&q.videoState!=='keep')setEmbodied(embodiedFromVideo(q.videoState),'director');else if(state.running)adaptiveFace('director-fallback');
   if(q.hold)state.running=false;
   save();sync();
 }
@@ -135,7 +143,7 @@ async function director(text,auto){
   if(directorBusy)return null;directorBusy=true;
   try{
     if(!token)await bootDirector();
-    var context={mode:'live',recent:[],experience:{availableVideoStates:AVAILABLE_VIDEO_STATES.slice()},chart:{activePort:'V',lead:'AVATAR',pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,rhythm:state.pattern,position:'keep',videoState:state.videoState,autopilot:!!auto,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS},about:'Nocturne mobile Live. Apply exact numeric telemetry requests exactly. Keep continuity. Choose ONLY from experience.availableVideoStates for Anna videoState. Change Anna visual state when the emotional or telemetry context changes; do not leave her frozen on idle during a meaningful build or peak.'};
+    var context={mode:'live',recent:[],experience:{availableVideoStates:AVAILABLE_VIDEO_STATES.slice()},chart:{activePort:'V',lead:'AVATAR',pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,rhythm:state.pattern,position:'keep',videoState:state.videoState,autopilot:!!auto,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS},about:'Nocturne mobile Live. Anna is perceived through telemetry and immersion rather than a visible avatar. Apply exact numeric telemetry requests exactly. Use videoState only as an affect-state signal. Let that state shape pace, depth, force, intensity, pattern, holds and waveform character. Keep continuity.'};
     var r=await fetch('/v1/director/respond',{method:'POST',headers:{'content-type':'application/json','x-nocturne-session':token||''},body:JSON.stringify({text:text,context:context})}),d=await r.json();if(!r.ok)throw new Error((d.error&&d.error.message)||'Director failed');applyDirector(d.director||{});return d.director||{};
   }finally{directorBusy=false}
 }
@@ -147,19 +155,19 @@ async function send(){
 }
 function routeVr(){
   if(!state.initialized){showSetup();return}
-  try{sessionStorage.setItem('nocturne.vr.session.v070',JSON.stringify({initialized:true,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,startedAt:state.startedAt||Date.now()}));localStorage.setItem('nocturne.vr.video-state.v1',state.videoState)}catch(e){}
+  try{sessionStorage.setItem('nocturne.vr.session.v070',JSON.stringify({initialized:true,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,startedAt:state.startedAt||Date.now()}));localStorage.setItem('nocturne.vr.video-state.v1',state.videoState);localStorage.setItem(EMBODIED_KEY,state.embodied)}catch(e){}
   location.href='/vr/?mode=live';
 }
 function draw(ts){
-  var c=$('waveform'),ctx=c&&c.getContext&&c.getContext('2d');if(ctx){
+  if(!state.lastDrawTs)state.lastDrawTs=ts;var frameDt=Math.min(.08,Math.max(0,(ts-state.lastDrawTs)/1000));state.lastDrawTs=ts;applyEmbodiedBias(frameDt);var c=$('waveform'),ctx=c&&c.getContext&&c.getContext('2d');if(ctx){
     var w=c.clientWidth||600,h=c.clientHeight||180,dpr=Math.min(window.devicePixelRatio||1,2);if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr)}
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.strokeStyle='rgba(183,145,220,.17)';ctx.lineWidth=1;
     [0,.25,.5,.75,1].forEach(function(p){var y=h-(p*h);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();if(p>0){ctx.fillStyle='rgba(190,165,210,.55)';ctx.font='10px system-ui';ctx.fillText(Math.round(p*100)+'%',5,y+12)}});
     var y0=h-10,amp=(h-20)*state.depth,period=Math.max(700,state.cycleTimeS*1000),phase=state.running?(ts%period)/period:state.phase;
     if(state.running){if(!state.lastTs)state.lastTs=ts;var prev=state.phase;state.phase=(state.phase+(ts-state.lastTs)/period)%1;state.lastTs=ts;if(state.phase<prev){state.cycle++;state.strokes++;sync();}phase=state.phase}else state.lastTs=0;
-    ctx.strokeStyle='#c597f1';ctx.lineWidth=3;ctx.beginPath();
+    var colors={calm:'#9b83bd',attentive:'#b88be9',curious:'#78c7f0',focused:'#75d5d2',playful:'#da82f5',assertive:'#e98ba2',intense:'#f08ad0',irritated:'#ed7180',withdrawn:'#776b86',recovering:'#79aee2'};ctx.strokeStyle=colors[state.embodied]||'#c597f1';ctx.lineWidth=state.embodied==='intense'?4:state.embodied==='withdrawn'?2:3;ctx.beginPath();
     for(var i=0;i<=120;i++){var q=i/120,v=(1-Math.cos(q*Math.PI*2))/2;if(state.pattern==='pulse')v=Math.pow(v,.45);else if(state.pattern==='build')v=v*(.35+.65*q);else if(state.pattern==='variable')v=clamp(v*(.75+.25*Math.sin(q*Math.PI*6)));var x=q*w,y=y0-amp*v;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
-    var active=(1-Math.cos(phase*Math.PI*2))/2,px=phase*w,py=y0-amp*active;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
+    var active=(1-Math.cos(phase*Math.PI*2))/2,px=phase*w,py=y0-amp*active;ctx.fillStyle='#fff';ctx.font='10px system-ui';ctx.fillText('AI STATE · '+String(state.embodied||'attentive').toUpperCase(),40,14);ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
   }
   requestAnimationFrame(draw);
 }
@@ -169,10 +177,10 @@ function advancedOpen(){
   [['ct-pace','pace'],['ct-depth','depth'],['ct-force','force'],['ct-energy','intensity']].forEach(function(x){if($(x[0]))$(x[0]).value=Math.round(state[x[1]]*100)});if($('ct-pattern'))$('ct-pattern').value=state.pattern;if($('ct-cadence'))$('ct-cadence').value=Math.round(state.pace*100);if($('ct-strokes'))$('ct-strokes').value=state.target;d.showModal();
 }
 function install(){
-  restore();sync();status('CONNECTING');bootDirector().then(function(){loadVideo(state.videoState||'A01')});
+  restore();var perf=$('performance');if(perf){try{perf.pause()}catch(e){}perf.hidden=true}var empty=$('empty');if(empty)empty.hidden=false;var avatar=$('avatar');if(avatar)avatar.classList.add('embodied-presence');var cue=$('orb-cue');if(cue)cue.textContent='Anna is expressed through rhythm, pressure, pace, holds and waveform behavior.';setEmbodied(state.embodied||'attentive','boot');sync();status('CONNECTING');bootDirector();
   bind('live-start',toggleLive);bind('send',send);bind('enter-vr',routeVr);bind('hold',function(){state.running=false;sync();line('Held / paused.')});
   bind('change',function(){setPattern(state.pattern==='steady'?'wave':'steady');director('Change the current pattern.',false).catch(function(){})});
-  bind('peak',function(){loadVideo('A18');line('Peak state selected.')});
+  bind('peak',function(){setEmbodied('intense','manual');state.intensity=Math.max(state.intensity,.82);state.force=Math.max(state.force,.62);sync();save();line('Anna shifted intense.')});
   bind('next-chart',function(){state.chart++;state.strokes=0;state.phase=0;sync();save();line('Chart '+state.chart+' ready.')});
   bind('auto-mode',function(){if(!state.initialized){showSetup();return}state.auto=!state.auto;if(state.auto&&!state.running)state.running=true;sync();save();line(state.auto?'Autopilot on.':'Autopilot off.');if(state.auto)director('Continue the Live session with a coherent next adjustment.',true).catch(function(){})});
   bind('custom-telemetry',advancedOpen);
@@ -183,7 +191,7 @@ function install(){
   var td=$('telemetry-dialog')&&$('telemetry-dialog').querySelector('form');if(td)td.addEventListener('submit',function(e){if(e.submitter&&e.submitter.value==='cancel')return;[['ct-pace','pace'],['ct-depth','depth'],['ct-force','force'],['ct-energy','intensity']].forEach(function(x){if($(x[0]))state[x[1]]=clamp(Number($(x[0]).value)/100)});if($('ct-pattern'))state.pattern=$('ct-pattern').value;state.initialized=true;state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3));save();sync();line('Advanced telemetry applied.')});
   if($('message'))$('message').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();send()}});
   window.addEventListener('nocturne:setup',function(){showSetup()});
-  window.addEventListener('pagehide',function(){save();if(videoUrl)URL.revokeObjectURL(videoUrl)});
+  window.addEventListener('pagehide',function(){save()});
   autoTimer=setInterval(function(){if(state.auto&&state.running&&Date.now()-lastAuto>11000){lastAuto=Date.now();director('Continue the Live session with a coherent next adjustment.',true).catch(function(){})}},12000);
   window.__NOCTURNE_MOBILE_READY__=true;document.documentElement.dataset.liveBoot='ready';requestAnimationFrame(draw);
 }
