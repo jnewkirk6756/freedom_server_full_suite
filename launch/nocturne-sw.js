@@ -1,22 +1,22 @@
-const VERSION='nocturne-sw-0.77.3';
-const SHELL='nocturne-shell-0773';
+const VERSION='nocturne-sw-0.80.0';
+const SHELL='nocturne-shell-0800';
 const CORE=[
   '/',
   '/live/',
   '/vr/',
-  '/experience.css?v=0773',
-  '/live-embodied.css?v=0773',
-  '/experience-mobile-safe.js?v=0773',
-  '/video-state-core.js?v=0773',
-  '/asset-pack-core.js?v=0773',
-  '/anna-avatar-runtime.js?v=0773',
-  '/vr.js?v=0773',
-  '/vr-fallback.js?v=0773',
-  '/vr.css?v=0773',
-  '/navigation.css?v=0773',
-  '/navigation.js?v=0773',
-  '/session-core.js?v=0773',
-  '/app.webmanifest?v=0773'
+  '/experience.css?v=0800',
+  '/live-embodied.css?v=0800',
+  '/experience-mobile-safe.js?v=0800',
+  '/video-state-core.js?v=0800',
+  '/asset-pack-core.js?v=0800',
+  '/anna-avatar-runtime.js?v=0800',
+  '/vr.js?v=0800',
+  '/vr-fallback.js?v=0800',
+  '/vr.css?v=0800',
+  '/navigation.css?v=0800',
+  '/navigation.js?v=0800',
+  '/session-core.js?v=0800',
+  '/app.webmanifest?v=0800'
 ];
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
