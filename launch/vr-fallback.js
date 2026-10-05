@@ -60,6 +60,19 @@ function loadTelemetry(){
   }catch{telemetry={...telemetry,pace:0,depth:0,force:0,intensity:0,cadence:0,initialized:false,startedAt:0}}
   return telemetry;
 }
+const VR_SESSION_KEY_FALLBACK='nocturne.vr.session.v070';
+function fallbackPaceFromCycle(sec){sec=Math.max(.7,Math.min(10,Number(sec)||3));return clamp((5-sec)/4.3)}
+function commitFallbackVrSession(){
+  const entry=Math.max(.5,Math.min(10,Number($('vr-entry-speed')?.value)||3));
+  const depth=Math.max(0,Math.min(100,Number($('vr-start-depth')?.value)||50))/100;
+  const cycle=Math.max(.7,Math.min(10,Number($('vr-stroke-speed')?.value)||3));
+  const s={initialized:true,pace:fallbackPaceFromCycle(cycle),depth,force:0,intensity:.2,entrySpeedS:entry,cycleTimeS:cycle,cadence:Math.round(fallbackPaceFromCycle(cycle)*100),pattern:'steady',startedAt:Date.now()};
+  try{sessionStorage.setItem(VR_SESSION_KEY_FALLBACK,JSON.stringify(s))}catch{}
+  telemetry={...telemetry,...s};set('diag-session','READY');set('pace',Math.round(s.pace*100));set('depth',Math.round(s.depth*100));set('force',0);set('energy',20);
+  actionLine='Session ready · enter '+entry.toFixed(1)+'s · depth '+Math.round(depth*100)+'% · cycle '+cycle.toFixed(1)+'s';lastMenu=0;
+  window.dispatchEvent(new CustomEvent('nocturne:vr-session-configured',{detail:s}));
+  return s;
+}
 function motionPeriodMs(tel,t){if(!tel.initialized)return 1e9;const elapsed=tel.startedAt?Math.max(0,Date.now()-tel.startedAt):1e9;return elapsed<tel.entrySpeedS*2000?Math.max(1000,tel.entrySpeedS*2000):Math.max(700,tel.cycleTimeS*1000)}
 function motionState(){
   const tel=loadTelemetry();if(!tel.initialized)return{phase:0,cycle:0,envelope:0,velocity:0,direction:'STILL',period:1e9};
@@ -267,7 +280,7 @@ async function testControllers(e){
   set('diag-line',pulses?'Controller test sent '+pulses+' haptic pulse'+(pulses===1?'':'s')+'.':'Controllers are visible, but no haptic actuator is exposed.');
 }
 window.nocturneVrSelfTest=run;
-document.addEventListener('DOMContentLoaded',()=>{$('diag-run')?.addEventListener('click',run);setTimeout(run,0);const enter=$('enter');if(enter)enter.addEventListener('click',enterFallback,{capture:true});const test=$('test');if(test)test.addEventListener('click',testControllers,{capture:true});const exit=$('exit');if(exit)exit.addEventListener('click',async e=>{if(session){e.preventDefault();e.stopImmediatePropagation();try{await session.end()}catch{}}},{capture:true})});
+document.addEventListener('DOMContentLoaded',()=>{$('diag-run')?.addEventListener('click',run);setTimeout(run,0);const enter=$('enter');if(enter)enter.addEventListener('click',enterFallback,{capture:true});const setup=$('session-setup');if(setup)setup.addEventListener('click',()=>{try{$('vr-session-dialog')?.showModal()}catch{}},{capture:true});const form=$('vr-session-form');if(form)form.addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return;if(!form.reportValidity()){e.preventDefault();return}commitFallbackVrSession();setTimeout(()=>enterFallback(),0)},{capture:true});const test=$('test');if(test)test.addEventListener('click',testControllers,{capture:true});const exit=$('exit');if(exit)exit.addEventListener('click',async e=>{if(session){e.preventDefault();e.stopImmediatePropagation();try{await session.end()}catch{}}},{capture:true})});
 window.addEventListener('nocturne:embodied-state',e=>{embodiedState=String(e.detail?.state||'attentive');lastMenu=0});window.addEventListener('nocturne:vr-ai-status',e=>{aiStatus=String(e.detail?.text||'AI READY').slice(0,38);lastMenu=0});window.addEventListener('nocturne:vr-reset-view',()=>resetSpatialView());window.addEventListener('storage',e=>{if(e.key===EMBODIED_STATE_KEY&&e.newValue){embodiedState=e.newValue;lastMenu=0}});
 window.addEventListener('error',e=>set('diag-line','VR script error: '+String(e.message||'unknown').slice(0,120)));
 window.addEventListener('unhandledrejection',e=>set('diag-line','VR promise error: '+String(e.reason&&e.reason.message||e.reason||'unknown').slice(0,120)));
