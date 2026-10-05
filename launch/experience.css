@@ -348,3 +348,24 @@ body.tool-wire #trajectory .tool::before{background:#0b0711!important;border:1px
   .trajectory-readout{font-size:5.5px!important;gap:5px!important}
   .trajectory-readout span{flex:1 1 auto;text-align:center}
 }
+
+/* Nocturne V0.76.6 — avatar must never render blank */
+#avatar{isolation:isolate}
+#anna-poster{
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:50% 28%!important;
+  z-index:1!important;
+  border-radius:inherit!important;
+  opacity:1!important;
+}
+#performance{
+  z-index:2!important;
+  background:transparent!important;
+  transition:opacity .12s ease!important;
+}
+#empty{z-index:3!important}
