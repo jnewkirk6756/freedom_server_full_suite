@@ -47,6 +47,10 @@ async function loadAnnaVideoState(id){
 
 function activeDevice(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');if(!Array.isArray(lib.devices))return null;return lib.devices.find(d=>d.id===lib.activeId)||(lib.devices.length===1?lib.devices[0]:null)}catch{return null}}
 function hexRgb(hex){const m=/^#([0-9a-f]{6})$/i.exec(String(hex||''));if(!m)return[.36,1,.84,1];const n=parseInt(m[1],16);return[((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255,1]}
+function embodiedColor(){const m={calm:[.48,.35,.72,1],attentive:[.62,.43,.86,1],curious:[.32,.68,.95,1],focused:[.46,.82,.82,1],playful:[.86,.42,.95,1],assertive:[.92,.48,.62,1],intense:[1,.28,.74,1],irritated:[.94,.25,.38,1],withdrawn:[.28,.25,.42,1],recovering:[.4,.62,.86,1]};return m[embodiedState]||m.attentive}
+function embodiedPulse(t){const speed=embodiedState==='intense'?.0048:embodiedState==='assertive'?.004:embodiedState==='playful'?.0036:embodiedState==='withdrawn'?.0012:embodiedState==='recovering'?.0018:.0024;return .72+.28*((Math.sin(t*speed)+1)/2)}
+function renderEmbodiedPresence(mvp,t){const col=embodiedColor(),pulse=embodiedPulse(t),rings=[];const y=floorY()+1.42,z=-1.38;for(let i=0;i<5;i++)rings.push(...ring((.28+i*.14)*pulse,y,z,56));drawWorld(mvp,rings,[col[0],col[1],col[2],.22+.42*pulse],gl.LINES,2);const core=[0,y,z];drawWorld(mvp,core,[Math.min(1,col[0]+.18),Math.min(1,col[1]+.18),Math.min(1,col[2]+.18),1],gl.POINTS,12)}
+
 function loadTelemetry(){
   try{
     const s=JSON.parse(sessionStorage.getItem('nocturne.vr.session.v070')||'{}');
@@ -77,10 +81,9 @@ async function run(){
   set('diag-secure',window.isSecureContext?'YES':'NO');set('diag-xr',navigator.xr?'YES':'NO');
   let glok=false;try{const c=document.createElement('canvas');glok=!!c.getContext('webgl')}catch{}set('diag-gl',glok?'YES':'NO');
   let immersive=false,err='';if(navigator.xr){try{immersive=await navigator.xr.isSessionSupported('immersive-vr')}catch(e){err=String(e&&e.message||e)}}set('diag-immersive',immersive?'YES':'NO');
-  const cfg=loadTelemetry();set('diag-session',cfg.initialized?'READY':'ZERO');
-  let mediaOk=false;try{mediaOk=await loadAnnaVideoState(localStorage.getItem('nocturne.vr.video-state.v1')||'A01')}catch{}set('diag-media',mediaOk?(annaVideoState+' READY'):'MISSING');
-  set('diag-line',[(window.isSecureContext?'HTTPS secure':'HTTPS not secure'),(navigator.xr?'WebXR exposed':'WebXR missing'),(immersive?'immersive-vr supported':'immersive-vr not supported'),(glok?'WebGL ready':'WebGL missing'),(mediaOk?'Anna media '+annaVideoState+' ready':'Anna media missing'),(cfg.initialized?'session initialized':'session zero')].join(' · ')+(err?' · '+err.slice(0,90):''));
-  return{immersive,mediaOk};
+  const cfg=loadTelemetry();set('diag-session',cfg.initialized?'READY':'ZERO');set('diag-media','EMBODIED');
+  set('diag-line',[(window.isSecureContext?'HTTPS secure':'HTTPS not secure'),(navigator.xr?'WebXR exposed':'WebXR missing'),(immersive?'immersive-vr supported':'immersive-vr not supported'),(glok?'WebGL ready':'WebGL missing'),('AI state '+embodiedState),(cfg.initialized?'session initialized':'session zero')].join(' · ')+(err?' · '+err.slice(0,90):''));
+  return{immersive,mediaOk:true};
 }
 function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s)||'shader');return s}
 function initGL(){
@@ -104,7 +107,7 @@ const PANEL_Z=-2.38,PANEL_W=2.05,PANEL_H=1.38;
 function panelZ(){return PANEL_Z+panelOffset.z}
 function basePanelX(){return -1.28}
 function panelX(){return basePanelX()+panelOffset.x}
-function modeColor(){return sceneMode==='live'?[.28,.78,1,1]:sceneMode==='anna'?[.86,.48,1,1]:sceneMode==='tool'?[.36,1,.84,1]:[.67,.42,.94,1]}
+function modeColor(){if(sceneMode==='live'||sceneMode==='anna')return embodiedColor();return sceneMode==='tool'?[.36,1,.84,1]:[.67,.42,.94,1]}
 function transformPoint(p,pose,pivot=[0,0,0]){
   const x=(p[0]-pivot[0])*pose.scale,z=(p[2]-pivot[2])*pose.scale,y=(p[1]-pivot[1])*pose.scale,a=pose.yaw,ca=Math.cos(a),sa=Math.sin(a);
   return[pivot[0]+x*ca-z*sa+pose.x,pivot[1]+y+pose.y,pivot[2]+x*sa+z*ca+pose.z];
@@ -248,7 +251,7 @@ async function enterFallback(e){
   const enter=$('enter');if(enter){enter.disabled=true;enter.textContent='OPENING VR…'}
   try{
     const test=await run();if(!test.immersive)throw Error('Quest reports immersive-vr unsupported');
-    await loadAnnaVideoState(localStorage.getItem('nocturne.vr.video-state.v1')||'A01');const canvas=$('xr-canvas');gl=canvas.getContext('webgl',{xrCompatible:true,alpha:false,antialias:true});if(!gl)throw Error('WebGL context unavailable');if(gl.makeXRCompatible)await gl.makeXRCompatible();initGL();
+    const canvas=$('xr-canvas');gl=canvas.getContext('webgl',{xrCompatible:true,alpha:false,antialias:true});if(!gl)throw Error('WebGL context unavailable');if(gl.makeXRCompatible)await gl.makeXRCompatible();initGL();
     const root=$('xr-overlay');try{session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor','hand-tracking','dom-overlay'],domOverlay:{root}})}catch{session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor','hand-tracking']})}
     layer=new XRWebGLLayer(session,gl);session.updateRenderState({baseLayer:layer,depthNear:.04,depthFar:60});
     try{refSpace=await session.requestReferenceSpace('local-floor');refMode='local-floor'}catch{refSpace=await session.requestReferenceSpace('local');refMode='local'}
