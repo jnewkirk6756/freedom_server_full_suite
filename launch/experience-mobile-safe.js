@@ -29,8 +29,8 @@ async function downloadDeviceAssets(){
   var btn=$('asset-download-now'),p=$('asset-progress'),t=$('asset-progress-text');
   if(btn)btn.disabled=true;if(p)p.removeAttribute('value');if(t)t.textContent='Preparing local asset pack…';
   try{
-    var core=await assetCore(),result=await core.downloadAssets({onProgress:function(x){if(t)t.textContent=String(x.label||x.stage||'Downloading…')}});
-    if(p){p.max=100;p.value=100}if(t)t.textContent='Assets ready on this device · '+result.status.local.clips+' clips · '+fmtMB(result.status.local.bytes)+'.';await refreshAssetDialog();
+    var core=await assetCore(),result=await core.downloadAssets({onProgress:function(x){if(t)t.textContent=String(x.label||x.stage||'Downloading…');if(p&&Number.isFinite(Number(x.percent))){p.max=100;p.value=Math.max(0,Math.min(100,Number(x.percent)))}}});
+    if(p){p.max=100;p.value=100}if(t)t.textContent=(result.ok?'Assets ready':'Asset download completed with '+result.media.failed.length+' warning(s)')+' · '+result.status.local.clips+' clips · '+fmtMB(result.status.local.bytes)+'.';await refreshAssetDialog();
   }catch(e){if(p){p.max=100;p.value=0}if(t)t.textContent='Download failed · '+String(e.message||e).slice(0,100)}
   finally{if(btn)btn.disabled=false}
 }
