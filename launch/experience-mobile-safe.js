@@ -79,7 +79,11 @@ function toggleLive(){
   if(!state.initialized){showSetup();line('Set Entry Speed, Depth and Stroke Speed first.');return}
   state.running=!state.running;if(state.running&&!state.startedAt)state.startedAt=Date.now();save();sync();if(state.running)adaptiveFace('live-start');line(state.running?'Live started.':'Live paused.');
 }
-function setPattern(p){if(['steady','wave','pulse','build','variable'].indexOf(p)<0)return;state.pattern=p;save();sync();if(state.running)adaptiveFace('pattern');line('Pattern · '+p.toUpperCase())}
+function setPattern(p){if(['steady','wave','pulse','build','variable','custom'].indexOf(p)<0)return;state.pattern=p;save();sync();if(state.running)adaptiveFace('pattern');line('Pattern · '+p.toUpperCase())}
+function nextPatternLive(){var order=['steady','wave','pulse','build','variable'];var i=order.indexOf(state.pattern);setPattern(order[(i<0?0:i+1)%order.length])}
+function togglePatternRecord(){var canvas=$('waveform'),btn=$('pattern-record');patternRecording=!patternRecording;patternDrawing=false;if(patternRecording){state.customPattern=[];if(canvas)canvas.style.pointerEvents='auto';if(btn)btn.textContent='FINISH DRAW';line('Draw directly on the waveform, then tap FINISH DRAW.')}else{if(canvas)canvas.style.pointerEvents='none';if(btn)btn.textContent='DRAW PATTERN';if(state.customPattern&&state.customPattern.length>=4){setPattern('custom');var pb=$('pattern-play');if(pb)pb.disabled=false;line('Custom pattern saved · '+state.customPattern.length+' samples.')}else line('Custom pattern cancelled · draw at least 4 samples.')}}
+function playCustomPattern(){if(!state.customPattern||state.customPattern.length<4){line('Draw a custom pattern first.');return}setPattern('custom');if(!state.initialized){showSetup();return}state.running=true;if(!state.startedAt)state.startedAt=Date.now();save();sync();line('Custom pattern live.')}
+function recordPatternPoint(ev){if(!patternRecording)return;var canvas=$('waveform');if(!canvas)return;var r=canvas.getBoundingClientRect(),y=Math.max(0,Math.min(r.height,Number(ev.clientY)-r.top)),v=1-y/Math.max(1,r.height);state.customPattern.push(clamp(v));if(state.customPattern.length>256)state.customPattern.shift()}
 function quick(cmd){
   if(!state.initialized){showSetup();return}
   if(cmd==='faster'){state.cycleTimeS=Math.max(.7,state.cycleTimeS-.3);state.pace=paceFromCycle(state.cycleTimeS);lockTelemetry('pace')}
@@ -117,12 +121,12 @@ function resolveVideoState(requested){
 }
 function bestVideoState(){
   if(!state.running)return state.intensity>.28?'A02':'A01';
-  var drive=Math.max(state.intensity,state.depth*.78,state.pace*.62,state.force*.55);
-  if(drive<.28)return'A02';
-  if(drive<.46)return state.pattern==='wave'?'A16B':'A16';
-  if(drive<.66)return state.pattern==='variable'?'A17B':'A17';
-  if(drive<.78)return'A18D';
-  if(drive<.88)return state.pattern==='pulse'?'A18B':'A18';
+  var drive=Math.max(state.intensity,state.depth*.78,state.pace*.62,state.force*.55),flip=(state.cycle%2)===1;
+  if(drive<.28)return flip?'A02':'A01';
+  if(drive<.46)return flip?'A16B':'A16';
+  if(drive<.66)return flip?'A17B':'A17';
+  if(drive<.78)return ['A17','A18D'][state.cycle%2];
+  if(drive<.88)return state.pattern==='pulse'?(flip?'A18B':'A18'):(flip?'A18D':'A18');
   return ['A18C','A18E','A18F'][state.cycle%3];
 }
 function adaptiveFace(reason){var next=bestVideoState(),embodied=embodiedFromVideo(next);if(embodied!==state.embodied)setEmbodied(embodied,reason||'adaptive');loadVideo(next,reason||'adaptive').catch(function(){});return next}
@@ -234,7 +238,7 @@ function routeVr(){
   try{var payload={initialized:true,running:state.running,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,position:state.position||'back',videoState:state.videoState,embodied:state.embodied,visuals:{videoEnabled:visuals.videoEnabled,voiceGuidance:visuals.voiceGuidance,toolSolid:visuals.toolSolid,waveScale:visuals.waveScale,waveMotion:visuals.waveMotion},startedAt:state.startedAt||Date.now()};if(window.NocturneSession)window.NocturneSession.commit(payload,'mobile-to-vr');sessionStorage.setItem('nocturne.vr.session.v070',JSON.stringify(payload));localStorage.setItem('nocturne.vr.video-state.v1',state.videoState);localStorage.setItem(EMBODIED_KEY,state.embodied)}catch(e){}
   location.href='/vr/?mode=live';
 }
-function strokeEnvelope(q,pattern){q=((Number(q)||0)%1+1)%1;var v=(1-Math.cos(q*Math.PI*2))/2;if(pattern==='pulse')v=Math.pow(v,.45);else if(pattern==='build')v=v*(.35+.65*q);else if(pattern==='variable')v=clamp(v*(.75+.25*Math.sin(q*Math.PI*6)));return clamp(v)}
+function strokeEnvelope(q,pattern){q=((Number(q)||0)%1+1)%1;if(pattern==='custom'&&state.customPattern&&state.customPattern.length>=4){var a=state.customPattern,t=q*(a.length-1),i=Math.min(a.length-2,Math.floor(t)),f=t-i;return clamp(a[i]+(a[i+1]-a[i])*f)}var v=(1-Math.cos(q*Math.PI*2))/2;if(pattern==='pulse')v=Math.pow(v,.45);else if(pattern==='build')v=v*(.35+.65*q);else if(pattern==='variable')v=clamp(v*(.75+.25*Math.sin(q*Math.PI*6)));return clamp(v)}
 function trajectoryGeometry(depth,envelope){
   var entry=8,target=92,setDepth=clamp(depth),motion=clamp(envelope),liveDepth=setDepth*motion,available=target-entry;
   return{entry:entry,target:target,setDepth:setDepth,liveDepth:liveDepth,setStop:entry+available*setDepth,tip:entry+available*liveDepth,insertedSpan:available*liveDepth};
