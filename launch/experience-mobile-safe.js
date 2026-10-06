@@ -35,7 +35,48 @@ async function downloadDeviceAssets(){
   finally{if(btn)btn.disabled=false}
 }
 function persistVisuals(){try{localStorage.setItem('nocturne.vr.video-enabled.v1',visuals.videoEnabled?'on':'off');localStorage.setItem('nocturne.face-photo.v1',visuals.facePhotoMode?'on':'off');localStorage.setItem('nocturne.vr.avatar-3d.v1',visuals.avatar3D?'on':'off');localStorage.setItem('nocturne.vr.voice-guidance.v1',visuals.voiceGuidance?'on':'off');localStorage.setItem('nocturne.vr.tool-solid.v1',visuals.toolSolid?'on':'off');localStorage.setItem('nocturne.vr.wave-scale.v1',String(visuals.waveScale));localStorage.setItem('nocturne.vr.wave-motion.v1',String(visuals.waveMotion));localStorage.setItem('nocturne.vr.position.v1',state.position||'back')}catch(e){}}
-function applyVisuals(){var v=$('performance'),poster=$('anna-poster'),empty=$('empty'),host=$('avatar'),showVideo=visuals.videoEnabled;if(host){host.classList.toggle('avatar-video-mode',showVideo);host.classList.toggle('avatar-photo-mode',!!visuals.facePhotoMode);host.classList.toggle('avatar-3d-mode',!!visuals.avatar3D)}if(poster){poster.hidden=false;poster.style.display='block'}if(v){v.style.visibility=showVideo?'visible':'hidden';v.style.opacity=(showVideo&&v.readyState>=2)?'1':'0';try{if(showVideo&&v.getAttribute('src')){if(visuals.facePhotoMode){v.pause()}else{var p=v.play();if(p&&p.catch)p.catch(function(){})}}else v.pause()}catch(e){}}if(empty)empty.hidden=true;var vb=$('avatar-video-toggle'),ab=$('avatar-3d-toggle');if(vb){vb.setAttribute('aria-pressed','true');vb.textContent=visuals.facePhotoMode?'FACE PHOTO':'FACE VIDEO';vb.classList.toggle('active',true)}if(ab){ab.setAttribute('aria-pressed',visuals.avatar3D?'true':'false');ab.classList.toggle('active',!!visuals.avatar3D)}var cue=$('orb-cue'),os=$('orb-state');if(cue)cue.textContent=visuals.facePhotoMode?'Photo expression mode · state changes swap still faces.':'Video expression mode · state changes load clips.';document.body.classList.toggle('tool-wire',!visuals.toolSolid);persistVisuals()}
+function facePack(){return window.NocturneFacePack||null}
+async function updateFacePackStatus(){
+  var el=$('face-pack-status'),core=facePack();if(!el)return null;
+  if(!core){el.textContent='FACE PACK LOADING';return null}
+  try{var s=await core.summary();el.textContent=(s.complete?'FACE PACK READY':(s.stateCount?('FACE PACK '+s.stateCount+'/40'):'DEFAULT FACE · 0/40'));el.dataset.complete=String(!!s.complete);return s}catch(e){el.textContent='FACE PACK ERROR';return null}
+}
+function applyVisuals(){
+  var canvas=$('anna-face'),poster=$('anna-poster'),empty=$('empty'),host=$('avatar');
+  if(host){host.classList.remove('avatar-video-mode','avatar-3d-mode');host.classList.add('avatar-photo-mode','face-grid-mode')}
+  if(poster){poster.hidden=false;poster.style.display='block'}
+  if(canvas){canvas.hidden=false;canvas.style.display='block';canvas.style.visibility='visible'}
+  if(empty)empty.hidden=true;
+  var cue=$('orb-cue');if(cue)cue.textContent='40-state still-render system · no avatar video.';
+  document.body.classList.toggle('tool-wire',!visuals.toolSolid);persistVisuals();updateFacePackStatus()
+}
+async function renderFaceState(target,reason){
+  var core=facePack(),canvas=$('anna-face'),poster=$('anna-poster'),cue=$('orb-cue'),os=$('orb-state');
+  if(!core||!canvas){if(cue)cue.textContent='Face pack unavailable.';return false}
+  var requested=core.state(target||state.videoState||state.embodied||'attentive');
+  try{
+    var rendered=await core.drawState(canvas,requested,{cover:true});
+    if(rendered){
+      state.videoState=rendered.id;state.faceState=rendered.id;
+      canvas.classList.remove('face-swap');void canvas.offsetWidth;canvas.classList.add('face-swap');
+      if(poster)poster.style.opacity='0';
+      if(os)os.textContent=rendered.name.toUpperCase();
+      if(cue)cue.textContent='Expression · '+rendered.name.toUpperCase();
+      var ast=$('avatar-state');if(ast)ast.textContent=rendered.name.toUpperCase();
+      save();return rendered;
+    }
+  }catch(e){}
+  if(poster)poster.style.opacity='1';if(os)os.textContent='DEFAULT FACE';if(cue)cue.textContent='Import the face grids to activate state renders.';return false
+}
+async function importFaceGrids(files){
+  var core=facePack();if(!core||!files||!files.length)return false;
+  line('Importing '+Math.min(4,files.length)+' face grid'+(files.length>1?'s':'')+'…');
+  try{var result=await core.importFiles(files);await updateFacePackStatus();await adaptiveFace('face-grid-import');line('Face pack · '+result.summary.stateCount+'/40 states installed'+(result.summary.complete?' · COMPLETE':' · grid '+result.summary.missing.join(', ')+' still missing'));return true}
+  catch(e){line('Face grid import failed · '+String(e.message||e).slice(0,100));return false}
+}
+async function clearFacePack(){
+  var core=facePack();if(!core)return;try{await core.clear();await updateFacePackStatus();var p=$('anna-poster');if(p)p.style.opacity='1';var cv=$('anna-face');if(cv){var x=cv.getContext('2d');x&&x.clearRect(0,0,cv.width,cv.height)}line('Face pack reset.')}catch(e){line('Face pack reset failed.')}
+}
 function speakGuide(t,force){var s=String(t||'').trim(),now=Date.now();if(!visuals.voiceGuidance||!s)return false;if(!force&&now-lastSpokenAt<5500)return false;lastSpokenAt=now;if(window.NocturneVoice&&window.NocturneVoice.speak){window.NocturneVoice.speak(s,{force:!!force,minGap:force?0:5500}).catch(function(){});return true}if(!('speechSynthesis'in window))return false;try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s.slice(0,420)),voices=speechSynthesis.getVoices?speechSynthesis.getVoices():[],v=voices.find(function(x){return /^en/i.test(x.lang||'')&&/Ava|Samantha|Victoria|Tessa|Karen|Moira|Zira|Serena/i.test(x.name||'')})||voices.find(function(x){return /^en/i.test(x.lang||'')});if(v)u.voice=v;u.rate=.92;u.pitch=.97;u.volume=.94;speechSynthesis.speak(u);return true}catch(e){return false}}
 function status(t,on){var e=$('presence');if(!e)return;var b=e.querySelector('b');if(b)b.textContent=t;e.classList.toggle('live',!!on)}
 function save(){
