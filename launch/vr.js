@@ -171,8 +171,6 @@ $('vr-wave-scale')?.addEventListener('input',e=>{visualCfg.waveScale=Math.max(.5
 $('vr-wave-motion')?.addEventListener('input',e=>{visualCfg.waveMotion=Math.max(.5,Math.min(1.8,Number(e.target.value)/100));persistVisual()});
 function browserControlAction(id){
   if(id==='vr-auto')return toggleAutopilot();
-  if(id==='vr-video-toggle'){visualCfg.videoEnabled=true;visualCfg.facePhotoMode=!visualCfg.facePhotoMode;persistVisual();window.dispatchEvent(new CustomEvent('nocturne:vr-video-state',{detail:{id:currentVideoState,reason:'face-mode',videoSound:visualCfg.videoSound,facePhotoMode:visualCfg.facePhotoMode}}));return true}
-  if(id==='vr-video-sound'){visualCfg.videoSound=!visualCfg.videoSound;persistVisual();window.dispatchEvent(new CustomEvent('nocturne:vr-video-sound',{detail:{enabled:visualCfg.videoSound}}));return true}
   if(id==='vr-tool-solid'){visualCfg.toolSolid=!visualCfg.toolSolid;persistVisual();return true}
   if(id==='vr-voice'){visualCfg.voiceGuidance=!visualCfg.voiceGuidance;if(!visualCfg.voiceGuidance&&'speechSynthesis'in window)try{speechSynthesis.cancel()}catch{}persistVisual();return true}
   if(id==='vr-command-mode'){visualCfg.commandMode=!visualCfg.commandMode;persistVisual();return true}
@@ -184,9 +182,9 @@ function browserControlAction(id){
   if(id==='vr-send'){sendChat();return true}
   return false;
 }
-const browserButtonIds=new Set(['vr-auto','vr-video-toggle','vr-video-sound','vr-tool-solid','vr-voice','vr-command-mode','vr-dynamic-strokes','vr-chart-prev','vr-chart-next','vr-user-peak','vr-mic','vr-mic-chat','vr-send']);
+const browserButtonIds=new Set(['vr-auto','vr-tool-solid','vr-voice','vr-command-mode','vr-dynamic-strokes','vr-chart-prev','vr-chart-next','vr-user-peak','vr-mic','vr-mic-chat','vr-send']);
 document.addEventListener('click',e=>{const b=e.target?.closest?.('button');if(!b||!browserButtonIds.has(b.id)||b.disabled)return;e.preventDefault();e.stopImmediatePropagation();browserControlAction(b.id)},true);
-function controlAudit(){const ids=['vr-auto','vr-video-toggle','vr-video-sound','vr-tool-solid','vr-voice','vr-mic','vr-command-mode','vr-dynamic-strokes','vr-chart-prev','vr-user-peak','vr-chart-next','vr-send','vr-pattern','vr-haptic-pattern'],missing=ids.filter(id=>!$(id));return{ok:missing.length===0,total:ids.length,missing,patternCore:Boolean(patternCore),patterns:patternCore?.patterns?.length||0,haptics:patternCore?.hapticModes?.length||0}}
+function controlAudit(){const ids=['vr-auto','vr-tool-solid','vr-voice','vr-mic','vr-command-mode','vr-dynamic-strokes','vr-chart-prev','vr-user-peak','vr-chart-next','vr-send','vr-pattern','vr-haptic-pattern','vr-face-pack-status'],missing=ids.filter(id=>!$(id));return{ok:missing.length===0,total:ids.length,missing,patternCore:Boolean(patternCore),facePack:Boolean(faceCore),patterns:patternCore?.patterns?.length||0,haptics:patternCore?.hapticModes?.length||0}}
 window.nocturneVrControlAudit=controlAudit;
 persistVisual();
 window.addEventListener('nocturne:vr-motion',e=>{vrMotion={...vrMotion,...(e.detail||{})};});
