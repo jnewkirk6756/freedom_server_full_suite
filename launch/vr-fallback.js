@@ -24,43 +24,23 @@ function requestedMode(){const q=new URLSearchParams(location.search).get('mode'
 let sceneMode=requestedMode(),actionLine='Point a controller at a tile and press trigger.',hovered=-1;
 const triggerDown=new Map();
 let telemetry={pace:0,depth:0,force:0,intensity:0,angle:0,cadence:0,entrySpeedS:3,cycleTimeS:3,initialized:false,startedAt:0},fallbackPattern=localStorage.getItem('nocturne.vr.pattern.v1')||'steady',fallbackHapticMode=localStorage.getItem('nocturne.vr.haptic-pattern.v1')||'auto',fallbackDynamic=localStorage.getItem('nocturne.vr.dynamic-strokes.v1')!=='off',fallbackRecorded=[];let panelOffset={x:0,y:0,z:0};
-const mediaCore=()=>mediaCorePromise||(mediaCorePromise=import('./video-state-core.js'));
-async function resolveAnnaState(id){
-  const core=await mediaCore(),requested=String(id||'A01').toUpperCase(),state=core.stateById(requested),recent=[];
-  const ids=state?[...core.familyCandidates(requested,recent),'A01','A02','A00']:['A01','A02','A00'];
-  for(const candidate of [...new Set(ids)]){try{const row=await core.getClipSynced(candidate);if(row?.blob)return{core,id:candidate,row};}catch{}}
-  return null;
+const faceCore=window.NocturneFacePack||null;
+function ensureAnnaCanvas(){
+  if(annaCanvas)return annaCanvas;
+  annaCanvas=document.createElement('canvas');annaCanvas.width=360;annaCanvas.height=600;annaCanvas.style.cssText='position:fixed;width:360px;height:600px;left:-10000px;top:-10000px;opacity:0;pointer-events:none';document.body.appendChild(annaCanvas);annaCtx=annaCanvas.getContext('2d',{alpha:false});return annaCanvas
 }
-function freezeAnnaFaceFrame(id){if(!annaVideo||!visualCfg.facePhotoMode)return;const pct=/^A18/.test(id)?.58:/^A17/.test(id)?.46:/^A16/.test(id)?.40:/^A19/.test(id)?.32:.28;try{const dur=Number(annaVideo.duration)||0;if(dur>0&&Number.isFinite(dur)){const target=Math.min(Math.max(.05,dur*pct),Math.max(.05,dur-.08));if(Math.abs((annaVideo.currentTime||0)-target)>.06)annaVideo.currentTime=target}annaVideo.pause()}catch{}}
-async function loadAnnaVideoState(id){
-  const seq=++annaVideoLoadSeq,core=await mediaCore(),requested=String(id||'A01').toUpperCase(),state=core.stateById(requested);
-  const ids=state?[...core.familyCandidates(requested,[]),...core.semanticFallbackCandidates(requested),'A01','A02','A00']:['A01','A02','A00'];
-  if(!annaVideo){
-    annaVideo=document.createElement('video');annaVideo.muted=!visualCfg.videoSound;annaVideo.playsInline=true;annaVideo.autoplay=false;annaVideo.preload='auto';annaVideo.setAttribute('playsinline','');annaVideo.setAttribute('webkit-playsinline','');
-    annaVideo.style.cssText='position:fixed;width:2px;height:2px;opacity:.001;pointer-events:none;left:-20px;top:-20px';document.body.appendChild(annaVideo);
-    annaCanvas=document.createElement('canvas');annaCanvas.width=360;annaCanvas.height=640;annaCtx=annaCanvas.getContext('2d',{alpha:false});
-  }
-  annaVideoReady=false;annaVideoError='loading';set('vr-video-state','LOADING');
-  for(const candidate of [...new Set(ids)]){
-    if(seq!==annaVideoLoadSeq)return false;
-    let url='';
-    try{
-      const row=await core.getClipSynced(candidate);if(!row?.blob)continue;url=URL.createObjectURL(row.blob);
-      const ok=await new Promise(resolve=>{
-        let settled=false;const done=v=>{if(settled)return;settled=true;clearTimeout(timer);resolve(v)};
-        const timer=setTimeout(()=>done(false),9000);
-        annaVideo.onloadeddata=()=>done(true);annaVideo.onerror=()=>done(false);
-        annaVideo.pause();annaVideo.src=url;annaVideo.loop=core.playbackMode(candidate)==='loop';annaVideo.muted=!visualCfg.videoSound;annaVideo.load();if(visualCfg.videoEnabled)try{const p=annaVideo.play();if(p?.catch)p.catch(()=>{});setTimeout(()=>freezeAnnaFaceFrame(candidate),220)}catch{}
-      });
-      if(!ok){try{URL.revokeObjectURL(url)}catch{}continue}
-      if(annaVideoUrl&&annaVideoUrl!==url)try{URL.revokeObjectURL(annaVideoUrl)}catch{}
-      annaVideoUrl=url;annaVideoState=candidate;annaVideoReady=true;annaVideoError='';try{localStorage.setItem('nocturne.vr.video-state.v1',candidate)}catch{}
-      const vw=annaVideo.videoWidth||360,vh=annaVideo.videoHeight||640;if(vw>0&&vh>0){annaCanvas.width=Math.max(180,Math.min(720,vw));annaCanvas.height=Math.max(320,Math.min(1280,vh))}
-      annaVideo.onended=()=>{const next=core.transitionAfterState(annaVideoState);if(next)loadAnnaVideoState(next)};
-      set('vr-video-state',candidate);actionLine='Anna '+candidate+' synced · '+vw+'×'+vh;lastMenu=0;if(visualCfg.videoEnabled)try{await annaVideo.play()}catch{}else try{annaVideo.pause()}catch{}return true;
-    }catch{if(url)try{URL.revokeObjectURL(url)}catch{}}
-  }
-  annaVideoReady=false;annaVideoError='missing';set('vr-video-state','MISSING');actionLine='Anna media cache has no usable avatar clip.';lastMenu=0;return false;
+function drawAnnaFallback(){
+  ensureAnnaCanvas();if(!annaCtx)return false;annaCtx.fillStyle='#08040d';annaCtx.fillRect(0,0,annaCanvas.width,annaCanvas.height);if(annaPosterReady){const iw=annaPoster.naturalWidth||120,ih=annaPoster.naturalHeight||213,src=iw/ih,dst=annaCanvas.width/annaCanvas.height;let sx=0,sy=0,sw=iw,sh=ih;if(src>dst){sw=ih*dst;sx=(iw-sw)/2}else{sh=iw/dst;sy=(ih-sh)/2}annaCtx.drawImage(annaPoster,sx,sy,sw,sh,0,0,annaCanvas.width,annaCanvas.height)}return true
+}
+async function loadAnnaFaceState(id){
+  ensureAnnaCanvas();annaFaceError='loading';const requested=String(id||annaFaceState||'ANNA_02_ATTENTIVE');
+  try{
+    if(faceCore){
+      const rendered=await faceCore.drawState(annaCanvas,requested,{cover:true});
+      if(rendered){annaFaceState=rendered.id;annaFaceReady=true;annaFaceError='';try{localStorage.setItem('nocturne.face-state.v1',annaFaceState)}catch{}set('vr-video-state',rendered.name.toUpperCase());actionLine='Anna face · '+rendered.name.toUpperCase();annaTexReady=false;lastMenu=0;return true}
+    }
+  }catch{}
+  drawAnnaFallback();annaFaceReady=false;annaFaceError='missing';set('vr-video-state','DEFAULT FACE');actionLine='Import Anna face grids in Live to activate the expression pack.';annaTexReady=false;lastMenu=0;return false
 }
 function deviceLibrary(){try{const lib=JSON.parse(localStorage.getItem('nocturne.devices.v1')||'{}');return Array.isArray(lib.devices)?lib:{devices:[],activeId:null,revision:0}}catch{return{devices:[],activeId:null,revision:0}}}
 function activeDevice(){const lib=deviceLibrary();return lib.devices.find(d=>d.id===lib.activeId)||(lib.devices.length===1?lib.devices[0]:null)}
