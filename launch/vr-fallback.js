@@ -181,10 +181,10 @@ function constellation(t){
   return{nodes,edges,stars};
 }
 function telemetryPath(t,motion=motionState()){
-  const y0=floorY(),rawLines=[],rawPoints=[],tel=loadTelemetry(),base=y0+1.22,z=-1.58,amp=tel.initialized?(.10+tel.depth*.42):0,phase=motion.phase*Math.PI*2;
-  for(let i=0;i<101;i++){const q=i/100,x=(-1.35+q*2.7)*visualCfg.waveMotion,wave=(1-Math.cos((q-.5)*Math.PI*2+phase))/2,y=base+amp*wave;if(i)rawLines.push(rawPoints[rawPoints.length-3],rawPoints[rawPoints.length-2],rawPoints[rawPoints.length-1],x,y,z);rawPoints.push(x,y,z)}
+  const y0=floorY(),rawLines=[],rawPoints=[],tel=loadTelemetry(),base=y0+1.22,z=-1.58,amp=tel.initialized?(.10+tel.depth*.42):0,span=Math.max(.5,Math.min(1.8,visualCfg.waveMotion));
+  for(let i=0;i<101;i++){const q=i/100,x=(-1.35+q*2.7)*span,ph=motion.phase+(q-.5)*span,s=patternCore?.sample?.(fallbackPattern,ph,{cycle:motion.cycle,dynamic:fallbackDynamic,custom:fallbackRecorded,depth:tel.depth,intensity:tel.intensity}),wave=s?clamp(s.fraction):(1-Math.cos(ph*Math.PI*2))/2,y=base+amp*wave;if(i)rawLines.push(rawPoints[rawPoints.length-3],rawPoints[rawPoints.length-2],rawPoints[rawPoints.length-1],x,y,z);rawPoints.push(x,y,z)}
   const pose={...wavePose,scale:(wavePose.scale||1)*visualCfg.waveScale},pivot=[0,base,z],centerIndex=50;
-  return{lines:transformVerts(rawLines,pose,pivot),points:transformVerts(rawPoints,pose,pivot),motion,centerIndex,seated:motion.envelope>=.94};
+  return{lines:transformVerts(rawLines,pose,pivot),points:transformVerts(rawPoints,pose,pivot),motion,centerIndex,seated:Boolean(motion.seated)};
 }
 function waveVolumeGeometry(path){const back=[],front=[],ribs=[],pts=path.points,n=pts.length/3;for(let i=1;i<n;i++){for(const dz of[-.09,.09])back.push(pts[(i-1)*3],pts[(i-1)*3+1],pts[(i-1)*3+2]+dz,pts[i*3],pts[i*3+1],pts[i*3+2]+dz)}for(let i=0;i<n;i+=8)ribs.push(pts[i*3],pts[i*3+1],pts[i*3+2]-.09,pts[i*3],pts[i*3+1],pts[i*3+2]+.09);const idx=Math.max(0,Math.min(n-1,Number(path.centerIndex)||Math.floor(n/2)));front.push(pts[idx*3],pts[idx*3+1],pts[idx*3+2]);return{layers:back,ribs,marker:front,seated:path.seated}}
 function liveHudGeometry(){const tel=loadTelemetry(),y=floorY()+1.82,z=-1.62,x0=.62,x1=1.82,xf=x0+(x1-x0)*tel.force;return{track:[x0,y,z,x1,y,z],fill:[x0,y,z+.002,xf,y,z+.002],marker:[xf,y,z+.004],frame:[x0,y-.08,z,x1,y-.08,z,x1,y-.08,z,x1,y+.08,z,x1,y+.08,z,x0,y+.08,z,x0,y+.08,z,x0,y-.08,z]}}
