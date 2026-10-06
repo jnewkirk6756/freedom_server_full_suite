@@ -54,3 +54,9 @@ html.xr-active #vr-live-controls{padding:8px 10px}
  .vr-chart-actions{grid-template-columns:1fr}
  .vr-mode-grid{grid-template-columns:1fr 1fr}
 }
+
+/* Nocturne V0.81 dynamic motion controls */
+#vr-dynamic-strokes[aria-pressed="true"]{border-color:#7fcfb0!important;background:#10271f!important;color:#d8ffea!important;box-shadow:0 0 16px #72d5aa20}
+#vr-pattern,#vr-haptic-pattern{font:800 10px ui-monospace,SFMono-Regular,Menlo,monospace!important;letter-spacing:.03em}
+.vr-mode-grid label:has(#vr-pattern),.vr-mode-grid label:has(#vr-haptic-pattern){border-color:#49325a;background:#0d0814}
+@media(max-width:700px){#vr-pattern,#vr-haptic-pattern{font-size:11px!important}}
