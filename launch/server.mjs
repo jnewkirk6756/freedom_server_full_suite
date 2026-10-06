@@ -63,7 +63,7 @@ export const server=http.createServer(async(req,res)=>{
       res.writeHead(200,{...common,'content-length':String(total)});return res.end(req.method==='HEAD'?'':data);
     }catch{return reply(503,'text/plain','Media unavailable')}
   }
-  if(req.method==='GET'&&u.pathname==='/v1/assets/manifest'){try{const states=await mediaManifest(),stats=await mediaStats();return reply(200,'application/json',JSON.stringify({ok:true,version:'0.77.2',vrCompatible:true,localFirst:true,states,...stats}))}catch{return reply(503,'application/json',JSON.stringify({error:{code:'ASSET_MANIFEST_UNAVAILABLE',message:'Device asset manifest is unavailable.'}}))}}
+  if(req.method==='GET'&&u.pathname==='/v1/assets/manifest'){try{const states=await mediaManifest(),stats=await mediaStats();return reply(200,'application/json',JSON.stringify({ok:true,version:'0.82.0',vrCompatible:true,localFirst:true,states,...stats}))}catch{return reply(503,'application/json',JSON.stringify({error:{code:'ASSET_MANIFEST_UNAVAILABLE',message:'Device asset manifest is unavailable.'}}))}}
   if(req.method==='GET'&&u.pathname==='/v1/media/status'){let ss=session(req),token=null;if(!ss){token=newSession();ss={token,value:sessions.get(token)}}const connected=await mediaPing(),stats=connected?await mediaStats():{states:0,usedBytes:0,capacityBytes:25*1024*1024};return reply(200,'application/json',JSON.stringify({ok:true,configured:Boolean(process.env.NOCTURNE_MEDIA_REDIS_URL),connected,sessionAccepted:Boolean(session(req)),sessionToken:token,...stats,persistent:false}))}
   if(req.method==='GET'&&u.pathname==='/v1/media/manifest'){const ss=session(req);if(!ss)return reply(401,'application/json',JSON.stringify({error:{code:'SESSION_REQUIRED',message:'Start a media sync session first.'}}));try{return reply(200,'application/json',JSON.stringify({ok:true,states:await mediaManifest(),...(await mediaStats())}))}catch{return reply(503,'application/json',JSON.stringify({error:{code:'MEDIA_SYNC_UNAVAILABLE',message:'Shared media cache is unavailable.'}}))}}
   const mediaMatch=u.pathname.match(/^\/v1\/media\/(A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?)$/);
@@ -131,6 +131,7 @@ async function startupSelfTest(port){
  await check('VR_ROUTE','/vr/',['vr.js?v=0820','vr-pattern-core.js?v=0820','voice-core.js?v=0820','vr-video-sound','vr-user-peak','vr-chart-next','vr-mic-chat']);
  await check('LIVE_RUNTIME','/experience-mobile-safe.js',['routeControlClick','triggerPeak','openLiveReport','teaseLive','liveControlAudit','directorEmbodied','videoLoadSeq']);
  await check('VOICE_CORE','/voice-core.js',["version:'0.82.0'",'/v1/voice/speak','browserFallback','NocturneVoice']);
+ await check('LIVE_FACE_SYNC','/experience-mobile-safe.js',['add(requested)','directorEmbodied','applyFaceState','triggerPeak','user-peak','teaseLive']);
  await check('ASSET_PACK_CORE','/asset-pack-core.js',['downloadAssets','fetchAssetManifest','vrCompatible','0820','voice-core.js']);
  await check('SERVICE_WORKER','/nocturne-sw.js',['nocturne-shell-0820','self.addEventListener','/vr/','voice-core.js']);
  await check('ASSET_MANIFEST','/v1/assets/manifest',['\"ok\":true','\"vrCompatible\":true','\"states\":']);
