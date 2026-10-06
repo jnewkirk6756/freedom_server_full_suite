@@ -200,25 +200,7 @@ async function tryVideoSource(v,src,timeoutMs){
     try{v.pause();v.removeAttribute('src');v.load();v.src=src;v.muted=true;v.playsInline=true;v.preload='auto';v.load();var p=v.play();if(p&&p.catch)p.catch(function(){})}catch(e){done(false)}
   });
 }
-async function loadVideo(id,reason){
-  var seq=++videoLoadSeq;id=String(id||'A01').toUpperCase();if(!/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(id))id='A01';id=resolveVideoState(id);
-  var v=$('performance');if(!v)return false;v.hidden=false;v.style.display='block';v.style.visibility='visible';var poster=$('anna-poster');if(poster){poster.hidden=false;poster.style.display='block'}
-  if(state.videoState===id&&v.getAttribute('src')&&v.readyState>=2){v.style.opacity='1';applyVisuals();return true}
-  v.style.opacity='0';var os=$('orb-state'),empty=$('empty'),cue=$('orb-cue'),rows=await mediaManifestRows(),candidates=hqCandidates(id,rows);
-  if(os)os.textContent=id+' · EXPRESSION SYNC';if(cue)cue.textContent='Changing Anna expression…';
-  for(var ci=0;ci<candidates.length;ci++){
-    if(seq!==videoLoadSeq)return false;var requested=candidates[ci],direct='/media/'+encodeURIComponent(requested)+'.mp4?v=0820',ok=await tryVideoSource(v,direct,5000),url='';
-    if(seq!==videoLoadSeq){if(url)try{URL.revokeObjectURL(url)}catch(e){}return false}
-    if(!ok){var blob=await fetchAvatarBlob(requested);if(blob){url=URL.createObjectURL(blob);ok=await tryVideoSource(v,url,6500)}}
-    if(seq!==videoLoadSeq){if(url)try{URL.revokeObjectURL(url)}catch(e){}return false}
-    if(!ok){if(url)try{URL.revokeObjectURL(url)}catch(e){};continue}
-    if(avatarObjectUrl&&avatarObjectUrl!==url)try{URL.revokeObjectURL(avatarObjectUrl)}catch(e){}
-    avatarObjectUrl=url||'';state.videoState=id;state.videoPlaybackState=requested;v.muted=true;v.playsInline=true;v.loop=!isOneShotVideo(id);
-    v.onended=function(){var current=state.videoState;if(/^A18/.test(current))applyFaceState('recovering','video-recovery','A19C');else if(/^A19/.test(current)||current==='A20')applyFaceState('calm','video-idle','A01')};
-    sizeAvatarFromVideo(v,requested);freezeFaceFrame(v,requested);v.style.opacity='1';if(os)os.textContent=requested+' · '+(v.videoWidth||0)+'×'+(v.videoHeight||0);if(cue)cue.textContent='Expression · '+String(state.embodied||'attentive').toUpperCase();if(empty)empty.hidden=true;save();applyVisuals();try{var pp=v.play();if(pp&&pp.catch)pp.catch(function(){})}catch(e){}return true;
-  }
-  visuals.videoEnabled=true;visuals.avatar3D=false;v.style.opacity='0';applyVisuals();if(os)os.textContent='VIDEO FALLBACK';if(cue)cue.textContent='Expression video unavailable · showing Anna poster.';if(empty)empty.hidden=true;return false;
-}
+async function loadVideo(id,reason){return await renderFaceState(id,reason||'state')}
 function directorEmbodied(q){
   if(!q)return null;var e=String(q.emotion||'').toLowerCase(),p=String(q.performance||'').toLowerCase();
   if(e==='excited')return'intense';if(e==='playful')return'playful';if(e==='focused')return'focused';if(e==='reflective')return'recovering';if(e==='calm')return'calm';if(e==='warm')return'playful';if(e==='attentive')return'attentive';
