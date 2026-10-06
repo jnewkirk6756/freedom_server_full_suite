@@ -42,6 +42,8 @@ function applyDirector(q={},source='director'){
   const priorPace=telemetry.pace;const setNum=(key,target,delta)=>{if(Number.isFinite(target))telemetry[key]=clamp(target);else if(Number.isFinite(delta)&&delta)telemetry[key]=clamp(telemetry[key]+delta)};
   setNum('pace',q.paceTarget,q.paceDelta);setNum('depth',q.depthTarget,q.depthDelta);setNum('force',q.forceTarget,q.forceDelta);setNum('intensity',q.intensityTarget,q.intensityDelta);if(Math.abs(telemetry.pace-priorPace)>.0001)telemetry.cycleTimeS=Math.max(.7,Math.min(10,5-telemetry.pace*4.3));
   if(patternCore?.patterns?.includes(q.pattern)&&q.pattern!=='keep')pattern=q.pattern;
+  if(patternCore?.hapticModes?.includes(q.hapticMode)&&q.hapticMode!=='keep')hapticMode=q.hapticMode;
+  if(typeof q.dynamicStrokes==='boolean')dynamicStrokes=q.dynamicStrokes;
   if(q.videoState&&q.videoState!=='keep')setVrVideoState(q.videoState,source);if(q.position&&q.position!=='keep'&&POSITION_VALUES.includes(q.position))position=q.position;
   saveTelemetry();persistVisual();window.dispatchEvent(new CustomEvent('nocturne:vr-director-state',{detail:{source,videoState:currentVideoState,telemetry:{...telemetry},pattern,position,speech:String(q.speech||''),at:Date.now()}}));return q;
 }
@@ -125,6 +127,8 @@ window.addEventListener('nocturne:vr-ui-action',e=>{
   if(action==='pattern-next'){pattern=patternCore?.nextPattern?.(pattern)||'steady';saveTelemetry();syncHUD();rememberVr('pattern','Pattern changed to '+pattern+'.',['vr','pattern'],.28);return}
   if(action==='haptic-next'){hapticMode=patternCore?.nextHaptic?.(hapticMode)||'auto';saveTelemetry();syncHUD();return}
   if(action==='dynamic-toggle'){dynamicStrokes=!dynamicStrokes;saveTelemetry();syncHUD();rememberVr('pattern','Dynamic strokes '+(dynamicStrokes?'enabled':'disabled')+'.',['vr','pattern'],.22);return}
+  if(action==='wave-size-next'){const vals=[.75,1,1.25,1.5,1.75];let i=vals.findIndex(v=>Math.abs(v-visualCfg.waveScale)<.02);visualCfg.waveScale=vals[(i<0?1:i+1)%vals.length];persistVisual();return}
+  if(action==='wave-span-next'){const vals=[.65,.85,1,1.25,1.5,1.75];let i=vals.findIndex(v=>Math.abs(v-visualCfg.waveMotion)<.02);visualCfg.waveMotion=vals[(i<0?2:i+1)%vals.length];persistVisual();return}
   if(action==='tool-solid'){visualCfg.toolSolid=!visualCfg.toolSolid;persistVisual();return}
   if(action==='hold'){telemetry.startedAt=Date.now();saveTelemetry();chatState('done','Hold.');rememberVr('hold','User held the VR pattern on chart '+chartState.index+'.',['vr','hold'],.3);return}
   if(['faster','slower','deeper','shallower','ease','force-up','force-down','energy-up','energy-down'].includes(action))applyVrQuick(action);
