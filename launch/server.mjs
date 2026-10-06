@@ -148,7 +148,7 @@ async function startupSelfTest(port){
  await check('AVATAR_RUNTIME','/anna-avatar-runtime.js',['NocturneAvatarRuntime','poseMix','setExpression']);
  await check('VR_RENDERER','/vr-fallback.js',['centerIndex=50','patternCore?.sample','hapticEvents','for(let row=0;row<6','cycleTool','travelMm/1000','panelPose','loadAnnaFaceState']);
  await check('VR_PATTERN_CORE','/vr-pattern-core.js',['version:\'0.81.0\'','double','triple','syncopated','heartbeat','crescendo','hapticEvents','strokeUnits']);
- await check('SESSION_CORE','/session-core.js',["VERSION='0.81.0'",'double','hapticMode','dynamicStrokes','recordedPattern']);
+ await check('SESSION_CORE','/session-core.js',["VERSION='0.84.0'",'double','hapticMode','dynamicStrokes','recordedPattern','faceState']);
  try{const src=fs.readFileSync(path.join(here,'director-core.mjs'),'utf8'),ok=['double','triple','hapticMode','dynamicStrokes'].every(x=>src.includes(x));checks.push({name:'DIRECTOR_CORE',ok,status:ok?200:500});console.log('NOCTURNE_SELF_TEST DIRECTOR_CORE='+(ok?'PASS':'FAIL')+' INTERNAL=1')}catch(e){checks.push({name:'DIRECTOR_CORE',ok:false,status:500});console.log('NOCTURNE_SELF_TEST DIRECTOR_CORE=FAIL ERROR='+String(e.message).slice(0,80))}
  await check('ANNA_GROUNDING','/anna-grounding.js',['ANNA-GROUNDING-0.80','culturalVoice','never claims that Russian women']);
  let directorSession='';
