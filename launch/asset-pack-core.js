@@ -1,24 +1,25 @@
 import {listClips,getClip,saveClip,storageEstimate} from './video-state-core.js';
 
-export const ASSET_PACK_VERSION='NOCTURNE-ASSET-PACK-0.80.0';
-export const SHELL_CACHE='nocturne-shell-0800';
+export const ASSET_PACK_VERSION='NOCTURNE-ASSET-PACK-0.81.0';
+export const SHELL_CACHE='nocturne-shell-0810';
 export const SHELL_ASSETS=[
   '/',
   '/live/',
   '/vr/',
-  '/experience.css?v=0800',
-  '/live-embodied.css?v=0800',
-  '/experience-mobile-safe.js?v=0800',
-  '/video-state-core.js?v=0800',
-  '/asset-pack-core.js?v=0800',
-  '/anna-avatar-runtime.js?v=0800',
-  '/vr.js?v=0800',
-  '/vr-fallback.js?v=0800',
-  '/vr.css?v=0800',
-  '/navigation.css?v=0800',
-  '/navigation.js?v=0800',
-  '/session-core.js?v=0800',
-  '/app.webmanifest?v=0800'
+  '/experience.css?v=0810',
+  '/live-embodied.css?v=0810',
+  '/experience-mobile-safe.js?v=0810',
+  '/video-state-core.js?v=0810',
+  '/asset-pack-core.js?v=0810',
+  '/vr-pattern-core.js?v=0810',
+  '/anna-avatar-runtime.js?v=0810',
+  '/vr.js?v=0810',
+  '/vr-fallback.js?v=0810',
+  '/vr.css?v=0810',
+  '/navigation.css?v=0810',
+  '/navigation.js?v=0810',
+  '/session-core.js?v=0810',
+  '/app.webmanifest?v=0810'
 ];
 
 function errText(error){return String(error&&error.message||error||'Unknown error').slice(0,180)}
@@ -35,7 +36,7 @@ export async function requestPersistentStorage(){
 export async function installServiceWorker(){
   if(!('serviceWorker'in navigator))return{supported:false,registered:false};
   try{
-    const reg=await navigator.serviceWorker.register('/nocturne-sw.js?v=0800',{scope:'/'});
+    const reg=await navigator.serviceWorker.register('/nocturne-sw.js?v=0810',{scope:'/'});
     return{supported:true,registered:true,scope:reg.scope};
   }catch(error){return{supported:true,registered:false,error:errText(error)}}
 }
@@ -55,7 +56,7 @@ export async function cacheShell({onProgress=function(){}}={}){
 }
 
 export async function fetchAssetManifest(){
-  const response=await fetch('/v1/assets/manifest?v=0800',{cache:'no-store',credentials:'same-origin'});
+  const response=await fetch('/v1/assets/manifest?v=0810',{cache:'no-store',credentials:'same-origin'});
   if(!response.ok)throw Error('Asset manifest HTTP '+response.status);
   const data=await response.json();
   const states=asArray(data&&data.states);
@@ -73,7 +74,7 @@ async function downloadMediaPack({onProgress=function(){}}={}){
     try{
       const local=await getClip(id).catch(function(){return null});
       if(local&&remote.sha256&&local.cloudSha===remote.sha256&&local.blob&&local.blob.size){skipped.push(id);continue}
-      const url='/media/'+encodeURIComponent(id)+'.mp4?asset='+encodeURIComponent(remote.sha256||String(remote.updatedAt||'0800'));
+      const url='/media/'+encodeURIComponent(id)+'.mp4?asset='+encodeURIComponent(remote.sha256||String(remote.updatedAt||'0810'));
       const response=await fetch(url,{cache:'reload',credentials:'same-origin'});
       if(!response.ok)throw Error('HTTP '+response.status);
       const blob=await response.blob();
