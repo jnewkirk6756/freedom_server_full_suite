@@ -1,7 +1,7 @@
 (function(g){
 'use strict';
-if(g.NocturneSession&&g.NocturneSession.VERSION==='0.81.0')return;
-var VERSION='0.81.0',KEY='nocturne.session.v0750',MOBILE='nocturne.mobile.session.v0710',VR='nocturne.vr.session.v070',TELEMETRY='nocturne.telemetry.v1';
+if(g.NocturneSession&&g.NocturneSession.VERSION==='0.84.0')return;
+var VERSION='0.84.0',KEY='nocturne.session.v0750',MOBILE='nocturne.mobile.session.v0710',VR='nocturne.vr.session.v070',TELEMETRY='nocturne.telemetry.v1';
 var clamp=function(v){v=Number(v)||0;return Math.max(0,Math.min(1,v))};
 function defaults(){return{schema:1,version:VERSION,initialized:false,running:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,cadence:0,pattern:'steady',hapticMode:'auto',dynamicStrokes:true,recordedPattern:[],videoState:'A01',faceState:'ANNA_02_ATTENTIVE',embodied:'attentive',position:'back',startedAt:0,updatedAt:0,source:'boot'};}
 function validPattern(v){return ['steady','wave','pulse','build','variable','double','triple','hold','glide','syncopated','custom'].indexOf(v)>=0?v:'steady'}
