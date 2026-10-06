@@ -249,11 +249,11 @@ function draw(ts){
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.strokeStyle='rgba(183,145,220,.17)';ctx.lineWidth=1;
     [0,.25,.5,.75,1].forEach(function(p){var y=h-(p*h);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();if(p>0){ctx.fillStyle='rgba(190,165,210,.55)';ctx.font='10px system-ui';ctx.fillText(Math.round(p*100)+'%',5,y+12)}});
     var y0=h-10,amp=(h-20)*state.depth,period=Math.max(700,state.cycleTimeS*1000),phase=state.phase;
-    if(state.running){if(!state.lastTs)state.lastTs=ts;var prev=state.phase;state.phase=(state.phase+(ts-state.lastTs)/period)%1;state.lastTs=ts;if(state.phase<prev){state.cycle++;state.strokes++;sync();}phase=state.phase}else state.lastTs=0;
+    if(state.running){if(!state.lastTs)state.lastTs=ts;var prev=state.phase;state.phase=(state.phase+(ts-state.lastTs)/period)%1;state.lastTs=ts;if(state.phase<prev){state.cycle++;state.strokes++;sync();if(state.cycle!==lastFaceCycle&&state.cycle%2===0&&!/^A1[89]/.test(String(state.videoState||''))){lastFaceCycle=state.cycle;adaptiveFace('cycle')}}phase=state.phase}else state.lastTs=0;
     var strokePhase=phase;renderPhase=phase;
     var colors={calm:'#9b83bd',attentive:'#b88be9',curious:'#78c7f0',focused:'#75d5d2',playful:'#da82f5',assertive:'#e98ba2',intense:'#f08ad0',irritated:'#ed7180',withdrawn:'#776b86',recovering:'#79aee2'};ctx.strokeStyle=colors[state.embodied]||'#c597f1';ctx.lineWidth=state.embodied==='intense'?4:state.embodied==='withdrawn'?2:3;ctx.beginPath();
     for(var i=0;i<=120;i++){var q=i/120,v=strokeEnvelope(q,state.pattern);var x=q*w,y=y0-amp*v;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
-    active=strokeEnvelope(strokePhase,state.pattern);visualActive=active;var px=renderPhase*w,py=y0-amp*visualActive;ctx.fillStyle='#fff';ctx.font='10px system-ui';ctx.fillText('AI STATE · '+String(state.embodied||'attentive').toUpperCase()+' · '+String(state.position||'back').toUpperCase(),40,14);ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
+    active=strokeEnvelope(strokePhase,state.pattern);visualActive=active;var px=renderPhase*w,py=y0-amp*visualActive;var climax=state.climaxEnabled?clamp(state.intensity*.45+state.depth*active*.35+state.force*.20):0,cf=$('climax-fill'),cm=$('climax-marker'),cv=$('climax-value');if(cf)cf.style.width=(climax*100)+'%';if(cm)cm.style.left=(climax*100)+'%';if(cv)cv.textContent=Math.round(climax*100);ctx.fillStyle='#fff';ctx.font='10px system-ui';ctx.fillText('AI STATE · '+String(state.embodied||'attentive').toUpperCase()+' · '+String(state.position||'back').toUpperCase(),40,14);ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
   }
   var tool=document.querySelector('#trajectory .tool'),stop=document.querySelector('#trajectory .depth-stop'),liveStop=document.querySelector('#trajectory .live-depth-stop'),angle=Math.max(-45,Math.min(45,Number(state.angle)||0)),force=clamp(state.force),energy=clamp(state.intensity),g=trajectoryGeometry(state.depth,state.initialized?visualActive:0);
   if(tool){
@@ -287,16 +287,23 @@ function routeControlClick(e){
   if(b.hasAttribute('data-command')){recognized=true;var cmd=String(b.getAttribute('data-command')||'').toLowerCase();quick(cmd.indexOf('faster')>=0?'faster':cmd.indexOf('slower')>=0?'slower':cmd.indexOf('ease')>=0?'ease':'more')}
   else if(b.hasAttribute('data-pattern')){recognized=true;setPattern(b.getAttribute('data-pattern'))}
   else if(id==='live-start'){recognized=true;toggleLive()}
-  else if(id==='hold'){recognized=true;state.running=false;sync();save();line('Held / paused.')}
-  else if(id==='change'){recognized=true;setPattern(state.pattern==='steady'?'wave':'steady');director('Change the current pattern.',false).catch(function(){})}
-  else if(id==='peak'){recognized=true;setEmbodied('intense','manual');state.intensity=Math.max(state.intensity,.82);state.force=Math.max(state.force,.62);sync();save();line('Anna shifted intense.')}
-  else if(id==='next-chart'){recognized=true;state.chart++;state.strokes=0;state.phase=0;sync();save();line('Chart '+state.chart+' ready.')}
+  else if(id==='hold'){recognized=true;state.running=false;sync();save();applyFaceState('focused','hold','A16');line('Held / paused.')}
+  else if(id==='change'){recognized=true;nextPatternLive();director('Change the current pattern.',false).catch(function(){})}
+  else if(id==='peak'){recognized=true;triggerPeak('peak-button',false)}
+  else if(id==='user-peak'){recognized=true;triggerPeak('user-peak',true)}
+  else if(id==='report'){recognized=true;openLiveReport()}
+  else if(id==='tease'){recognized=true;teaseLive()}
+  else if(id==='climax-toggle'){recognized=true;state.climaxEnabled=!state.climaxEnabled;b.textContent='NOCTURNE ● '+(state.climaxEnabled?'ON':'OFF');save();line('Climax tracking '+(state.climaxEnabled?'on.':'off.'))}
+  else if(id==='pattern-record'){recognized=true;togglePatternRecord()}
+  else if(id==='pattern-play'){recognized=true;playCustomPattern()}
+  else if(id==='next-chart'){recognized=true;state.chart++;state.strokes=0;state.phase=0;state.peaks=0;sync();save();applyFaceState('attentive','chart-next','A02');line('Chart '+state.chart+' ready.')}
   else if(id==='auto-mode'){recognized=true;if(!state.initialized){showSetup()}else{state.auto=!state.auto;if(state.auto&&!state.running)state.running=true;sync();save();line(state.auto?'Autopilot on.':'Autopilot off.');if(state.auto)director('Continue the Live session with a coherent next adjustment and give a brief cue only if this chart moment needs guidance.',true).catch(function(){})}}
   else if(id==='custom-telemetry'){recognized=true;advancedOpen()}
-  else if(id==='avatar-video-toggle'){recognized=true;visuals.videoEnabled=true;visuals.avatar3D=false;applyVisuals();line('Video avatar selected.')}
+  else if(id==='avatar-video-toggle'){recognized=true;visuals.videoEnabled=true;visuals.avatar3D=false;applyVisuals();adaptiveFace('video-toggle');line('Video avatar selected.')}
   else if(id==='avatar-hd-import'){recognized=true;var f=$('avatar-hd-file');if(f){f.value='';f.click()}}
   else if(id==='asset-download'){recognized=true;openAssetDialog()}
   else if(id==='asset-download-now'){recognized=true;downloadDeviceAssets()}
+  else if(id==='feelings-close'){recognized=true;var fd=$('feelings');if(fd)fd.hidden=true}
   else if(id==='enter-vr'){recognized=true;routeVr()}
   else if(id==='send'){recognized=true;send()}
   if(recognized){e.preventDefault();e.stopImmediatePropagation();controlFlash(b)}
