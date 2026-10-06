@@ -60,3 +60,17 @@ html.xr-active #vr-live-controls{padding:8px 10px}
 #vr-pattern,#vr-haptic-pattern{font:800 10px ui-monospace,SFMono-Regular,Menlo,monospace!important;letter-spacing:.03em}
 .vr-mode-grid label:has(#vr-pattern),.vr-mode-grid label:has(#vr-haptic-pattern){border-color:#49325a;background:#0d0814}
 @media(max-width:700px){#vr-pattern,#vr-haptic-pattern{font-size:11px!important}}
+
+/* Nocturne V0.84 — video-free shared face pack */
+.vr-face-pack-status{
+  display:flex;align-items:center;justify-content:center;min-height:42px;
+  border:1px solid #49325a;border-radius:10px;background:#0d0814;color:#cdb7dc;
+  padding:8px 10px;font:800 9px ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.04em
+}
+.vr-face-pack-status[data-complete="true"]{border-color:#407a60;background:#0b2117;color:#baf7d3}
+#vr-live-controls .vr-mode-grid{grid-template-columns:1.35fr repeat(3,minmax(0,1fr))}
+@media(max-width:700px){
+ #vr-live-controls .vr-mode-grid{grid-template-columns:1fr 1fr}
+ .vr-face-pack-status{grid-column:1/-1}
+}
