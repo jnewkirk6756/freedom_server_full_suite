@@ -1,26 +1,26 @@
 import {listClips,getClip,saveClip,storageEstimate} from './video-state-core.js';
 
-export const ASSET_PACK_VERSION='NOCTURNE-ASSET-PACK-0.82.0';
-export const SHELL_CACHE='nocturne-shell-0820';
+export const ASSET_PACK_VERSION='NOCTURNE-ASSET-PACK-0.83.0';
+export const SHELL_CACHE='nocturne-shell-0830';
 export const SHELL_ASSETS=[
   '/',
   '/live/',
   '/vr/',
-  '/experience.css?v=0820',
-  '/live-embodied.css?v=0820',
-  '/experience-mobile-safe.js?v=0820',
-  '/video-state-core.js?v=0820',
-  '/asset-pack-core.js?v=0820',
-  '/vr-pattern-core.js?v=0820',
-  '/voice-core.js?v=0820',
-  '/anna-avatar-runtime.js?v=0820',
-  '/vr.js?v=0820',
-  '/vr-fallback.js?v=0820',
-  '/vr.css?v=0820',
-  '/navigation.css?v=0820',
-  '/navigation.js?v=0820',
-  '/session-core.js?v=0820',
-  '/app.webmanifest?v=0820'
+  '/experience.css?v=0830',
+  '/live-embodied.css?v=0830',
+  '/experience-mobile-safe.js?v=0830',
+  '/video-state-core.js?v=0830',
+  '/asset-pack-core.js?v=0830',
+  '/vr-pattern-core.js?v=0830',
+  '/voice-core.js?v=0830',
+  '/anna-avatar-runtime.js?v=0830',
+  '/vr.js?v=0830',
+  '/vr-fallback.js?v=0830',
+  '/vr.css?v=0830',
+  '/navigation.css?v=0830',
+  '/navigation.js?v=0830',
+  '/session-core.js?v=0830',
+  '/app.webmanifest?v=0830'
 ];
 
 function errText(error){return String(error&&error.message||error||'Unknown error').slice(0,180)}
@@ -37,7 +37,7 @@ export async function requestPersistentStorage(){
 export async function installServiceWorker(){
   if(!('serviceWorker'in navigator))return{supported:false,registered:false};
   try{
-    const reg=await navigator.serviceWorker.register('/nocturne-sw.js?v=0820',{scope:'/'});
+    const reg=await navigator.serviceWorker.register('/nocturne-sw.js?v=0830',{scope:'/'});
     return{supported:true,registered:true,scope:reg.scope};
   }catch(error){return{supported:true,registered:false,error:errText(error)}}
 }
@@ -57,7 +57,7 @@ export async function cacheShell({onProgress=function(){}}={}){
 }
 
 export async function fetchAssetManifest(){
-  const response=await fetch('/v1/assets/manifest?v=0820',{cache:'no-store',credentials:'same-origin'});
+  const response=await fetch('/v1/assets/manifest?v=0830',{cache:'no-store',credentials:'same-origin'});
   if(!response.ok)throw Error('Asset manifest HTTP '+response.status);
   const data=await response.json();
   const states=asArray(data&&data.states);
@@ -75,7 +75,7 @@ async function downloadMediaPack({onProgress=function(){}}={}){
     try{
       const local=await getClip(id).catch(function(){return null});
       if(local&&remote.sha256&&local.cloudSha===remote.sha256&&local.blob&&local.blob.size){skipped.push(id);continue}
-      const url='/media/'+encodeURIComponent(id)+'.mp4?asset='+encodeURIComponent(remote.sha256||String(remote.updatedAt||'0820'));
+      const url='/media/'+encodeURIComponent(id)+'.mp4?asset='+encodeURIComponent(remote.sha256||String(remote.updatedAt||'0830'));
       const response=await fetch(url,{cache:'reload',credentials:'same-origin'});
       if(!response.ok)throw Error('HTTP '+response.status);
       const blob=await response.blob();
