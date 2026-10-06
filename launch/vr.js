@@ -111,7 +111,7 @@ function applyVrQuick(action){
 }
 window.addEventListener('nocturne:vr-ui-action',e=>{
   const action=String(e.detail?.action||'');
-  if(action==='toggle-auto'){document.getElementById('vr-auto')?.click();return}
+  if(action==='toggle-auto'){toggleAutopilot();return}
   if(action==='ai-choose'){autopilotTick(true);return}
   if(action==='chart-prev'){prevChart();return}
   if(action==='chart-next'){nextChart('manual');return}
@@ -129,7 +129,10 @@ window.addEventListener('nocturne:vr-ui-action',e=>{
   if(action==='hold'){telemetry.startedAt=Date.now();saveTelemetry();chatState('done','Hold.');rememberVr('hold','User held the VR pattern on chart '+chartState.index+'.',['vr','hold'],.3);return}
   if(['faster','slower','deeper','shallower','ease','force-up','force-down','energy-up','energy-down'].includes(action))applyVrQuick(action);
 });
-const autoButton=$('vr-auto');function syncAutoButton(){if(!autoButton)return;autoButton.setAttribute('aria-pressed',autopilot?'true':'false');autoButton.textContent=autopilot?'AUTOPILOT ON':'AUTOPILOT OFF';vrAiStatus(autopilot?'AI AUTO ON':'AI READY')}if(autoButton){autoButton.addEventListener('click',()=>{if(!telemetry.initialized){showSessionSetup();text('message','Initialize Entry Speed, Depth and Stroke Speed before Autopilot.');return}autopilot=!autopilot;localStorage.setItem('nocturne.vr.autopilot.v1',autopilot?'on':'off');syncAutoButton();window.dispatchEvent(new CustomEvent('nocturne:vr-video-state',{detail:{id:currentVideoState,reason:'autopilot-toggle'}}));if(autopilot)autopilotTick(true)});syncAutoButton()}
+const autoButton=$('vr-auto');
+function syncAutoButton(){if(!autoButton)return;autoButton.setAttribute('aria-pressed',autopilot?'true':'false');autoButton.textContent=autopilot?'AUTOPILOT ON':'AUTOPILOT OFF';vrAiStatus(autopilot?'AI AUTO ON':'AI READY')}
+function toggleAutopilot(){if(!telemetry.initialized){showSessionSetup();text('message','Initialize Entry Speed, Depth and Stroke Speed before Autopilot.');return false}autopilot=!autopilot;localStorage.setItem('nocturne.vr.autopilot.v1',autopilot?'on':'off');syncAutoButton();window.dispatchEvent(new CustomEvent('nocturne:vr-video-state',{detail:{id:currentVideoState,reason:'autopilot-toggle'}}));if(autopilot)autopilotTick(true);return true}
+if(autoButton){autoButton.addEventListener('click',toggleAutopilot);syncAutoButton()}
 function requireSessionControl(){if(telemetry.initialized)return true;showSessionSetup();text('message','Initialize Entry Speed, Depth and Stroke Speed first.');syncHUD();return false}
 for(const [id,key]of[['vr-pace-range','pace'],['vr-depth-range','depth'],['vr-force-range','force'],['vr-energy-range','intensity']]){$(id)?.addEventListener('input',e=>{if(!requireSessionControl())return;telemetry[key]=clamp(Number(e.target.value)/100);if(key==='pace'){telemetry.cycleTimeS=Math.max(.7,Math.min(10,5-telemetry.pace*4.3));cadence=Math.round(telemetry.pace*100)}saveTelemetry();syncHUD()})}
 $('vr-position')?.addEventListener('change',e=>{const v=String(e.target.value);if(POSITION_VALUES.includes(v)){position=v;saveTelemetry();persistVisual();text('message','Position · '+e.target.selectedOptions[0].textContent)}});
@@ -146,6 +149,25 @@ $('vr-chart-next')?.addEventListener('click',()=>nextChart('browser'));
 $('vr-user-peak')?.addEventListener('click',()=>registerUserPeak('browser'));
 $('vr-wave-scale')?.addEventListener('input',e=>{visualCfg.waveScale=Math.max(.5,Math.min(2,Number(e.target.value)/100));persistVisual()});
 $('vr-wave-motion')?.addEventListener('input',e=>{visualCfg.waveMotion=Math.max(.5,Math.min(1.8,Number(e.target.value)/100));persistVisual()});
+function browserControlAction(id){
+  if(id==='vr-auto')return toggleAutopilot();
+  if(id==='vr-video-toggle'){visualCfg.videoEnabled=!visualCfg.videoEnabled;persistVisual();window.dispatchEvent(new CustomEvent('nocturne:vr-video-state',{detail:{id:currentVideoState,reason:'video-toggle',videoSound:visualCfg.videoSound}}));return true}
+  if(id==='vr-video-sound'){visualCfg.videoSound=!visualCfg.videoSound;persistVisual();window.dispatchEvent(new CustomEvent('nocturne:vr-video-sound',{detail:{enabled:visualCfg.videoSound}}));return true}
+  if(id==='vr-tool-solid'){visualCfg.toolSolid=!visualCfg.toolSolid;persistVisual();return true}
+  if(id==='vr-voice'){visualCfg.voiceGuidance=!visualCfg.voiceGuidance;if(!visualCfg.voiceGuidance&&'speechSynthesis'in window)try{speechSynthesis.cancel()}catch{}persistVisual();return true}
+  if(id==='vr-command-mode'){visualCfg.commandMode=!visualCfg.commandMode;persistVisual();return true}
+  if(id==='vr-dynamic-strokes'){dynamicStrokes=!dynamicStrokes;saveTelemetry();syncHUD();return true}
+  if(id==='vr-chart-prev'){prevChart();return true}
+  if(id==='vr-chart-next'){nextChart('browser');return true}
+  if(id==='vr-user-peak'){registerUserPeak('browser');return true}
+  if(id==='vr-mic'||id==='vr-mic-chat'){startMicChat();return true}
+  if(id==='vr-send'){sendChat();return true}
+  return false;
+}
+const browserButtonIds=new Set(['vr-auto','vr-video-toggle','vr-video-sound','vr-tool-solid','vr-voice','vr-command-mode','vr-dynamic-strokes','vr-chart-prev','vr-chart-next','vr-user-peak','vr-mic','vr-mic-chat','vr-send']);
+document.addEventListener('click',e=>{const b=e.target?.closest?.('button');if(!b||!browserButtonIds.has(b.id)||b.disabled)return;e.preventDefault();e.stopImmediatePropagation();browserControlAction(b.id)},true);
+function controlAudit(){const ids=['vr-auto','vr-video-toggle','vr-video-sound','vr-tool-solid','vr-voice','vr-mic','vr-command-mode','vr-dynamic-strokes','vr-chart-prev','vr-user-peak','vr-chart-next','vr-send','vr-pattern','vr-haptic-pattern'],missing=ids.filter(id=>!$(id));return{ok:missing.length===0,total:ids.length,missing,patternCore:Boolean(patternCore),patterns:patternCore?.patterns?.length||0,haptics:patternCore?.hapticModes?.length||0}}
+window.nocturneVrControlAudit=controlAudit;
 persistVisual();
 window.addEventListener('nocturne:vr-motion',e=>{vrMotion={...vrMotion,...(e.detail||{})};});
 window.addEventListener('nocturne:vr-controller-state',e=>{vrControllers=Array.isArray(e.detail?.controllers)?e.detail.controllers.slice(0,4):[];});
