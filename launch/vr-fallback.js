@@ -107,9 +107,14 @@ function motionState(){
 }
 function aiLinkColor(){const s=String(aiStatus).toUpperCase();if(s.includes('ERROR'))return[1,.28,.34,.9];if(s.includes('THINK')||s.includes('CHOOS'))return[.77,.45,1,.92];if(s.includes('APPLIED'))return[.42,1,.72,.92];if(s.includes('AUTO'))return[.36,.82,1,.9];return[.72,.6,.9,.72]}
 function syncMotionRuntime(t,motion){
-  const tel=loadTelemetry(),device=activeDevice();window.__NOCTURNE_VR_SYNC__={phase:motion.phase,cycle:motion.cycle,direction:motion.direction,envelope:motion.envelope,seated:motion.envelope>=.94,telemetry:{...tel},tool:device?{id:device.id,name:device.name,lengthMm:device.lengthMm,widthMm:device.widthMm,travelMm:device.travelMm,shape:device.shape,texture:device.texture}:null,videoState:annaVideoState,videoReady:annaVideoReady,videoSound:visualCfg.videoSound,aiStatus,at:Date.now()};
-  if(motion.cycle!==lastMotionCycle){if(lastMotionCycle>=0&&session){const amp=clamp(.28+tel.intensity*.34+tel.force*.2);for(const src of session.inputSources||[])pulseSource(src,amp,40+tel.depth*65);window.dispatchEvent(new CustomEvent('nocturne:vr-cycle',{detail:{...window.__NOCTURNE_VR_SYNC__}}))}lastMotionCycle=motion.cycle}
-  if(t-lastMotionEvent>120){lastMotionEvent=t;window.dispatchEvent(new CustomEvent('nocturne:vr-motion',{detail:{...window.__NOCTURNE_VR_SYNC__}}))}
+  const tel=loadTelemetry(),device=activeDevice(),resolvedHaptic=patternCore?.resolveHapticMode?.(fallbackPattern,fallbackHapticMode)||fallbackHapticMode;window.__NOCTURNE_VR_SYNC__={phase:motion.phase,cycle:motion.cycle,direction:motion.direction,envelope:motion.envelope,seated:Boolean(motion.seated),pattern:fallbackPattern,hapticMode:resolvedHaptic,dynamicStrokes:fallbackDynamic,strokeUnits:motion.strokeUnits||1,telemetry:{...tel},tool:device?{id:device.id,name:device.name,lengthMm:device.lengthMm,widthMm:device.widthMm,travelMm:device.travelMm,shape:device.shape,texture:device.texture}:null,videoState:annaVideoState,videoReady:annaVideoReady,videoSound:visualCfg.videoSound,aiStatus,at:Date.now()};
+  if(motion.cycle!==hapticEventCycle){hapticEventCycle=motion.cycle;hapticFired.clear()}
+  if(session&&fallbackHapticMode!=='off'){
+    const evs=patternCore?.hapticEvents?.(fallbackPattern,fallbackHapticMode,{intensity:tel.intensity,force:tel.force,depth:tel.depth,cycle:motion.cycle})||[];
+    for(let i=0;i<evs.length;i++){const ev=evs[i],key=motion.cycle+':'+i;if(motion.phase>=ev.phase&&!hapticFired.has(key)){hapticFired.add(key);const scale=clamp(.55+tel.depth*.2+tel.intensity*.15);for(const src of session.inputSources||[])pulseSource(src,clamp(ev.strength*scale),ev.duration)}}
+  }
+  if(motion.cycle!==lastMotionCycle){if(lastMotionCycle>=0&&session)window.dispatchEvent(new CustomEvent('nocturne:vr-cycle',{detail:{...window.__NOCTURNE_VR_SYNC__}}));lastMotionCycle=motion.cycle}
+  if(t-lastMotionEvent>80){lastMotionEvent=t;window.dispatchEvent(new CustomEvent('nocturne:vr-motion',{detail:{...window.__NOCTURNE_VR_SYNC__}}))}
   if(session&&t-lastControllerEvent>240){lastControllerEvent=t;const controllers=[...session.inputSources].filter(s=>s.gamepad).map(s=>({hand:s.handedness,trigger:s.gamepad.buttons?.[0]?.value||0,grip:s.gamepad.buttons?.[1]?.value||0,axes:[...(s.gamepad.axes||[])].slice(0,4)}));window.dispatchEvent(new CustomEvent('nocturne:vr-controller-state',{detail:{controllers}}))}
 }
 async function run(){
@@ -131,14 +136,14 @@ function initGL(){
   fs=shader(gl.FRAGMENT_SHADER,'precision mediump float;uniform sampler2D t;varying vec2 v;void main(){gl_FragColor=texture2D(t,v);}');
   uiProgram=gl.createProgram();gl.attachShader(uiProgram,vs);gl.attachShader(uiProgram,fs);gl.linkProgram(uiProgram);if(!gl.getProgramParameter(uiProgram,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(uiProgram)||'ui program');
   uiBuf=gl.createBuffer();uiTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,uiTex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);annaTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  menuCanvas=document.createElement('canvas');menuCanvas.width=1200;menuCanvas.height=960;menuCtx=menuCanvas.getContext('2d');if(!annaCanvas){annaCanvas=document.createElement('canvas');annaCanvas.width=256;annaCanvas.height=455;annaCtx=annaCanvas.getContext('2d',{alpha:false})}
+  menuCanvas=document.createElement('canvas');menuCanvas.width=1200;menuCanvas.height=1080;menuCtx=menuCanvas.getContext('2d');if(!annaCanvas){annaCanvas=document.createElement('canvas');annaCanvas.width=256;annaCanvas.height=455;annaCtx=annaCanvas.getContext('2d',{alpha:false})}
 }
 function mul4(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++){let v=0;for(let k=0;k<4;k++)v+=a[k*4+r]*b[c*4+k];o[c*4+r]=v}return o}
 function rounded(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 function floorY(){return refMode==='local-floor'?0:-1.55}
 function basePanelY(){return refMode==='local-floor'?1.48:.02}
 function panelY(){return basePanelY()+panelOffset.y}
-const PANEL_Z=-2.38,PANEL_W=2.08,PANEL_H=1.62;
+const PANEL_Z=-2.38,PANEL_W=2.08,PANEL_H=1.82;
 function panelZ(){return PANEL_Z+panelOffset.z}
 function basePanelX(){return -1.28}
 function panelX(){return basePanelX()+panelOffset.x}
