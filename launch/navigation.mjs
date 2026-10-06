@@ -1,5 +1,5 @@
 /** Shared, server-rendered navigation, independent of individual screen runtimes. */
-export const NAVIGATION_VERSION = '0.75.2';
+export const NAVIGATION_VERSION = '0.81.0';
 const homePaths = new Set(['/', '/experience']);
 const tools = [
   ['/video-states/', 'Video states'], ['/world/', 'Spatial world'], ['/player/', 'Media player'],
@@ -22,7 +22,7 @@ export function withNavigation(body, url = '/') {
   if (html.includes('id="nocturne-navigation"') || !/<\/body>/i.test(html)) return html;
   const path = new URL(url, 'http://nocturne.local').pathname.replace(/\/+$/, '') || '/';
   const active = homePaths.has(path) ? 'home' : path === '/live' ? 'live' : path === '/devices' ? 'devices' : path === '/vr' ? 'vr' : 'more';
-  const build='0752';const fresh=href=>href+(href.includes('?')?'&':'?')+'v='+build;const tab = (id, href, label) => `<a href="${fresh(href)}" data-screen="${id}"${active === id ? ' aria-current="page"' : ''}>${icon(id)}<span>${label}</span></a>`;
+  const build='0810';const fresh=href=>href+(href.includes('?')?'&':'?')+'v='+build;const tab = (id, href, label) => `<a href="${fresh(href)}" data-screen="${id}"${active === id ? ' aria-current="page"' : ''}>${icon(id)}<span>${label}</span></a>`;
   const menu = tools.map(([href, label]) => `<a href="${href}"${path + '/' === href ? ' aria-current="page"' : ''}>${label}<span aria-hidden="true">&#8599;</span></a>`).join('');
   const nav = `<div id="nocturne-nav-spacer" aria-hidden="true"></div>
 <nav id="nocturne-navigation" aria-label="Nocturne screens" style="grid-template-columns:repeat(5,minmax(0,1fr))">
@@ -33,6 +33,6 @@ ${tab('home', '/', 'Home')}${tab('live', '/live/', 'Live')}${tab('devices', '/de
 <button id="nocturne-edit-setup" type="button">Session setup<span aria-hidden="true">&#9881;</span></button>
 <details class="nocturne-tools"><summary>Creative &amp; developer tools</summary>${menu}</details>
 <p>State is saved on this device. Switching screens does not unlock Live.</p><small>Navigation ${NAVIGATION_VERSION}</small></div></details></nav>`;
-  html = html.replace(/<\/head>/i, `<link rel="stylesheet" href="/navigation.css?v=0752"><script defer src="/session-core.js?v=0750"></script><script type="module" src="/navigation.js?v=0752"></script></head>`);
+  html = html.replace(/<\/head>/i, `<link rel="stylesheet" href="/navigation.css?v=0810"><script defer src="/session-core.js?v=0810"></script><script type="module" src="/navigation.js?v=0810"></script></head>`);
   return html.replace(/<\/body>/i, nav + '</body>');
 }
