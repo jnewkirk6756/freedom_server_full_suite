@@ -3,7 +3,7 @@
 var $=function(id){return document.getElementById(id)}, clamp=function(v){v=Number(v)||0;return Math.max(0,Math.min(1,v))};
 var SESSION_KEY='nocturne.mobile.session.v0710', TOKEN_KEY='nocturne.staging.token';
 var AVAILABLE_VIDEO_STATES=['A00','A01','A02','A05','A10','A16','A16B','A17','A17B','A18','A18B','A18C','A18D','A18E','A18F','A19B','A19C'];
-var state={running:false,initialized:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,angle:0,pattern:'steady',tool:'white',phase:0,cycle:0,chart:1,strokes:0,target:40,peaks:0,auto:false,videoState:'A03',embodied:'attentive',position:'back',startedAt:0,lastTs:0,climaxEnabled:true,customPattern:[]};
+var state={running:false,initialized:false,pace:0,depth:0,force:0,intensity:0,entrySpeedS:3,cycleTimeS:3,angle:0,pattern:'steady',tool:'white',phase:0,cycle:0,chart:1,strokes:0,target:40,peaks:0,auto:false,videoState:'A03',faceState:localStorage.getItem('nocturne.face-state.v1')||'ANNA_02_ATTENTIVE',embodied:'attentive',position:'back',startedAt:0,lastTs:0,climaxEnabled:true,customPattern:[]};
 var token=sessionStorage.getItem(TOKEN_KEY)||'', mediaToken=sessionStorage.getItem('nocturne.media.session.v067')||'', videoUrl='', avatarObjectUrl='', mediaManifestCache=null, mediaManifestAt=0, videoCorePromise=null, assetPackPromise=null, autoTimer=0, directorBusy=false, lastAuto=0, explicitLocks={}, lastSpokenAt=0, videoLoadSeq=0, lastFaceCycle=-1, patternRecording=false, patternDrawing=false;
 var visuals={videoEnabled:localStorage.getItem('nocturne.vr.video-enabled.v1')!=='off',facePhotoMode:localStorage.getItem('nocturne.face-photo.v1')!=='off',avatar3D:localStorage.getItem('nocturne.vr.avatar-3d.v1')==='on',voiceGuidance:localStorage.getItem('nocturne.vr.voice-guidance.v1')!=='off',toolSolid:localStorage.getItem('nocturne.vr.tool-solid.v1')!=='off',waveScale:Math.max(.5,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-scale.v1'))||1)),waveMotion:Math.max(.35,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-motion.v1'))||1))};
 var EMBODIED_KEY='nocturne.embodied.state.v071';
@@ -57,7 +57,7 @@ async function renderFaceState(target,reason){
   try{
     var rendered=await core.drawState(canvas,requested,{cover:true});
     if(rendered){
-      state.videoState=rendered.id;state.faceState=rendered.id;
+      state.faceState=rendered.id;try{localStorage.setItem('nocturne.face-state.v1',rendered.id)}catch(e){};
       canvas.classList.remove('face-swap');void canvas.offsetWidth;canvas.classList.add('face-swap');
       if(poster)poster.style.opacity='0';
       if(os)os.textContent=rendered.name.toUpperCase();
@@ -80,8 +80,8 @@ async function clearFacePack(){
 function speakGuide(t,force){var s=String(t||'').trim(),now=Date.now();if(!visuals.voiceGuidance||!s)return false;if(!force&&now-lastSpokenAt<5500)return false;lastSpokenAt=now;if(window.NocturneVoice&&window.NocturneVoice.speak){window.NocturneVoice.speak(s,{force:!!force,minGap:force?0:5500}).catch(function(){});return true}if(!('speechSynthesis'in window))return false;try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s.slice(0,420)),voices=speechSynthesis.getVoices?speechSynthesis.getVoices():[],v=voices.find(function(x){return /^en/i.test(x.lang||'')&&/Ava|Samantha|Victoria|Tessa|Karen|Moira|Zira|Serena/i.test(x.name||'')})||voices.find(function(x){return /^en/i.test(x.lang||'')});if(v)u.voice=v;u.rate=.92;u.pitch=.97;u.volume=.94;speechSynthesis.speak(u);return true}catch(e){return false}}
 function status(t,on){var e=$('presence');if(!e)return;var b=e.querySelector('b');if(b)b.textContent=t;e.classList.toggle('live',!!on)}
 function save(){
-  state.updatedAt=Date.now();try{sessionStorage.setItem(SESSION_KEY,JSON.stringify(state));localStorage.setItem('nocturne.telemetry.v1',JSON.stringify({pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,pattern:state.pattern,cadence:Math.round(state.pace*100),videoState:state.videoState,updatedAt:state.updatedAt}))}catch(e){}
-  try{if(window.NocturneSession)window.NocturneSession.commit({initialized:state.initialized,running:state.running,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,videoState:state.videoState,embodied:state.embodied,startedAt:state.startedAt,updatedAt:state.updatedAt},'mobile-live')}catch(e){}
+  state.updatedAt=Date.now();try{sessionStorage.setItem(SESSION_KEY,JSON.stringify(state));localStorage.setItem('nocturne.face-state.v1',state.faceState||'ANNA_02_ATTENTIVE');localStorage.setItem('nocturne.telemetry.v1',JSON.stringify({pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,pattern:state.pattern,cadence:Math.round(state.pace*100),videoState:state.videoState,faceState:state.faceState,updatedAt:state.updatedAt}))}catch(e){}
+  try{if(window.NocturneSession)window.NocturneSession.commit({initialized:state.initialized,running:state.running,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,videoState:state.videoState,faceState:state.faceState,embodied:state.embodied,startedAt:state.startedAt,updatedAt:state.updatedAt},'mobile-live')}catch(e){}
 }
 function restore(){
   try{var shared=window.NocturneSession&&window.NocturneSession.snapshot();if(shared&&shared.initialized){Object.assign(state,shared);state.running=false;state.lastTs=0}else{var s=JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null');if(s&&s.initialized){Object.assign(state,s);state.running=false;state.lastTs=0}}}catch(e){}try{var es=localStorage.getItem(EMBODIED_KEY);if(es&&EMBODIED[es])state.embodied=es}catch(e){}
@@ -230,7 +230,7 @@ function applyDirector(q){
   if(Number.isFinite(q.paceTarget)||Number(q.paceDelta||0))state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3));
   if(q.pattern&&q.pattern!=='keep')setPattern(q.pattern);
   var de=directorEmbodied(q);
-  if(q.videoState&&q.videoState!=='keep'){var ev=embodiedFromVideo(q.videoState);setEmbodied(ev,'video-state-director');loadVideo(q.videoState,'director').catch(function(){})}
+  if(q.videoState&&q.videoState!=='keep'){state.videoState=String(q.videoState);var ev=embodiedFromVideo(q.videoState);setEmbodied(ev,'video-state-director');loadVideo(q.videoState,'director').catch(function(){})}
   else if(de)applyFaceState(de,'director-emotion');
   else if(state.running)adaptiveFace('director-fallback');
   if(q.position&&q.position!=='keep'&&['back','doggy','side','standing','squat'].indexOf(q.position)>=0)state.position=q.position;
@@ -253,7 +253,7 @@ async function send(){
 function routeVr(){
   if(!state.initialized){showSetup();return}
   persistVisuals();
-  try{var payload={initialized:true,running:state.running,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,position:state.position||'back',videoState:state.videoState,embodied:state.embodied,visuals:{videoEnabled:visuals.videoEnabled,voiceGuidance:visuals.voiceGuidance,toolSolid:visuals.toolSolid,waveScale:visuals.waveScale,waveMotion:visuals.waveMotion},startedAt:state.startedAt||Date.now()};if(window.NocturneSession)window.NocturneSession.commit(payload,'mobile-to-vr');sessionStorage.setItem('nocturne.vr.session.v070',JSON.stringify(payload));localStorage.setItem('nocturne.vr.video-state.v1',state.videoState);localStorage.setItem(EMBODIED_KEY,state.embodied)}catch(e){}
+  try{var payload={initialized:true,running:state.running,pace:state.pace,depth:state.depth,force:state.force,intensity:state.intensity,entrySpeedS:state.entrySpeedS,cycleTimeS:state.cycleTimeS,cadence:Math.round(state.pace*100),pattern:state.pattern,position:state.position||'back',videoState:state.videoState,faceState:state.faceState,embodied:state.embodied,visuals:{videoEnabled:visuals.videoEnabled,voiceGuidance:visuals.voiceGuidance,toolSolid:visuals.toolSolid,waveScale:visuals.waveScale,waveMotion:visuals.waveMotion},startedAt:state.startedAt||Date.now()};if(window.NocturneSession)window.NocturneSession.commit(payload,'mobile-to-vr');sessionStorage.setItem('nocturne.vr.session.v070',JSON.stringify(payload));localStorage.setItem('nocturne.vr.video-state.v1',state.videoState);localStorage.setItem('nocturne.face-state.v1',state.faceState||'ANNA_02_ATTENTIVE');localStorage.setItem(EMBODIED_KEY,state.embodied)}catch(e){}
   location.href='/vr/?mode=live';
 }
 function strokeEnvelope(q,pattern){q=((Number(q)||0)%1+1)%1;if(pattern==='custom'&&state.customPattern&&state.customPattern.length>=4){var a=state.customPattern,t=q*(a.length-1),i=Math.min(a.length-2,Math.floor(t)),f=t-i;return clamp(a[i]+(a[i+1]-a[i])*f)}var v=(1-Math.cos(q*Math.PI*2))/2;if(pattern==='pulse')v=Math.pow(v,.45);else if(pattern==='build')v=v*(.35+.65*q);else if(pattern==='variable')v=clamp(v*(.75+.25*Math.sin(q*Math.PI*6)));return clamp(v)}
