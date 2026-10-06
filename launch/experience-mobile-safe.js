@@ -161,38 +161,58 @@ async function tryVideoSource(v,src,timeoutMs){
   });
 }
 async function loadVideo(id,reason){
-  id=String(id||'A01').toUpperCase();if(!/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(id))id='A01';id=resolveVideoState(id);
-  var v=$('performance');if(!v)return false;v.hidden=false;v.style.display='block';v.style.visibility='visible';v.style.opacity='0';var poster=$('anna-poster');if(poster){poster.hidden=false;poster.style.display='block'};
-  if(state.videoState===id&&v.getAttribute('src')&&v.readyState>=2){applyVisuals();return true}
-  var os=$('orb-state'),empty=$('empty'),cue=$('orb-cue'),rows=await mediaManifestRows(),candidates=hqCandidates(id,rows);
-  if(os)os.textContent=id+' · LOADING';if(cue)cue.textContent='Loading Anna video…';
+  var seq=++videoLoadSeq;id=String(id||'A01').toUpperCase();if(!/^A(?:0[0-9]|1[0-9]|20)(?:[A-Z])?$/.test(id))id='A01';id=resolveVideoState(id);
+  var v=$('performance');if(!v)return false;v.hidden=false;v.style.display='block';v.style.visibility='visible';var poster=$('anna-poster');if(poster){poster.hidden=false;poster.style.display='block'}
+  if(state.videoState===id&&v.getAttribute('src')&&v.readyState>=2){v.style.opacity='1';applyVisuals();return true}
+  v.style.opacity='0';var os=$('orb-state'),empty=$('empty'),cue=$('orb-cue'),rows=await mediaManifestRows(),candidates=hqCandidates(id,rows);
+  if(os)os.textContent=id+' · EXPRESSION SYNC';if(cue)cue.textContent='Changing Anna expression…';
   for(var ci=0;ci<candidates.length;ci++){
-    var requested=candidates[ci],direct='/media/'+encodeURIComponent(requested)+'.mp4?v=0765';
-    var ok=await tryVideoSource(v,direct,6500),url='';
-    if(!ok){
-      var blob=await fetchAvatarBlob(requested);
-      if(blob){url=URL.createObjectURL(blob);ok=await tryVideoSource(v,url,8000)}
-    }
+    if(seq!==videoLoadSeq)return false;var requested=candidates[ci],direct='/media/'+encodeURIComponent(requested)+'.mp4?v=0820',ok=await tryVideoSource(v,direct,5000),url='';
+    if(seq!==videoLoadSeq){if(url)try{URL.revokeObjectURL(url)}catch(e){}return false}
+    if(!ok){var blob=await fetchAvatarBlob(requested);if(blob){url=URL.createObjectURL(blob);ok=await tryVideoSource(v,url,6500)}}
+    if(seq!==videoLoadSeq){if(url)try{URL.revokeObjectURL(url)}catch(e){}return false}
     if(!ok){if(url)try{URL.revokeObjectURL(url)}catch(e){};continue}
     if(avatarObjectUrl&&avatarObjectUrl!==url)try{URL.revokeObjectURL(avatarObjectUrl)}catch(e){}
     avatarObjectUrl=url||'';state.videoState=id;state.videoPlaybackState=requested;v.muted=true;v.playsInline=true;v.loop=!isOneShotVideo(id);
-    v.onended=function(){var current=state.videoState;if(/^A18/.test(current))loadVideo('A19C','recovery');else if(/^A19/.test(current)||current==='A20')loadVideo('A01','idle')};
-    sizeAvatarFromVideo(v,requested);v.style.opacity='1';if(os)os.textContent=requested+' · '+(v.videoWidth||0)+'×'+(v.videoHeight||0);if(empty)empty.hidden=true;save();applyVisuals();try{var pp=v.play();if(pp&&pp.catch)pp.catch(function(){})}catch(e){}return true;
+    v.onended=function(){var current=state.videoState;if(/^A18/.test(current))applyFaceState('recovering','video-recovery','A19C');else if(/^A19/.test(current)||current==='A20')applyFaceState('calm','video-idle','A01')};
+    sizeAvatarFromVideo(v,requested);v.style.opacity='1';if(os)os.textContent=requested+' · '+(v.videoWidth||0)+'×'+(v.videoHeight||0);if(cue)cue.textContent='Expression · '+String(state.embodied||'attentive').toUpperCase();if(empty)empty.hidden=true;save();applyVisuals();try{var pp=v.play();if(pp&&pp.catch)pp.catch(function(){})}catch(e){}return true;
   }
-  visuals.videoEnabled=true;visuals.avatar3D=false;v.style.opacity='0';applyVisuals();if(os)os.textContent='VIDEO FALLBACK';if(cue)cue.textContent='Video stream unavailable · showing Anna poster.';if(empty)empty.hidden=true;return false;
+  visuals.videoEnabled=true;visuals.avatar3D=false;v.style.opacity='0';applyVisuals();if(os)os.textContent='VIDEO FALLBACK';if(cue)cue.textContent='Expression video unavailable · showing Anna poster.';if(empty)empty.hidden=true;return false;
 }
+function directorEmbodied(q){
+  if(!q)return null;var e=String(q.emotion||'').toLowerCase(),p=String(q.performance||'').toLowerCase();
+  if(e==='excited')return'intense';if(e==='playful')return'playful';if(e==='focused')return'focused';if(e==='reflective')return'recovering';if(e==='calm')return'calm';if(e==='warm')return'playful';if(e==='attentive')return'attentive';
+  if(p.indexOf('pleased')>=0)return'playful';if(p.indexOf('reflective')>=0)return'recovering';if(p.indexOf('calm')>=0)return'calm';return null;
+}
+function applyFaceState(next,reason,preferredVideo){
+  if(!EMBODIED[next])next='attentive';setEmbodied(next,reason||'face');var id=preferredVideo||videoFromEmbodied(next);loadVideo(id,reason||'face').catch(function(){});return id;
+}
+function triggerPeak(source,userOwned){
+  if(!state.initialized){showSetup();line('Initialize the session first.');return}
+  state.peaks=Math.max(0,Number(state.peaks)||0)+(userOwned?1:0);state.intensity=Math.max(state.intensity,.88);state.force=Math.max(state.force,.68);state.running=true;if(!state.startedAt)state.startedAt=Date.now();lockTelemetry('intensity',14000);lockTelemetry('force',14000);
+  applyFaceState('intense',source||'peak',userOwned?'A18E':'A18D');sync();save();line((userOwned?'Your peak':'Peak state')+' recorded · chart '+String(state.chart).padStart(2,'0')+'.');
+  if(userOwned){director('The user just marked a peak. Acknowledge it briefly, preserve continuity, and guide recovery or the next coherent chart step.',true).then(function(q){if(q&&q.speech){line(q.speech);speakGuide(q.speech,true)}}).catch(function(){});setTimeout(function(){applyFaceState('recovering','peak-recovery','A19C')},4200)}
+}
+function openLiveReport(){
+  var d=$('feelings');if(!d)return;var setN=function(id,v){var e=$(id);if(e)e.textContent=Math.max(0,Math.min(100,Math.round(v)))};
+  setN('f-enjoy',45+state.intensity*48);setN('f-comfort',92-state.force*22-state.intensity*8);setN('f-arousal',state.intensity*100);setN('f-strain',state.force*55+state.pace*24);setN('f-pain',state.force*6);setN('f-over',Math.max(0,(state.intensity-.65)*170));
+  var title=$('feeling-title');if(title)title.textContent=String(state.embodied||'attentive').toUpperCase();d.hidden=false;line('Live report opened.');
+}
+function teaseLive(){
+  if(!state.initialized){showSetup();return}state.pattern='variable';state.intensity=clamp(Math.max(.46,state.intensity));state.pace=clamp(Math.max(.42,state.pace));applyFaceState('playful','tease','A16B');sync();save();line('Tease pattern · playful state.');director('Shift into a playful teasing pattern without exceeding the current depth target. Give one brief cue.',true).then(function(q){if(q&&q.speech)speakGuide(q.speech,true)}).catch(function(){});
+}
+
 function applyDirector(q){
   if(!q)return;
-  ['pace','depth','force','intensity'].forEach(function(k){
-    var target=q[k+'Target'],delta=Number(q[k+'Delta']||0);
-    if(Number.isFinite(target))state[k]=clamp(target);else if(delta)state[k]=clamp(state[k]+delta);
-  });
+  ['pace','depth','force','intensity'].forEach(function(k){var target=q[k+'Target'],delta=Number(q[k+'Delta']||0);if(Number.isFinite(target))state[k]=clamp(target);else if(delta)state[k]=clamp(state[k]+delta)});
   if(Number.isFinite(q.paceTarget)||Number(q.paceDelta||0))state.cycleTimeS=Math.max(.7,Math.min(10,5-state.pace*4.3));
   if(q.pattern&&q.pattern!=='keep')setPattern(q.pattern);
-  if(q.videoState&&q.videoState!=='keep'){setEmbodied(embodiedFromVideo(q.videoState),'director');loadVideo(q.videoState,'director').catch(function(){})}else if(state.running)adaptiveFace('director-fallback');
+  var de=directorEmbodied(q);
+  if(q.videoState&&q.videoState!=='keep'){var ev=embodiedFromVideo(q.videoState);setEmbodied(ev,'video-state-director');loadVideo(q.videoState,'director').catch(function(){})}
+  else if(de)applyFaceState(de,'director-emotion');
+  else if(state.running)adaptiveFace('director-fallback');
   if(q.position&&q.position!=='keep'&&['back','doggy','side','standing','squat'].indexOf(q.position)>=0)state.position=q.position;
-  if(q.hold)state.running=false;
-  save();sync();
+  if(q.hold)state.running=false;save();sync();
 }
 async function director(text,auto){
   if(directorBusy)return null;directorBusy=true;
