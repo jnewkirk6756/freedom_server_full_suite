@@ -256,11 +256,11 @@ function telemetrySummary(){const t=loadTelemetry();return t.initialized?('PACE 
 function vrChartState(){try{return JSON.parse(localStorage.getItem('nocturne.vr.chart.v1')||'{}')}catch{return{}}}
 function latestChat(){return String($('vr-line')?.textContent||'Anna ready.').replace(/\s+/g,' ').slice(0,105)}
 function drawMenu(t){
-  if(!menuCtx)return;const c=menuCtx,w=menuCanvas.width,h=menuCanvas.height,tel=loadTelemetry(),auto=localStorage.getItem('nocturne.vr.autopilot.v1')==='on',chart=vrChartState(),motion=motionState(),device=activeDevice(),seated=motion.envelope>=.94;
+  if(!menuCtx)return;const c=menuCtx,w=menuCanvas.width,h=menuCanvas.height,tel=loadTelemetry(),auto=localStorage.getItem('nocturne.vr.autopilot.v1')==='on',chart=vrChartState(),motion=motionState(),device=activeDevice(),seated=Boolean(motion.seated),patLabel=patternCore?.describe?.(fallbackPattern)||fallbackPattern.toUpperCase(),hapLabel=patternCore?.hapticLabels?.[fallbackHapticMode]||String(fallbackHapticMode).toUpperCase();
   c.clearRect(0,0,w,h);const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'rgba(20,10,33,.99)');g.addColorStop(.58,'rgba(8,6,16,.98)');g.addColorStop(1,'rgba(3,3,8,.99)');c.fillStyle=g;rounded(c,18,18,w-36,h-36,42);c.fill();c.strokeStyle='rgba(183,125,240,.82)';c.lineWidth=4;rounded(c,18,18,w-36,h-36,42);c.stroke();
-  c.fillStyle='#a98bc2';c.font='700 22px system-ui';c.fillText('NOCTURNE / IMMERSIVE CONTROL DECK · 0.80',48,54);
+  c.fillStyle='#a98bc2';c.font='700 22px system-ui';c.fillText('NOCTURNE / IMMERSIVE CONTROL DECK · 0.81',48,54);
   c.fillStyle='#fff';c.font='800 40px system-ui';c.fillText(tel.initialized?'SESSION LIVE':'SESSION READY',48,101);
-  c.fillStyle=seated?'#8ff0bd':'#c5b2d2';c.font='800 19px system-ui';c.fillText((seated?'CREST / SEATED':'LIVE MOTION')+' · CHART '+String(chart.index||1).padStart(2,'0')+' · STROKES '+Number(chart.strokes||0)+'/'+Number(chart.target||40)+' · PEAKS '+Number(chart.peaks||0),48,136);
+  c.fillStyle=seated?'#8ff0bd':'#c5b2d2';c.font='800 19px system-ui';c.fillText((seated?'CREST / SEATED':'LIVE MOTION')+' · '+patLabel+' · CHART '+String(chart.index||1).padStart(2,'0')+' · STROKES '+Number(chart.strokes||0)+'/'+Number(chart.target||40)+' · PEAKS '+Number(chart.peaks||0),48,136);
   c.fillStyle='#a999b5';c.font='17px system-ui';c.fillText('ANNA '+embodiedState.toUpperCase()+' · '+aiStatus+' · VIDEO '+annaVideoState+' · '+(device?device.name:'DEFAULT PREVIEW'),48,165);
   const metrics=[['PACE',Math.round(tel.pace*100)+'%'],['DEPTH',Math.round(tel.depth*100)+'%'],['FORCE',Math.round(tel.force*100)+'%'],['ENERGY',Math.round(tel.intensity*100)+'%'],['CYCLE',tel.initialized?tel.cycleTimeS.toFixed(1)+'s':'—']];
   metrics.forEach((m,i)=>{const x=48+i*222;c.fillStyle='rgba(24,15,34,.95)';rounded(c,x,184,204,64,15);c.fill();c.strokeStyle='rgba(80,55,96,.75)';c.lineWidth=2;rounded(c,x,184,204,64,15);c.stroke();c.fillStyle='#8f7e9d';c.font='700 13px system-ui';c.fillText(m[0],x+14,205);c.fillStyle='#f1e8f8';c.font='800 23px ui-monospace';c.fillText(m[1],x+14,234)});
@@ -269,18 +269,20 @@ function drawMenu(t){
     ['PACE','+'],['PACE','−'],['DEPTH','+'],['DEPTH','−'],['HOLD','NOW'],
     ['FORCE','+'],['FORCE','−'],['ENERGY','+'],['ENERGY','−'],['POSITION',currentPosition.toUpperCase()],
     ['TOOL',device?device.name.slice(0,14):'NEXT'],['VIDEO',visualCfg.videoEnabled?'ON':'OFF'],['VID AUDIO',visualCfg.videoSound?'ON':'OFF'],['AI VOICE',visualCfg.voiceGuidance?'ON':'OFF'],['MIC','CHAT'],
-    ['EDIT',editLabel],['TOOL VIEW',visualCfg.toolSolid?'SOLID':'WIRE'],['COMMAND',visualCfg.commandMode?'ON':'OFF'],['RESET','SCENE'],['HOME','EXIT VR']
+    ['EDIT',editLabel],['TOOL VIEW',visualCfg.toolSolid?'SOLID':'WIRE'],['COMMAND',visualCfg.commandMode?'ON':'OFF'],['PATTERN',patLabel.slice(0,13)],['VIBRATION',hapLabel.slice(0,13)],
+    ['DYNAMIC',fallbackDynamic?'ON':'OFF'],['WAVE SIZE',Math.round(visualCfg.waveScale*100)+'%'],['WAVE SPAN',Math.round(visualCfg.waveMotion*100)+'%'],['RESET','SCENE'],['HOME','EXIT VR']
   ];
   const top=270,tw=207,th=78,gap=14,rowGap=12;
-  items.forEach((it,i)=>{const col=i%5,row=Math.floor(i/5),x=48+col*(tw+gap),y=top+row*(th+rowGap),hot=hovered===i,active=(i===0&&auto)||(i===16&&visualCfg.videoEnabled)||(i===17&&visualCfg.videoSound)||(i===18&&visualCfg.voiceGuidance)||(i===21&&visualCfg.toolSolid)||(i===22&&visualCfg.commandMode)||(i===20);c.fillStyle=hot?'rgba(112,66,148,.98)':active?'rgba(62,42,78,.98)':'rgba(30,20,40,.96)';rounded(c,x,y,tw,th,16);c.fill();c.strokeStyle=hot?'rgba(230,193,255,1)':active?'rgba(162,112,205,.95)':'rgba(78,56,92,.8)';c.lineWidth=hot?4:2;rounded(c,x,y,tw,th,16);c.stroke();c.fillStyle='#fff';c.font='800 18px system-ui';c.fillText(it[0],x+14,y+30);c.fillStyle='#ac98ba';c.font='16px system-ui';c.fillText(it[1],x+14,y+57)});
-  c.fillStyle='#e6d8ef';c.font='18px system-ui';c.fillText('ANNA: '+latestChat(),48,744);
-  c.fillStyle='#b8a7c4';c.font='16px system-ui';c.fillText(actionLine.slice(0,125),48,780);
-  c.fillStyle='#796b84';c.font='15px system-ui';c.fillText('Grip + aim = move '+editLabel+' · stick X = rotate · stick Y = scale · trigger = select',48,814);
-  if(device){c.fillText('Tool dimensions '+Math.round(device.lengthMm)+'×'+Math.round(device.widthMm)+' mm · usable travel '+Math.round(device.travelMm)+' mm · '+(device.shape||'shape')+' · '+(device.texture||'texture'),48,842)}
-  c.fillText(controllerSummary(),48,872);
+  items.forEach((it,i)=>{const col=i%5,row=Math.floor(i/5),x=48+col*(tw+gap),y=top+row*(th+rowGap),hot=hovered===i,active=(i===0&&auto)||(i===16&&visualCfg.videoEnabled)||(i===17&&visualCfg.videoSound)||(i===18&&visualCfg.voiceGuidance)||(i===21&&visualCfg.toolSolid)||(i===22&&visualCfg.commandMode)||(i===25&&fallbackDynamic)||(i===20);c.fillStyle=hot?'rgba(112,66,148,.98)':active?'rgba(62,42,78,.98)':'rgba(30,20,40,.96)';rounded(c,x,y,tw,th,16);c.fill();c.strokeStyle=hot?'rgba(230,193,255,1)':active?'rgba(162,112,205,.95)':'rgba(78,56,92,.8)';c.lineWidth=hot?4:2;rounded(c,x,y,tw,th,16);c.stroke();c.fillStyle='#fff';c.font='800 18px system-ui';c.fillText(it[0],x+14,y+30);c.fillStyle='#ac98ba';c.font='16px system-ui';c.fillText(it[1],x+14,y+57)});
+  c.fillStyle='#e6d8ef';c.font='18px system-ui';c.fillText('ANNA: '+latestChat(),48,840);
+  c.fillStyle='#b8a7c4';c.font='16px system-ui';c.fillText(actionLine.slice(0,125),48,878);
+  c.fillStyle='#796b84';c.font='15px system-ui';c.fillText('Grip + aim = move '+editLabel+' · stick X = rotate · stick Y = scale · trigger = select',48,912);
+  c.fillText('Pattern '+patLabel+' · vibration '+hapLabel+' · dynamic '+(fallbackDynamic?'ON':'OFF')+' · seated '+(seated?'YES':'NO'),48,942);
+  if(device){c.fillText('Tool '+Math.round(device.lengthMm)+'×'+Math.round(device.widthMm)+' mm · usable travel '+Math.round(device.travelMm)+' mm · '+(device.shape||'shape')+' · '+(device.texture||'texture'),48,972)}
+  c.fillText(controllerSummary(),48,1002);
   gl.bindTexture(gl.TEXTURE_2D,uiTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,menuCanvas);lastMenu=t;
 }
-function menuTileIndex(lx,ly){const px=lx*1200,py=ly*960,top=270,tw=207,th=78,gap=14,rowGap=12;for(let row=0;row<5;row++)for(let col=0;col<5;col++){const x=48+col*(tw+gap),y=top+row*(th+rowGap);if(px>=x&&px<=x+tw&&py>=y&&py<=y+th)return row*5+col}return-1}
+function menuTileIndex(lx,ly){const px=lx*1200,py=ly*1080,top=270,tw=207,th=78,gap=14,rowGap=12;for(let row=0;row<6;row++)for(let col=0;col<5;col++){const x=48+col*(tw+gap),y=top+row*(th+rowGap);if(px>=x&&px<=x+tw&&py>=y&&py<=y+th)return row*5+col}return-1}
 
 function renderMenu(mvp,t){
   if(t-lastMenu>120)drawMenu(t);const w=PANEL_W/2,h=PANEL_H/2,a=panelWorldPoint(-w,-h),b=panelWorldPoint(w,-h),cc=panelWorldPoint(-w,h),d=panelWorldPoint(w,h);
@@ -345,8 +347,13 @@ function selectTile(i,src){
   else if(i===20){const order=['anna','tool','wave','mannequin','panel'];editTarget=order[(order.indexOf(editTarget)+1)%order.length];actionLine='Editing '+(editTarget==='anna'?'ANNA':editTarget.toUpperCase())+' · grip + aim move · stick rotate/scale';lastMenu=0}
   else if(i===21)dispatchVrAction('tool-solid');
   else if(i===22)dispatchVrAction('command-toggle');
-  else if(i===23)resetSpatialView();
-  else if(i===24)navigateOut('/');
+  else if(i===23)dispatchVrAction('pattern-next');
+  else if(i===24)dispatchVrAction('haptic-next');
+  else if(i===25)dispatchVrAction('dynamic-toggle');
+  else if(i===26)dispatchVrAction('wave-size-next');
+  else if(i===27)dispatchVrAction('wave-span-next');
+  else if(i===28)resetSpatialView();
+  else if(i===29)navigateOut('/');
   pulseSource(src,i===4?.95:.45,i===4?160:75);lastMenu=0;
 }
 function controllerInteraction(frame){
