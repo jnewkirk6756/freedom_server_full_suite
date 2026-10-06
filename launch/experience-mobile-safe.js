@@ -161,16 +161,10 @@ function resolveVideoState(requested){
   return options[0]||'A01';
 }
 function bestVideoState(){
-  if(!state.running)return state.intensity>.28?'A02':'A01';
-  var drive=Math.max(state.intensity,state.depth*.78,state.pace*.62,state.force*.55),flip=(state.cycle%2)===1;
-  if(drive<.28)return flip?'A02':'A01';
-  if(drive<.46)return flip?'A16B':'A16';
-  if(drive<.66)return flip?'A17B':'A17';
-  if(drive<.78)return ['A17','A18D'][state.cycle%2];
-  if(drive<.88)return state.pattern==='pulse'?(flip?'A18B':'A18'):(flip?'A18D':'A18');
-  return ['A18C','A18E','A18F'][state.cycle%3];
+  var core=facePack();if(!core)return state.embodied||'attentive';
+  return core.choose({embodied:state.embodied,intensity:state.intensity,depth:state.depth,pace:state.pace,force:state.force,pattern:state.pattern,cycle:state.cycle})
 }
-function adaptiveFace(reason){var next=bestVideoState(),embodied=embodiedFromVideo(next);if(embodied!==state.embodied)setEmbodied(embodied,reason||'adaptive');loadVideo(next,reason||'adaptive').catch(function(){});return next}
+function adaptiveFace(reason){var next=bestVideoState();renderFaceState(next,reason||'adaptive').catch(function(){});return next&&next.id?next.id:String(next||'')}
 function isOneShotVideo(id){return /^A18/.test(id)||/^A19/.test(id)||id==='A20'}
 function sizeAvatarFromVideo(v,id){
   var host=$('avatar');if(!host||!v)return;
