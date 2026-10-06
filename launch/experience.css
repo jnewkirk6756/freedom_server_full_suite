@@ -609,3 +609,41 @@ body[data-ai-state="recovering"] #performance{filter:drop-shadow(0 25px 50px #00
   #avatar-state-bars{left:12px;right:12px;bottom:10px}
   #anna-chat-dock{margin-top:2px!important}
 }
+
+/* Nocturne V0.84 — still-render face pack, video avatar removed */
+#anna-face{
+  position:relative;z-index:3;display:block;width:100%;height:100%;
+  border-radius:inherit;background:transparent;object-fit:cover;
+  filter:drop-shadow(0 24px 48px #000c);
+  transform:scale(1.012);transform-origin:50% 34%;
+}
+#anna-face.face-swap{animation:nocturneFaceSwap .28s ease-out}
+@keyframes nocturneFaceSwap{0%{opacity:.18;transform:scale(1.035)}100%{opacity:1;transform:scale(1.012)}}
+#anna-poster{transition:opacity .18s ease!important}
+#avatar.face-grid-mode{overflow:hidden!important;background:#050309!important}
+#avatar.face-grid-mode #anna-face{display:block!important}
+#avatar.face-grid-mode #anna-poster{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:50% 32%!important}
+#avatar-display-controls{
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto!important;
+  gap:7px!important;align-items:center!important;
+}
+#avatar-display-controls #face-grid-import,#avatar-display-controls #face-pack-clear{
+  min-height:42px!important;font-size:6.4px!important;letter-spacing:.04em!important
+}
+#face-grid-import{border-color:#8a5dac!important;background:#251532!important;color:#f1dcff!important}
+#face-pack-clear{border-color:#3d3046!important;background:#0c0911!important;color:#a99bb3!important}
+#face-pack-status{
+  display:flex;align-items:center;justify-content:center;min-height:42px;padding:0 10px;
+  border:1px solid #30243a;border-radius:11px;background:#08050d;color:#a99bb3;
+  font:700 6.4px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap
+}
+#face-pack-status[data-complete="true"]{border-color:#407a60;color:#aaf2c8;background:#0a1c14}
+@media(max-width:699px){
+  #avatar.face-grid-mode{
+    display:grid!important;width:calc(100% - 24px)!important;height:420px!important;min-height:420px!important;
+    margin:8px 12px 10px!important;pointer-events:auto!important
+  }
+  #avatar.face-grid-mode #anna-face{display:block!important;width:100%!important;height:100%!important}
+  #avatar-display-controls{grid-template-columns:1fr 1fr!important}
+  #face-pack-status{grid-column:1/-1!important;min-height:34px!important}
+}
