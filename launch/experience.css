@@ -564,3 +564,48 @@ body[data-ai-state="recovering"] #performance{filter:drop-shadow(0 25px 50px #00
   #control-rail button{display:flex!important;align-items:center!important;justify-content:center!important;min-width:0!important;height:40px!important;min-height:40px!important}
   #conversation{padding-bottom:calc(230px + env(safe-area-inset-bottom))!important}
 }
+
+/* Nocturne V0.83 — photo-first Zyris-inspired avatar card */
+#avatar-session-strip{
+  position:absolute;left:14px;right:14px;top:10px;z-index:8;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;pointer-events:none
+}
+#avatar-session-strip span{
+  display:grid;gap:2px;text-align:center;padding:7px 5px;border:1px solid #ffffff13;border-radius:12px;
+  background:#09060dcc;backdrop-filter:blur(10px);font:600 6px ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:#8f819a;letter-spacing:.07em
+}
+#avatar-session-strip b{font-size:13px;color:#f1e8f8}
+#avatar-state-bars{
+  position:absolute;z-index:8;left:16px;right:16px;bottom:12px;display:grid;gap:5px;pointer-events:none
+}
+#avatar-state-bars label{display:grid;grid-template-columns:58px 1fr 26px;gap:6px;align-items:center;font:650 6px ui-monospace,SFMono-Regular,Menlo,monospace;color:#95879f}
+#avatar-state-bars label>span{display:block;height:5px;border-radius:99px;background:#21172a;overflow:hidden}
+#avatar-state-bars label>span i{display:block;height:100%;width:0;border-radius:inherit;transition:width .22s ease}
+#avatar-heat{background:linear-gradient(90deg,#ff6d52,#ff7fae,#f6e4ff)}
+#avatar-comfort{background:linear-gradient(90deg,#715a95,#b989e5,#e7d8f6)}
+#avatar-energy{background:linear-gradient(90deg,#4bbbd7,#70d9ec,#c3f3ff)}
+#avatar-state-bars b{font-size:7px;color:#d9c9e5;text-align:right}
+#avatar.avatar-photo-mode{
+  width:min(92vw,560px)!important;height:min(48vh,560px)!important;min-height:330px;
+  border:1px solid #2e2037;border-radius:22px;overflow:hidden;background:#050309;
+  box-shadow:0 26px 70px #000b,0 0 45px #6e2a8f15
+}
+#avatar.avatar-photo-mode #performance,#avatar.avatar-photo-mode #anna-poster{
+  width:100%!important;height:100%!important;object-fit:cover!important;object-position:50% 32%!important;border-radius:0!important
+}
+#avatar.avatar-photo-mode #performance{filter:saturate(1.03) contrast(1.02) brightness(.98)!important;animation:nocturnePhotoBreath 5.8s ease-in-out infinite alternate}
+#avatar.avatar-photo-mode #feeling{top:58px!important;bottom:auto!important;left:16px!important;right:auto!important;background:#08100ccf;border-color:#284735!important}
+@keyframes nocturnePhotoBreath{from{transform:scale(1.012)}to{transform:scale(1.045) translateY(-.35%)}}
+@media(max-width:699px){
+  #avatar.avatar-photo-mode{
+    display:grid!important;width:calc(100% - 24px)!important;height:420px!important;min-height:420px!important;
+    margin:8px 12px 10px!important;align-self:start!important;overflow:hidden!important;pointer-events:auto!important
+  }
+  #avatar.avatar-photo-mode .aura,#avatar.avatar-photo-mode #performance,#avatar.avatar-photo-mode #anna-poster{display:block!important}
+  #avatar.avatar-photo-mode #empty{display:none!important}
+  #avatar.avatar-photo-mode #feeling{display:flex!important;pointer-events:auto!important}
+  #avatar-session-strip{top:8px;left:10px;right:10px}
+  #avatar-state-bars{left:12px;right:12px;bottom:10px}
+  #anna-chat-dock{margin-top:2px!important}
+}
