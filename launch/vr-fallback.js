@@ -274,17 +274,8 @@ function renderMenu(mvp,t){
   gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.drawArrays(gl.TRIANGLES,0,6);gl.disable(gl.BLEND);
 }
 function updateAnnaTexture(t){
-  if(!annaTex||!annaCanvas||!annaCtx)return false;if(t-annaLastUpload<66&&annaTexReady)return true;annaLastUpload=t;
-  try{
-    const vw=annaVideo?.videoWidth||120,vh=annaVideo?.videoHeight||213,srcRatio=vw/vh,dstRatio=annaCanvas.width/annaCanvas.height;let sx=0,sy=0,sw=vw,sh=vh;
-    annaCtx.fillStyle='#08040d';annaCtx.fillRect(0,0,annaCanvas.width,annaCanvas.height);
-    if(annaPosterReady)annaCtx.drawImage(annaPoster,0,0,annaCanvas.width,annaCanvas.height);
-    if(visualCfg.videoEnabled&&annaVideoReady&&annaVideo?.readyState>=2){if(srcRatio>dstRatio){sw=vh*dstRatio;sx=(vw-sw)/2}else{sh=vw/dstRatio;sy=(vh-sh)/2}annaCtx.drawImage(annaVideo,sx,sy,sw,sh,0,0,annaCanvas.width,annaCanvas.height)}
-    gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
-    if(!annaTexReady||annaTexW!==annaCanvas.width||annaTexH!==annaCanvas.height){gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,annaCanvas);annaTexW=annaCanvas.width;annaTexH=annaCanvas.height;annaTexReady=true}
-    else gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,gl.RGBA,gl.UNSIGNED_BYTE,annaCanvas);
-    return true;
-  }catch(e){annaVideoError='texture';return false}
+  if(!annaTex)return false;ensureAnnaCanvas();if(!annaCanvas||!annaCtx)return false;if(!annaFaceReady&&annaPosterReady&&annaFaceError==='missing')drawAnnaFallback();if(annaTexReady&&annaTexW===annaCanvas.width&&annaTexH===annaCanvas.height)return true;
+  try{gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,annaCanvas);annaTexW=annaCanvas.width;annaTexH=annaCanvas.height;annaTexReady=true;annaLastUpload=t;return true}catch(e){annaFaceError='texture';return false}
 }
 function annaPlaneGeometry(){
   const h=.78*annaPose.scale,ratio=(annaCanvas?.width&&annaCanvas?.height)?annaCanvas.width/annaCanvas.height:.5625,w=h*ratio,x=annaPose.x,y=floorY()+annaPose.y,z=annaPose.z,a=annaPose.yaw,ca=Math.cos(a),sa=Math.sin(a),rx=ca*w,rz=sa*w;
