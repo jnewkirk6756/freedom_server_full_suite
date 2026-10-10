@@ -129,3 +129,36 @@ test('graphics recovery after rejected XR exit preserves an actionable exit retr
 test('actual canvas lifecycle handlers are wired along with pagehide cleanup',()=>{
  assert.match(source,/addEventListener\('webglcontextlost',handleContextLost\)/);assert.match(source,/addEventListener\('webglcontextrestored',handleContextRestored\)/);assert.match(source,/addEventListener\('pagehide',.*stop\('pagehide'\)/);
 });
+
+test('fallback diagnostics initialize their own status before the separate module loads',async()=>{
+ const declarations=source.match(/const EMBODIED_STATE_KEY=[^\n]+\nlet embodiedState=[^\n]+/);
+ assert.ok(declarations,'fallback must own its status binding; module-scoped vr.js state is unavailable');
+ for(const saved of [null,'curious']){
+  const lines=new Map(),context=vm.createContext({
+   localStorage:{getItem:key=>{assert.equal(key,'nocturne.embodied.state.v071');return saved}},
+   document:{createElement:()=>({getContext:()=>null})},navigator:{},
+   set:(key,value)=>lines.set(key,value),loadTelemetry:()=>({initialized:false}),
+   patternCore:null,annaFaceReady:false,annaFaceState:'',annaFaceError:'',isSecureContext:true,
+  });context.window=context;
+  vm.runInContext(declarations[0]+'\n'+extract('run'),context);
+  await context.run();assert.match(lines.get('diag-line'),new RegExp('AI '+(saved||'attentive')));
+  assert.equal(Object.hasOwn(context,'embodiedState'),false,'state remains lexical rather than leaking to the global object');
+ }
+});
+
+test('fallback storage status listener resolves its own key and updates diagnostics',async()=>{
+ const declarations=source.match(/const EMBODIED_STATE_KEY=[^\n]+\nlet embodiedState=[^\n]+/),listeners=new Map(),lines=new Map();
+ const listener=source.split('\n').find(line=>line.startsWith("window.addEventListener('nocturne:embodied-state'"));
+ const context=vm.createContext({
+  localStorage:{getItem:()=>null},document:{createElement:()=>({getContext:()=>null})},navigator:{},
+  set:(key,value)=>lines.set(key,value),loadTelemetry:()=>({initialized:false}),
+  patternCore:null,annaFaceReady:false,annaFaceState:'',annaFaceError:'',isSecureContext:true,
+  addEventListener:(type,callback)=>listeners.set(type,callback),String,
+ });context.window=context;
+ vm.runInContext(declarations[0]+'\nlet lastMenu=1;\n'+extract('run')+'\n'+listener,context);
+ listeners.get('storage')({key:'nocturne.embodied.state.v071',newValue:'focused'});
+ await context.run();assert.match(lines.get('diag-line'),/AI focused/);
+ listeners.get('nocturne:embodied-state')({detail:{state:'curious'}});
+ await context.run();assert.match(lines.get('diag-line'),/AI curious/);
+ assert.equal(vm.runInContext('lastMenu',context),0);
+});

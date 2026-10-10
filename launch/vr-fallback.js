@@ -1,5 +1,7 @@
 (function(){
 const $=id=>document.getElementById(id),set=(id,v)=>{const e=$(id);if(e)e.textContent=v},clamp=v=>Math.max(0,Math.min(1,Number(v)||0)),patternCore=globalThis.NocturneVrPatterns;
+const EMBODIED_STATE_KEY='nocturne.embodied.state.v071';
+let embodiedState=localStorage.getItem(EMBODIED_STATE_KEY)||'attentive';
 let session=null,gl=null,layer=null,refSpace=null,refMode='local-floor';
 let worldProgram=null,worldBuf=null,uiProgram=null,uiBuf=null,uiTex=null,annaTex=null,menuCanvas=null,menuCtx=null,lastMenu=0;
 let annaFaceState=localStorage.getItem('nocturne.face-state.v1')||'ANNA_02_ATTENTIVE',annaFaceReady=false,annaFaceError='',annaCanvas=null,annaCtx=null,aiStatus='AI CONNECTING',annaTexReady=false,annaTexW=0,annaTexH=0,annaLastUpload=0,lastMotionCycle=-1,lastMotionEvent=0,lastControllerEvent=0,pendingRoute=null,hapticEventCycle=-1,hapticFired=new Set();

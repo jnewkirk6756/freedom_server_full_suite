@@ -28,7 +28,7 @@ const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/playe
     if(target.pathname.startsWith('/media/'))return route.fulfill({status:404,body:'No test media'});
     return route.continue();
    });
-   const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
+   const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(page.url()+': '+error.message));
    for(const path of routes){
     await page.goto(url+path);await page.locator('#nocturne-navigation').waitFor();
     await page.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close()));
@@ -58,6 +58,7 @@ const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/playe
    await page.waitForFunction(()=>document.documentElement.dataset.nocturneContrast==='high');
    await page.goto(url+'/model-viewer/');await page.waitForFunction(()=>document.querySelector('#model-viewer').dataset.contextState==='ready');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,name+' viewer horizontal overflow');
+   assert.equal(await page.evaluate(()=>document.querySelector('.nocturne-skip').getBoundingClientRect().bottom<=0),true,name+' unfocused skip link stays outside the viewport');
    const before=await page.evaluate(()=>NocturneModelViewer.getState().transform);
    await page.locator('#model-canvas').focus();await page.keyboard.press('ArrowRight');
    assert.notEqual((await page.evaluate(()=>NocturneModelViewer.getState().transform)).rotation.y,before.rotation.y);
@@ -74,6 +75,7 @@ const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/playe
    await page.evaluate(()=>{const gl=document.getElementById('model-canvas').getContext('webgl');window.testContextLoss=gl.getExtension('WEBGL_lose_context');if(!window.testContextLoss)throw Error('Context-loss extension unavailable');window.testContextLoss.loseContext()});
    await page.waitForFunction(()=>document.querySelector('#model-viewer').dataset.contextState==='lost');await page.evaluate(()=>window.testContextLoss.restoreContext());
    await page.waitForFunction(()=>document.querySelector('#model-viewer').dataset.contextState==='ready');assert.deepEqual(await page.evaluate(()=>NocturneModelViewer.getState().transform),beforeLoss);
+   await page.evaluate(()=>window.scrollTo(0,0));
    fs.mkdirSync('reports',{recursive:true});await page.screenshot({path:'reports/neutral-model-'+name+'.png',fullPage:true});
    assert.deepEqual(errors,[],name+' page errors');console.log('PASS '+name+' navigation, focus, preferences, neutral viewer and recovery');passed++;
    await context.close();
