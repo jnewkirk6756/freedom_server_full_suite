@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#100d19">
+  <title>Model Studio · Nocturne</title>
+  <link rel="stylesheet" href="/model-viewer.css">
+  <script src="/browser-storage.js" defer></script>
+  <script src="/viewer-core.js" defer></script>
+  <script src="/model-viewer.js" defer></script>
+</head>
+<body>
+  <main class="viewer-shell" id="model-viewer" data-context-state="starting">
+    <header class="viewer-header">
+      <a class="viewer-brand" href="/" aria-label="Nocturne home"><span class="brand-mark" aria-hidden="true">N</span> NOCTURNE <span class="brand-divider">/</span> <span>MODEL STUDIO</span></a>
+      <span class="local-badge"><span aria-hidden="true"></span> LOCAL PREVIEW</span>
+    </header>
+    <section class="viewer-heading" aria-labelledby="viewer-title">
+      <div><p class="eyebrow">LIGHT. FORM. FINISH.</p><h1 id="viewer-title">A closer look.</h1><p class="viewer-intro">Explore shape and surface in a quiet, interactive space.</p></div>
+      <p class="neutral-note">Neutral geometry<br><span>No downloads. No uploads.</span></p>
+    </section>
+    <div class="viewer-layout">
+      <section class="viewport-card" aria-label="Interactive model preview">
+        <div class="viewport-topline"><span id="model-name">01 / CUBE</span><span id="render-quality">INITIALIZING</span></div>
+        <div class="viewport-stage" id="viewer-stage">
+          <div class="stage-grid" aria-hidden="true"></div>
+          <canvas id="model-canvas" tabindex="0" role="img" aria-label="Interactive neutral cube model. Use arrow keys to rotate." aria-describedby="viewer-instructions"></canvas>
+          <div class="viewer-unavailable" id="viewer-unavailable" hidden><span class="fallback-shape" aria-hidden="true"></span><h2 id="unavailable-title">Preview paused</h2><p id="unavailable-message"></p><button type="button" id="retry-renderer">Retry preview</button></div>
+          <div class="axis-legend" aria-hidden="true"><span class="axis-y">Y</span><span class="axis-z">Z</span><span class="axis-x">X</span></div>
+          <span class="stage-caption" id="stage-caption">DRAG TO ROTATE</span>
+        </div>
+        <div class="viewport-toolbar">
+          <div class="mode-switch" role="group" aria-label="Drag mode">
+            <button type="button" data-viewer-mode="rotate" aria-pressed="true">Rotate</button>
+            <button type="button" data-viewer-mode="move" aria-pressed="false">Move</button>
+            <button type="button" data-viewer-mode="scale" aria-pressed="false">Scale</button>
+          </div>
+          <button type="button" id="reset-model" class="reset-button" title="Reset position, rotation and scale (R)">Reset view <span aria-hidden="true">↺</span></button>
+        </div>
+        <details class="viewer-help"><summary>Touch &amp; keyboard help</summary><p id="viewer-instructions" class="viewer-instructions">Drag to rotate. Two fingers to move and pinch to scale. Focus the preview: arrows rotate, Shift + arrows move, + / − scale, R resets.</p></details>
+      </section>
+      <aside class="viewer-controls" aria-label="Model controls">
+        <section class="control-section"><p class="section-number">01 / GEOMETRY</p><h2>Choose a form</h2><div class="shape-options" role="group" aria-label="Geometry">
+          <button type="button" data-viewer-shape="cube" aria-pressed="true"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4 35 12v17L20 37 5 29V12ZM5 12l15 9 15-9M20 21v16M20 4v17"/></svg><span>Cube</span></button>
+          <button type="button" data-viewer-shape="sphere" aria-pressed="false"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15"/><ellipse cx="20" cy="20" rx="7" ry="15"/><path d="M5 20h30M8 11c7 5 17 5 24 0M8 29c7-5 17-5 24 0"/></svg><span>Sphere</span></button>
+          <button type="button" data-viewer-shape="prism" aria-pressed="false"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m6 30 10-24 17 25ZM16 6l8-3 14 23-5 5M6 30l8 5 24-9"/></svg><span>Prism</span></button>
+        </div></section>
+        <section class="control-section"><p class="section-number">02 / SURFACE</p><h2>Find the finish</h2><div class="material-options" role="group" aria-label="Material finish">
+          <button type="button" data-viewer-material="matte" aria-pressed="false"><span class="material-swatch matte" aria-hidden="true"></span><span>Matte</span></button>
+          <button type="button" data-viewer-material="satin" aria-pressed="true"><span class="material-swatch satin" aria-hidden="true"></span><span>Satin</span></button>
+          <button type="button" data-viewer-material="gloss" aria-pressed="false"><span class="material-swatch gloss" aria-hidden="true"></span><span>Gloss</span></button>
+        </div><p class="control-note" id="material-description">Soft highlights. A balanced, gently reflective surface.</p></section>
+        <section class="control-section transform-section"><p class="section-number">03 / TRANSFORM</p><h2>Make an adjustment</h2>
+          <label class="range-label" for="model-scale"><span>Scale</span><output id="model-scale-output" for="model-scale">100%</output></label>
+          <input id="model-scale" type="range" min="35" max="180" value="100" step="1" aria-label="Model scale">
+          <div class="nudge-row"><span>Move</span><div class="nudge-buttons" role="group" aria-label="Move model"><button type="button" data-nudge="left" aria-label="Move model left">←</button><button type="button" data-nudge="down" aria-label="Move model down">↓</button><button type="button" data-nudge="up" aria-label="Move model up">↑</button><button type="button" data-nudge="right" aria-label="Move model right">→</button></div></div>
+          <div class="nudge-row"><span>Rotate</span><div class="nudge-buttons" role="group" aria-label="Rotate model"><button type="button" data-nudge="rotate-left" aria-label="Rotate model left">↶</button><button type="button" data-nudge="rotate-right" aria-label="Rotate model right">↷</button><button type="button" data-nudge="tilt-up" aria-label="Tilt model up">↑</button><button type="button" data-nudge="tilt-down" aria-label="Tilt model down">↓</button></div></div>
+          <div class="transform-readout" id="transform-readout" aria-label="Model position">X 0.00 · Y 0.00 · Z 0.00</div>
+        </section>
+        <details class="control-section preferences-section" id="viewer-rendering-options"><summary>Rendering options</summary><label class="select-row" for="viewer-quality"><span>Render quality</span><select id="viewer-quality"><option value="auto">Auto</option><option value="low">Low</option><option value="balanced">Balanced</option><option value="high">High</option></select></label>
+          <label class="motion-row" for="auto-rotate"><span>Slow rotation</span><input id="auto-rotate" type="checkbox" aria-describedby="motion-note"></label><p class="control-note" id="motion-note">Off by default. Turn on to inspect every side.</p><p class="control-note">Form, finish and quality are saved in this browser.</p>
+        </section>
+      </aside>
+    </div>
+    <footer class="viewer-footer"><p id="viewer-status" role="status" aria-live="polite">Preparing the local preview…</p><span>BUILT FOR A CLOSER LOOK</span></footer>
+    <noscript><p class="noscript-note">Enable JavaScript to use the interactive preview. This page uses only built-in neutral geometry.</p></noscript>
+  </main>
+</body>
+</html>

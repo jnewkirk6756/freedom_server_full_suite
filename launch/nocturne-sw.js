@@ -1,5 +1,5 @@
-const VERSION='nocturne-sw-0.84.0-2';
-const SHELL='nocturne-shell-0840-2';
+const VERSION='nocturne-sw-0.84.1-1';
+const SHELL='nocturne-shell-0841-1';
 const CORE=[
   '/',
   '/anna-home.js?v=0840',
@@ -26,8 +26,16 @@ const CORE=[
   '/vr.js?v=0840',
   '/vr-fallback.js?v=0840',
   '/vr.css?v=0840',
-  '/navigation.css?v=0840',
-  '/navigation.js?v=0840',
+  '/ui-shell.css?v=0841',
+  '/ui-shell-core.js?v=0841',
+  '/ui-shell.js?v=0841',
+  '/viewer-core.js?v=0841',
+  '/xr-session-core.js?v=0841',
+  '/model-viewer/',
+  '/model-viewer.js?v=0841',
+  '/model-viewer.css?v=0841',
+  '/navigation.css?v=0841',
+  '/navigation.js?v=0841',
   '/navigation-state.js?v=0840',
   '/browser-storage.js?v=0840',
   '/session-core.js?v=0840',

@@ -1,0 +1,84 @@
+✖ catalog contains A00-A20 plus nine alternates (10.503062ms)
+✔ state lookup is case insensitive (0.507816ms)
+✔ filename extracts primary and alternate IDs without false A99 matches (0.985097ms)
+✔ ordered stack respects filename IDs then fills primary open slots (1.812791ms)
+✔ metadata flags low resolution and wrong duration (2.487627ms)
+✖ good vertical metadata has no quality warnings (3.123037ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 4
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 469.739352
+
+✖ failing tests:
+
+test at ../../../tmp/nocturne-pr14-baseline/test/video-state-core.test.mjs:5:1
+✖ catalog contains A00-A20 plus nine alternates (10.503062ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+      'A16B',
+      'A17B',
+      'A18B',
+      'A18C',
+      'A18D',
+      'A18E',
+  +   'A19B',
+      'A18F',
+  -   'A19B',
+      'A19C'
+    ]
+
+      at TestContext.<anonymous> (file:///tmp/nocturne-pr14-baseline/test/video-state-core.test.mjs:8:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [
+      'A16B', 'A17B',
+      'A18B', 'A18C',
+      'A18D', 'A18E',
+      'A19B', 'A18F',
+      'A19C'
+    ],
+    expected: [
+      'A16B', 'A17B',
+      'A18B', 'A18C',
+      'A18D', 'A18E',
+      'A18F', 'A19B',
+      'A19C'
+    ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at ../../../tmp/nocturne-pr14-baseline/test/video-state-core.test.mjs:33:1
+✖ good vertical metadata has no quality warnings (3.123037ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + [
+  +   'Duration 8.0s; target is about 10s.'
+  + ]
+  - []
+
+      at TestContext.<anonymous> (file:///tmp/nocturne-pr14-baseline/test/video-state-core.test.mjs:34:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'Duration 8.0s; target is about 10s.' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

@@ -1,3 +1,16 @@
+# Nocturne interface polish candidate
+
+Local-only continuation of tested PR #14 head `396ba2ee89fe893d58e2de8152eb97d78972138d`.
+
+- Run `npm test`: foundation plus focused neutral interface/viewer/XR checks.
+- Run `npm run test:browser` in an environment allowed to start Chromium.
+- Open `/model-viewer/` for the neutral model-viewer prototype.
+- [Implementation, verification and remaining gates](reports/UI-POLISH-VALIDATION.md).
+
+The candidate has not been published or deployed. Real iPhone/Quest and current browser layout/rendering checks are still required. Existing scene content/simulation is outside this interface patch.
+
+---
+
 # Nocturne private-preview foundation
 
 This is a local stabilization candidate based on commit
