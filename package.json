@@ -1,0 +1,12 @@
+{
+  "name": "nocturne-private-preview",
+  "version": "0.84.1-foundation.1",
+  "private": true,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node launch/server.mjs",
+    "test": "node --test launch/navigation.test.mjs test/foundation-*.test.mjs",
+    "test:browser": "node test/foundation-browser.cjs"
+  },
+  "devDependencies": { "playwright": "1.62.1" }
+}

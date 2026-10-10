@@ -22,9 +22,9 @@ function initialize() {
   const input = document.getElementById('message');
   const line = document.getElementById(key === 'home' ? 'anna-line' : 'last-line');
   if (saved) {
-    if (input && 'value' in input && typeof saved.draft === 'string') input.value = saved.draft;
-    if (line && typeof saved.line === 'string' && saved.line) line.textContent = saved.line;
-    if (Number.isFinite(saved.scrollY)) requestAnimationFrame(() => scrollTo(0, saved.scrollY));
+    if (input && 'value' in input && typeof saved.draft === 'string') input.value = saved.draft.slice(0, 2400);
+    if (line && typeof saved.line === 'string' && saved.line) line.textContent = saved.line.slice(0, 4000);
+    if (Number.isFinite(saved.scrollY) && saved.scrollY >= 0) requestAnimationFrame(() => scrollTo(0, saved.scrollY));
   }
   initialized = true;
   if (input && 'value' in input) input.addEventListener('input', saveUI);
@@ -60,4 +60,6 @@ document.addEventListener('click', e => {
 });
 window.addEventListener('pagehide', suspend);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') suspend(); });
+// Some screen runtimes are destroyed on pagehide and have no resume hook.
+// Keep reinitializing them on BFCache restore; the saved UI survives the reload.
 window.addEventListener('pageshow', e => { if(e.persisted){ location.reload(); return; } if(menu) menu.open=false; });
