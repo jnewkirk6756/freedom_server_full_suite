@@ -6,6 +6,7 @@ const {chromium}=require('playwright');
 const {spawn}=require('node:child_process');
 const {once}=require('node:events');
 const fs=require('node:fs');
+const {verifyNeutralScaleRange}=require('./neutral-range-browser-helper.cjs');
 const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/player/','/matrix/','/nps/','/commission/','/director/','/video-router/','/photo-space/','/travel/','/venice-setup/','/app/','/launcher/'];
 (async()=>{
  const child=spawn(process.execPath,['launch/server.mjs'],{env:{PATH:process.env.PATH,HOST:'127.0.0.1',PORT:'0'},stdio:['ignore','pipe','pipe']});
@@ -18,7 +19,7 @@ const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/playe
  try{
   browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
   for(const [name,viewport] of [['desktop',{width:1440,height:1000}],['phone',{width:390,height:844}],['narrow',{width:320,height:640}],['landscape',{width:844,height:390}]]){
-   const context=await browser.newContext({viewport,serviceWorkers:'block'});
+   const context=await browser.newContext({viewport,hasTouch:viewport.width<=844,serviceWorkers:'block'});
    await context.route('**/*',async route=>{
     const target=new URL(route.request().url());if(target.origin!==url)return route.abort();
     if(target.pathname.startsWith('/v1/')){
@@ -33,6 +34,7 @@ const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/playe
     await page.goto(url+path);await page.locator('#nocturne-navigation').waitFor();
     await page.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close()));
     assert.equal(await page.locator('#nocturne-navigation').count(),1,name+path);
+    assert.equal(await page.locator('#nocturne-build-label').isVisible(),true,name+path+' visible build');
     const box=await page.locator('#nocturne-navigation').boundingBox();assert.ok(box.x>=0&&box.x+box.width<=viewport.width+1,name+path+' navigation bounds');
     for(const tab of await page.locator('#nocturne-navigation > a,#nocturne-screen-menu > summary').all()){
      const rect=await tab.boundingBox();assert.ok(rect.width>=44&&rect.height>=44,name+path+' touch target');
@@ -59,6 +61,7 @@ const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/playe
    await page.goto(url+'/model-viewer/');await page.waitForFunction(()=>document.querySelector('#model-viewer').dataset.contextState==='ready');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,name+' viewer horizontal overflow');
    assert.equal(await page.evaluate(()=>document.querySelector('.nocturne-skip').getBoundingClientRect().bottom<=0),true,name+' unfocused skip link stays outside the viewport');
+   await verifyNeutralScaleRange(page,{label:name,touch:viewport.width<=844});
    const before=await page.evaluate(()=>NocturneModelViewer.getState().transform);
    await page.locator('#model-canvas').focus();await page.keyboard.press('ArrowRight');
    assert.notEqual((await page.evaluate(()=>NocturneModelViewer.getState().transform)).rotation.y,before.rotation.y);
@@ -75,9 +78,17 @@ const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/playe
    await page.evaluate(()=>{const gl=document.getElementById('model-canvas').getContext('webgl');window.testContextLoss=gl.getExtension('WEBGL_lose_context');if(!window.testContextLoss)throw Error('Context-loss extension unavailable');window.testContextLoss.loseContext()});
    await page.waitForFunction(()=>document.querySelector('#model-viewer').dataset.contextState==='lost');await page.evaluate(()=>window.testContextLoss.restoreContext());
    await page.waitForFunction(()=>document.querySelector('#model-viewer').dataset.contextState==='ready');assert.deepEqual(await page.evaluate(()=>NocturneModelViewer.getState().transform),beforeLoss);
+   await verifyNeutralScaleRange(page,{label:name+' after graphics recovery',touch:viewport.width<=844});
    await page.evaluate(()=>window.scrollTo(0,0));
    fs.mkdirSync('reports',{recursive:true});await page.screenshot({path:'reports/neutral-model-'+name+'.png',fullPage:true});
    assert.deepEqual(errors,[],name+' page errors');console.log('PASS '+name+' navigation, focus, preferences, neutral viewer and recovery');passed++;
+   await page.evaluate(()=>NocturneRuntimeDiagnostics.reportAsset('decode-failed'));
+   assert.equal(await page.locator('#nocturne-navigation-state').textContent(),'Issue');
+   await page.locator('#nocturne-screen-menu > summary').click();
+   assert.match(await page.locator('#nocturne-runtime-message').innerText(),/could not be decoded/);
+   await page.evaluate(()=>NocturneRuntimeDiagnostics.reportAsset('ready'));
+   assert.equal(await page.locator('#nocturne-navigation-state').textContent(),'More');
+   assert.equal(await page.locator('#nocturne-runtime-message').isVisible(),false);
    await context.close();
   }
   console.log('UI_BROWSER '+passed+'/4 PASS; real iPhone and Quest still require hardware checks');

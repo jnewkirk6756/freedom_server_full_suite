@@ -19,3 +19,13 @@ test('new viewer and utilities remain behind the existing hosted access boundary
  const url=await start(t,{HOST:'0.0.0.0'});
  for(const path of ['/model-viewer/','/viewer-core.js','/xr-session-core.js','/ui-shell.js']){const response=await fetch(url+path);assert.equal(response.status,503,path);assert.equal((await response.json()).error.code,'PRIVATE_ACCESS_NOT_CONFIGURED');}
 });
+test('served pages identify their deployed build before any screen script runs',async t=>{
+ const url=await start(t,{RENDER_GIT_COMMIT:'5d032f72478f044f4a7cac583a76c48f9f6eaf13'});
+ for(const path of ['/','/experience/','/live/','/vr/','/model-viewer/']){
+  const html=await (await fetch(url+path)).text();
+  assert.match(html,/Build 0\.84\.1-diag\.1 · 5d032f7/,path);
+  assert.equal((html.match(/id="nocturne-runtime-status"/g)||[]).length,1,path);
+  assert.match(html,/<head[^>]*><script src="\/runtime-diagnostics\.js\?v=0841diag1"><\/script>/,path);
+ }
+ const script=await fetch(url+'/runtime-diagnostics.js?v=0841diag1');assert.equal(script.status,200);assert.match(await script.text(),/NocturneRuntimeDiagnostics/);
+});

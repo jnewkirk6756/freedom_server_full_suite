@@ -1,5 +1,5 @@
-const VERSION='nocturne-sw-0.84.1-1';
-const SHELL='nocturne-shell-0841-1';
+const VERSION='nocturne-sw-0.84.1-diag1';
+const SHELL='nocturne-shell-0841-diag1';
 const CORE=[
   '/',
   '/anna-home.js?v=0840',
@@ -37,6 +37,7 @@ const CORE=[
   '/navigation.css?v=0841',
   '/navigation.js?v=0841',
   '/navigation-state.js?v=0840',
+  '/runtime-diagnostics.js?v=0841diag1',
   '/browser-storage.js?v=0840',
   '/session-core.js?v=0840',
   '/app.webmanifest?v=0840'

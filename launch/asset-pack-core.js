@@ -1,7 +1,7 @@
 import {listClips,getClip,saveClip,storageEstimate} from './video-state-core.js';
 
 export const ASSET_PACK_VERSION='NOCTURNE-ASSET-PACK-0.84.0';
-export const SHELL_CACHE='nocturne-shell-0841-1';
+export const SHELL_CACHE='nocturne-shell-0841-diag1';
 export const SHELL_ASSETS=[
   '/',
   '/anna-home.js?v=0840',
@@ -39,6 +39,7 @@ export const SHELL_ASSETS=[
   '/navigation.css?v=0841',
   '/navigation.js?v=0841',
   '/navigation-state.js?v=0840',
+  '/runtime-diagnostics.js?v=0841diag1',
   '/browser-storage.js?v=0840',
   '/session-core.js?v=0840',
   '/app.webmanifest?v=0840'
