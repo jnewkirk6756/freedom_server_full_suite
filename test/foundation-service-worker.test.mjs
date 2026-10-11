@@ -378,3 +378,8 @@ test('the precached app icon remains available offline', async () => {
   h.state.network = async () => { throw new TypeError('Offline'); };
   assert.equal(await (await h.request('/nocturne-icon.svg')).text(), 'shell resource');
 });
+
+test('only fixed bundled portraits join the existing private-safe offline cache path',async()=>{
+ const h=worker();h.state.network=async()=>new Response('portrait test bytes');await h.lifecycle('install');h.state.network=async()=>{throw new TypeError('Offline')};
+ for(const path of ['/portraits/neutral-20261011.webp','/portraits/friendly-20261011.webp'])assert.equal(await (await h.request(path)).text(),'portrait test bytes');
+});

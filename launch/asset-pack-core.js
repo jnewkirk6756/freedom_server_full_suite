@@ -1,7 +1,7 @@
 import {listClips,getClip,saveClip,storageEstimate} from './video-state-core.js';
 
 export const ASSET_PACK_VERSION='NOCTURNE-ASSET-PACK-0.84.0';
-export const SHELL_CACHE='nocturne-shell-0841-diag1';
+export const SHELL_CACHE='nocturne-shell-0841-portrait1';
 export const SHELL_ASSETS=[
   '/',
   '/anna-home.js?v=0840',
@@ -14,6 +14,10 @@ export const SHELL_ASSETS=[
   '/video-state-player.js?v=0840',
   '/video-state.css?v=0840',
   '/nocturne-icon.svg?v=0840',
+  '/neutral-portrait.js?v=20261011',
+  '/neutral-portrait.css?v=20261011',
+  '/portraits/friendly-20261011.webp',
+  '/portraits/neutral-20261011.webp',
   '/live/',
   '/vr/',
   '/experience.css?v=0840',

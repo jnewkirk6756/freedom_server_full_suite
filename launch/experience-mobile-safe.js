@@ -39,7 +39,7 @@ function facePack(){return window.NocturneFacePack||null}
 async function updateFacePackStatus(){
   var el=$('face-pack-status'),core=facePack();if(!el)return null;
   if(!core){el.textContent='FACE PACK LOADING';return null}
-  try{var s=await core.summary();el.textContent=(s.complete?'FACE PACK READY':(s.stateCount?('FACE PACK '+s.stateCount+'/40'):'DEFAULT FACE · 0/40'));el.dataset.complete=String(!!s.complete);return s}catch(e){el.textContent='FACE PACK ERROR';return null}
+  try{var s=await core.summary();el.textContent=(s.complete?'FACE PACK READY':(s.stateCount?('FACE PACK '+s.stateCount+'/40'):'BUILT-IN PORTRAIT · NO LOCAL PACK'));el.dataset.complete=String(!!s.complete);return s}catch(e){el.textContent='FACE PACK ERROR';return null}
 }
 function applyVisuals(){
   var canvas=$('anna-face'),poster=$('anna-poster'),empty=$('empty'),host=$('avatar');
@@ -66,7 +66,7 @@ async function renderFaceState(target,reason){
       save();return rendered;
     }
   }catch(e){}
-  if(poster)poster.style.opacity='1';if(os)os.textContent='DEFAULT FACE';if(cue)cue.textContent='Import the face grids to activate state renders.';return false
+  if(poster)poster.style.opacity='1';if(os)os.textContent='BUILT-IN PORTRAIT';if(cue)cue.textContent='Static portrait. Optional local images remain on this device.';return false
 }
 async function importFaceGrids(files){
   var core=facePack();if(!core||!files||!files.length)return false;

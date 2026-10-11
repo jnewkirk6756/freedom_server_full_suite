@@ -83,3 +83,23 @@ test('successful neutral drawing and selection survive broken diagnostics unchan
  const h=images({rows:[{index:1,blob:{size:1}}],reportThrows:true}),selected=h.core.state('calm');
  assert.equal(await h.core.drawState(h.canvas,selected),selected);assert.equal(h.canvas.dataset.faceState,selected.id);assert.deepEqual(h.statuses,['ready']);assert.deepEqual(h.writes,[]);
 });
+
+test('a loaded built-in portrait makes an empty optional local pack non-fatal in either load order',()=>{
+ for(const order of ['portrait-first','pack-first']){
+  const h=boot();if(order==='portrait-first')h.context.NocturneRuntimeDiagnostics.reportPortrait('ready');
+  h.report('missing-assets');h.context.NocturneRuntimeDiagnostics.reportPortrait('ready');
+  assert.equal(h.node.hidden,true);assert.equal(h.caption.textContent,'More');
+ }
+});
+test('portrait success never suppresses local storage, decoder or script errors',()=>{
+ const h=boot();h.context.NocturneRuntimeDiagnostics.reportPortrait('ready');
+ for(const code of ['storage-unavailable','storage-blocked','decode-failed']){h.report(code);assert.equal(h.node.hidden,false);assert.equal(h.node.dataset.status,code);}
+ h.listeners.get('error')({target:h.global});h.report('missing-assets');h.context.NocturneRuntimeDiagnostics.reportPortrait('ready');assert.match(h.node.textContent,/page script failed/);
+});
+test('portrait failures keep useful feedback until an explicit successful retry',()=>{
+ const h=boot();h.context.NocturneRuntimeDiagnostics.reportPortrait('unavailable');assert.match(h.node.textContent,/existing display was kept/);h.context.NocturneRuntimeDiagnostics.reportPortrait('bogus');assert.equal(h.node.hidden,false);h.context.NocturneRuntimeDiagnostics.reportPortrait('ready');assert.equal(h.node.hidden,true);
+});
+
+test('failed manual variant change does not call an optional pack missing when a portrait remains visible',()=>{
+ const h=boot();h.report('missing-assets');h.context.NocturneRuntimeDiagnostics.reportPortrait('ready');h.context.NocturneRuntimeDiagnostics.reportPortrait('unavailable');assert.equal(h.node.dataset.status,'portrait-unavailable');assert.doesNotMatch(h.node.textContent,/Local image assets/);
+});
