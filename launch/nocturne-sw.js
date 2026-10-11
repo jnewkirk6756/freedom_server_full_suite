@@ -1,5 +1,5 @@
-const VERSION='nocturne-sw-0.84.1-diag1';
-const SHELL='nocturne-shell-0841-diag1';
+const VERSION='nocturne-sw-0.84.1-portrait1';
+const SHELL='nocturne-shell-0841-portrait1';
 const CORE=[
   '/',
   '/anna-home.js?v=0840',
@@ -12,6 +12,10 @@ const CORE=[
   '/video-state-player.js?v=0840',
   '/video-state.css?v=0840',
   '/nocturne-icon.svg?v=0840',
+  '/neutral-portrait.js?v=20261011',
+  '/neutral-portrait.css?v=20261011',
+  '/portraits/friendly-20261011.webp',
+  '/portraits/neutral-20261011.webp',
   '/live/',
   '/vr/',
   '/experience.css?v=0840',
@@ -114,7 +118,7 @@ self.addEventListener('fetch',event=>{
   if(req.method!=='GET'||/^\/(?:api|v1|media)(?:\/|$)/.test(url.pathname))return;
   if(req.cache==='no-store'||req.headers.has('range'))return;
   const navigation=req.mode==='navigate';
-  if(navigation||url.pathname==='/nocturne-icon.svg'||/\.(?:js|css|webmanifest|json)$/i.test(url.pathname)){
+  if(navigation||['/portraits/neutral-20261011.webp','/portraits/friendly-20261011.webp'].includes(url.pathname)||url.pathname==='/nocturne-icon.svg'||/\.(?:js|css|webmanifest|json)$/i.test(url.pathname)){
     event.respondWith(networkFirst(req,navigation));
   }
 });

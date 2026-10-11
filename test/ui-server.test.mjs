@@ -29,3 +29,22 @@ test('served pages identify their deployed build before any screen script runs',
  }
  const script=await fetch(url+'/runtime-diagnostics.js?v=0841diag1');assert.equal(script.status,200);assert.match(await script.text(),/NocturneRuntimeDiagnostics/);
 });
+
+test('bundled portrait assets are exact binary WebP files with GET/HEAD and a fixed allowlist',async t=>{
+ const url=await start(t);
+ for(const name of ['neutral','friendly']){
+  const path='/portraits/'+name+'-20261011.webp',response=await fetch(url+path),data=Buffer.from(await response.arrayBuffer());
+  assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'image/webp');assert.equal(data.subarray(0,4).toString(),'RIFF');assert.equal(data.subarray(8,12).toString(),'WEBP');assert.ok(data.length>100000&&data.length<350000);
+  const head=await fetch(url+path,{method:'HEAD'});assert.equal(head.status,200);assert.equal((await head.arrayBuffer()).byteLength,0);
+ }
+ assert.equal((await fetch(url+'/portraits/not-allowlisted.webp')).status,404);
+ for(const path of ['/live/','/vr/']){const html=await (await fetch(url+path)).text();assert.match(html,/neutral-portrait.js/);assert.equal((html.match(/id="neutral-portrait-select"/g)||[]).length,1);assert.match(html,/Your imported images take priority/);}
+});
+test('both new portraits and loader preserve hosted denial and authenticated private responses',async t=>{
+ const password='public-test-fixture-not-a-secret',url=await start(t,{NOCTURNE_ACCESS_PASSWORD:password});
+ const headers={authorization:'Basic '+Buffer.from('owner:'+password).toString('base64')};
+ for(const path of ['/neutral-portrait.js','/neutral-portrait.css','/portraits/neutral-20261011.webp','/portraits/friendly-20261011.webp']){
+  const denied=await fetch(url+path);assert.equal(denied.status,401);assert.equal(denied.headers.get('cache-control'),'private, no-store');
+  const allowed=await fetch(url+path,{headers});assert.equal(allowed.status,200);assert.equal(allowed.headers.get('cache-control'),'private, no-store');
+ }
+});

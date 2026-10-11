@@ -1,3 +1,9 @@
+# Neutral portrait update
+
+Two bundled, manually selected portrait fallbacks are included for Live and VR. See [implementation and validation](reports/NEUTRAL-PORTRAIT-VALIDATION.md). Existing local imports keep priority. Browser CI must pass before rollout.
+
+---
+
 # Nocturne interface polish candidate
 
 Local-only continuation of tested PR #14 head `396ba2ee89fe893d58e2de8152eb97d78972138d`.

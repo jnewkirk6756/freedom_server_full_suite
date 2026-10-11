@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node launch/server.mjs",
     "test": "node --test launch/navigation.test.mjs test/foundation-*.test.mjs test/ui-*.test.mjs test/xr-*.test.mjs test/viewer-core.test.mjs",
-    "test:browser": "node test/foundation-browser.cjs && node test/ui-browser.cjs"
+    "test:browser": "node test/foundation-browser.cjs && node test/ui-browser.cjs && node test/portrait-browser.cjs"
   },
   "devDependencies": { "playwright": "1.62.1" }
 }
