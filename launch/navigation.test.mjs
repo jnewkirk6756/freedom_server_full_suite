@@ -6,12 +6,19 @@ const source='<!doctype html><html><head><title>Screen</title></head><body><main
 const storage=()=>{const data=new Map();return{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)}};
 test('shared navigation is injected once, including Buffer responses',()=>{
  const html=withNavigation(Buffer.from(source),'/live/');
- assert.match(html,/navigation\.js\?v=0592/);assert.match(html,/data-screen="live" aria-current="page"/);
+ const script=new URL(html.match(/src="([^"]*navigation\.js[^"]*)"/)[1],'http://nocturne.local');
+ const stylesheet=new URL(html.match(/href="([^"]*navigation\.css[^"]*)"/)[1],'http://nocturne.local');
+ assert.equal(script.pathname,'/navigation.js');assert.ok(script.searchParams.get('v'));
+ assert.equal(script.searchParams.get('v'),stylesheet.searchParams.get('v'));
+ assert.match(html,/data-screen="live" aria-current="page"/);
  assert.equal(withNavigation(html,'/live/'),html);
 });
 test('all public UI surfaces have a route back to Home',()=>{
- for(const route of ['/','/experience/','/live/','/vr/','/world/','/player/','/matrix/','/nps/','/commission/','/director/','/video-router/','/photo-space/','/travel/','/venice-setup/','/app/','/launcher/']){
-  const html=withNavigation(source,route);assert.match(html,/href="\/" data-screen="home"/);assert.match(html,/href="\/experience\/\?panel=settings"/);
+ for(const route of ['/','/experience/','/live/','/devices/','/vr/','/world/','/player/','/matrix/','/nps/','/commission/','/director/','/video-router/','/photo-space/','/travel/','/venice-setup/','/app/','/launcher/']){
+  const html=withNavigation(source,route);
+  const home=new URL(html.match(/href="([^"]+)" data-screen="home"/)[1],'http://nocturne.local');
+  assert.equal(home.pathname,'/');assert.equal(home.origin,'http://nocturne.local');
+  assert.match(html,/href="\/experience\/\?panel=settings"/);
  }
 });
 test('navigation never interpolates untrusted URL data into HTML',()=>{
@@ -33,4 +40,14 @@ test('blocked or corrupt storage cannot break navigation',()=>{
 test('navigation state does not write relationship or permission keys',()=>{
  const keys=[];writeNavigationState('screen.live',{draft:'hello'},{setItem:(k)=>keys.push(k)});
  assert.deepEqual(keys,['nocturne.navigation.v1.screen.live']);
+});
+
+
+test('storage adapter loads synchronously before deferred session and navigation scripts',()=>{
+ const html=withNavigation(source,'/');
+ const adapter=html.match(/<script([^>]*src="[^"]*browser-storage\.js[^"]*"[^>]*)><\/script>/);
+ assert.ok(adapter);assert.doesNotMatch(adapter[1],/\b(?:defer|async)\b|type="module"/);
+ assert.ok(html.indexOf(adapter[0])<html.indexOf('<script defer src="/session-core.js'));
+ assert.ok(html.indexOf(adapter[0])<html.indexOf('<script type="module" src="/navigation.js'));
+ assert.ok(html.indexOf(adapter[0])<html.indexOf('</head>'));
 });

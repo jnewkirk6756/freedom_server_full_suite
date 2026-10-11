@@ -1,3 +1,5 @@
+> Historical module notes. For current startup, access controls, validation and release limits, use [the root README](../README.md).
+
 # Aurelia 0.19 — Spatial Rooms
 
 Run `node launch/server.mjs`. Existing free read-only staging host; private account writes and live AI remain disabled.

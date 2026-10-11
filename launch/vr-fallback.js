@@ -1,8 +1,10 @@
 (function(){
 const $=id=>document.getElementById(id),set=(id,v)=>{const e=$(id);if(e)e.textContent=v},clamp=v=>Math.max(0,Math.min(1,Number(v)||0)),patternCore=globalThis.NocturneVrPatterns;
+const EMBODIED_STATE_KEY='nocturne.embodied.state.v071';
+let embodiedState=localStorage.getItem(EMBODIED_STATE_KEY)||'attentive';
 let session=null,gl=null,layer=null,refSpace=null,refMode='local-floor';
 let worldProgram=null,worldBuf=null,uiProgram=null,uiBuf=null,uiTex=null,annaTex=null,menuCanvas=null,menuCtx=null,lastMenu=0;
-let annaFaceState=localStorage.getItem('nocturne.face-state.v1')||'ANNA_02_ATTENTIVE',annaFaceReady=false,annaFaceError='',annaCanvas=null,annaCtx=null,aiStatus='AI CONNECTING',annaTexReady=false,annaTexW=0,annaTexH=0,annaLastUpload=0,lastMotionCycle=-1,lastMotionEvent=0,lastControllerEvent=0,pendingRoute=null,lastEscapePressed=false,hapticEventCycle=-1,hapticFired=new Set();
+let annaFaceState=localStorage.getItem('nocturne.face-state.v1')||'ANNA_02_ATTENTIVE',annaFaceReady=false,annaFaceError='',annaCanvas=null,annaCtx=null,aiStatus='AI CONNECTING',annaTexReady=false,annaTexW=0,annaTexH=0,annaLastUpload=0,lastMotionCycle=-1,lastMotionEvent=0,lastControllerEvent=0,pendingRoute=null,hapticEventCycle=-1,hapticFired=new Set();
 const ANNA_POSTER_DATA='data:image/jpeg;base64,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';const annaPoster=new Image();let annaPosterReady=false;annaPoster.onload=()=>{annaPosterReady=true};annaPoster.src=ANNA_POSTER_DATA;
 let editTarget='anna',editAxis='yaw',annaPose={x:1.42,y:1.48,z:-2.05,scale:1,yaw:0},toolPose={x:0,y:0,z:0,scale:1,yaw:0},wavePose={x:0,y:0,z:0,scale:1,yaw:0},mannequinPose={x:0,y:0,z:0,scale:1,yaw:0},panelPose={scale:1,yaw:0};
 let currentPosition=localStorage.getItem('nocturne.vr.position.v1')||'back',visualCfg={avatar3D:false,toolSolid:localStorage.getItem('nocturne.vr.tool-solid.v1')!=='off',mannequinTexture:localStorage.getItem('nocturne.vr.mannequin-texture.v1')!=='off',voiceGuidance:localStorage.getItem('nocturne.vr.voice-guidance.v1')!=='off',commandMode:localStorage.getItem('nocturne.vr.command-mode.v1')!=='off',waveScale:Math.max(.5,Math.min(2,Number(localStorage.getItem('nocturne.vr.wave-scale.v1'))||1)),waveMotion:Math.max(.5,Math.min(1.8,Number(localStorage.getItem('nocturne.vr.wave-motion.v1'))||1))};
@@ -22,7 +24,8 @@ window.addEventListener('nocturne:vr-director-state',e=>{if(!avatarRuntime)retur
 
 function requestedMode(){const q=new URLSearchParams(location.search).get('mode');if(['live','anna','tool','cognitive'].includes(q))return q;try{const saved=JSON.parse(localStorage.getItem('nocturne.vr.entry.v1')||'null');if(saved&&Date.now()-Number(saved.at||0)<30*60*1000&&['live','anna','tool','cognitive'].includes(saved.mode))return saved.mode}catch{}return'cognitive'}
 let sceneMode=requestedMode(),actionLine='Point a controller at a tile and press trigger.',hovered=-1;
-const triggerDown=new Map();
+const triggerDown=new Map(),escapeDown=new Map(),rayTargets=new Map(),glShaders=new Set();
+let lastDisplayFrame=null,contextLost=false,xrLifecycle=null;
 let telemetry={pace:0,depth:0,force:0,intensity:0,angle:0,cadence:0,entrySpeedS:3,cycleTimeS:3,initialized:false,startedAt:0},fallbackPattern=localStorage.getItem('nocturne.vr.pattern.v1')||'steady',fallbackHapticMode=localStorage.getItem('nocturne.vr.haptic-pattern.v1')||'auto',fallbackDynamic=localStorage.getItem('nocturne.vr.dynamic-strokes.v1')!=='off',fallbackRecorded=[];let panelOffset={x:0,y:0,z:0};
 const faceCore=window.NocturneFacePack||null;
 function ensureAnnaCanvas(){
@@ -106,7 +109,7 @@ async function run(){
   set('diag-line',[(window.isSecureContext?'HTTPS secure':'HTTPS not secure'),(navigator.xr?'WebXR exposed':'WebXR missing'),(immersive?'immersive-vr supported':'immersive-vr not supported'),(glok?'WebGL ready':'WebGL missing'),('controls '+(audit.ok?audit.total+'/'+audit.total:'missing '+audit.missing.join(','))),('patterns '+audit.patterns+' / haptics '+audit.haptics),('face '+(annaFaceReady?annaFaceState:'fallback')),('AI '+embodiedState),(cfg.initialized?'session initialized':'session zero')].join(' · ')+(err?' · '+err.slice(0,90):''));
   return{immersive,mediaOk:true};
 }
-function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s)||'shader');return s}
+function shader(type,src){const s=gl.createShader(type);glShaders.add(s);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s)||'shader');return s}
 function initGL(){
   if(worldProgram)return;
   let vs=shader(gl.VERTEX_SHADER,'attribute vec3 a;uniform mat4 m;uniform float ps;void main(){gl_Position=m*vec4(a,1.0);gl_PointSize=ps;}');
@@ -287,11 +290,15 @@ function renderEmbodiedPresence(mvp,t){
   const verts=new Float32Array([x-rx,y-h,z-rz,0,1,x+rx,y-h,z+rz,1,1,x-rx,y+h,z-rz,0,0,x-rx,y+h,z-rz,0,0,x+rx,y-h,z+rz,1,1,x+rx,y+h,z+rz,1,0]);
   gl.useProgram(uiProgram);gl.bindBuffer(gl.ARRAY_BUFFER,uiBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.DYNAMIC_DRAW);const p=gl.getAttribLocation(uiProgram,'p'),uv=gl.getAttribLocation(uiProgram,'uv');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,20,0);gl.enableVertexAttribArray(uv);gl.vertexAttribPointer(uv,2,gl.FLOAT,false,20,12);gl.uniformMatrix4fv(gl.getUniformLocation(uiProgram,'m'),false,mvp);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,annaTex);gl.uniform1i(gl.getUniformLocation(uiProgram,'t'),0);gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.drawArrays(gl.TRIANGLES,0,6);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);
 }
-function navigateOut(path='/vr/'){
+async function navigateOut(path='/vr/'){
   pendingRoute=path;
   actionLine=path==='/'?'Returning to Nocturne Home…':'Leaving immersive VR…';
   lastMenu=0;
-  if(session){try{session.end()}catch{location.assign(path)}}else location.assign(path);
+  if(xrLifecycle?.status().busy){
+    const ended=await xrLifecycle.stop('navigation');
+    if(!ended){pendingRoute=null;set('diag-line','VR could not exit. Use Exit VR again or the headset system menu.');}
+    else if(!xrLifecycle.status().busy&&pendingRoute){pendingRoute=null;location.assign(path);}
+  }else{pendingRoute=null;location.assign(path);}
 }
 function pulseSource(src,strength=.45,duration=75){const gp=src?.gamepad,acts=[];if(!gp)return;try{if(gp.vibrationActuator)acts.push(gp.vibrationActuator);for(const a of gp.hapticActuators||[])acts.push(a)}catch{}for(const a of acts){try{if(a.pulse)a.pulse(clamp(strength),duration);else if(a.playEffect)a.playEffect('dual-rumble',{duration,strongMagnitude:clamp(strength),weakMagnitude:clamp(strength*.6)})}catch{}}}
 function dispatchVrAction(action){window.dispatchEvent(new CustomEvent('nocturne:vr-ui-action',{detail:{action}}))}
@@ -328,40 +335,127 @@ function selectTile(i,src){
   else if(i===29)navigateOut('/');
   pulseSource(src,i===4?.95:.45,i===4?160:75);lastMenu=0;
 }
-function controllerInteraction(frame){
+function controllerInteraction(frame,dtSeconds=0){
   hovered=-1;const rays=[];if(!session||!refSpace)return rays;let nearest=Infinity,chosen=null;
-  for(const src of session.inputSources){if(!src.gamepad)continue;const pose=frame.getPose(src.targetRaySpace,refSpace);if(!pose)continue;const m=pose.transform.matrix,o=[m[12],m[13],m[14]],d=[-m[8],-m[9],-m[10]],tr=src.gamepad.buttons?.[0]?.value||0,gr=src.gamepad.buttons?.[1]?.value||0,ax=src.gamepad.axes?.[2]??src.gamepad.axes?.[0]??0,ay=src.gamepad.axes?.[3]??src.gamepad.axes?.[1]??0,escapePressed=Boolean(src.gamepad.buttons?.[5]?.pressed||src.gamepad.buttons?.[5]?.value>.7);if(escapePressed&&!lastEscapePressed){lastEscapePressed=true;navigateOut('/vr/');return rays}if(!escapePressed)lastEscapePressed=false;
+  const present=new Set(session.inputSources);
+  for(const map of [triggerDown,escapeDown,rayTargets])for(const source of map.keys())if(!present.has(source))map.delete(source);
+  const axis=globalThis.NocturneViewerCore?.controllerAxis||(()=>0),seconds=Math.max(0,Math.min(.05,Number(dtSeconds)||0));
+  for(const src of session.inputSources){if(!src.targetRaySpace)continue;const pose=frame.getPose(src.targetRaySpace,refSpace);if(!pose){triggerDown.delete(src);escapeDown.delete(src);rayTargets.delete(src);continue;}const m=pose.transform.matrix,o=[m[12],m[13],m[14]],d=[-m[8],-m[9],-m[10]],tr=src.gamepad?.buttons?.[0]?.value||0,gr=src.gamepad?.buttons?.[1]?.value||0,ax=src.gamepad?.axes?.[2]??src.gamepad?.axes?.[0]??0,ay=src.gamepad?.axes?.[3]??src.gamepad?.axes?.[1]??0,escapePressed=Boolean(src.gamepad?.buttons?.[5]?.pressed||src.gamepad?.buttons?.[5]?.value>.7);const wasEscape=escapeDown.get(src)||false;escapeDown.set(src,escapePressed);if(escapePressed&&!wasEscape){navigateOut('/vr/');return rays}
     if(gr>.72&&tr<.45){
       const dd=2.25,px=o[0]+d[0]*dd,py=o[1]+d[1]*dd,pz=o[2]+d[2]*dd;
-      if(editTarget==='panel'){panelOffset.x=Math.max(-1.8,Math.min(1.8,px-basePanelX()));panelOffset.y=Math.max(-1.1,Math.min(1.1,py-basePanelY()));panelOffset.z=Math.max(-1.4,Math.min(.8,pz-PANEL_Z));panelPose.yaw=Math.max(-1.35,Math.min(1.35,panelPose.yaw+ax*.018));panelPose.scale=Math.max(.62,Math.min(1.7,panelPose.scale-ay*.012))}
-      else if(editTarget==='anna'){annaPose.x=Math.max(-2.2,Math.min(2.2,px));annaPose.y=Math.max(.55,Math.min(2.6,py-floorY()));annaPose.z=Math.max(-4.5,Math.min(-.7,pz));annaPose.yaw=Math.max(-1.5,Math.min(1.5,annaPose.yaw+ax*.018));annaPose.scale=Math.max(.45,Math.min(1.8,annaPose.scale-ay*.012))}
-      else if(editTarget==='tool'){toolPose.x=Math.max(-2,Math.min(2,px));toolPose.y=Math.max(-1,Math.min(1.6,py-(floorY()+1.15)));toolPose.z=Math.max(-2.2,Math.min(1.2,pz+.62));toolPose.yaw=Math.max(-1.5,Math.min(1.5,toolPose.yaw+ax*.018));toolPose.scale=Math.max(.45,Math.min(2.2,toolPose.scale-ay*.012))}
-      else if(editTarget==='wave'){wavePose.x=Math.max(-2.2,Math.min(2.2,px));wavePose.y=Math.max(-1.2,Math.min(1.5,py-(floorY()+1.22)));wavePose.z=Math.max(-2.2,Math.min(1.1,pz+1.58));wavePose.yaw=Math.max(-1.5,Math.min(1.5,wavePose.yaw+ax*.018));wavePose.scale=Math.max(.4,Math.min(2.6,wavePose.scale-ay*.012))}
-      else if(editTarget==='mannequin'){mannequinPose.x=Math.max(-2.2,Math.min(2.2,px));mannequinPose.y=Math.max(-.4,Math.min(1.8,py-floorY()));mannequinPose.z=Math.max(-2.2,Math.min(1.4,pz+2.78));mannequinPose.yaw=Math.max(-1.6,Math.min(1.6,mannequinPose.yaw+ax*.018));mannequinPose.scale=Math.max(.5,Math.min(1.8,mannequinPose.scale-ay*.012))}
+      if(editTarget==='panel'){panelOffset.x=Math.max(-1.8,Math.min(1.8,px-basePanelX()));panelOffset.y=Math.max(-1.1,Math.min(1.1,py-basePanelY()));panelOffset.z=Math.max(-1.4,Math.min(.8,pz-PANEL_Z));panelPose.yaw=Math.max(-1.35,Math.min(1.35,panelPose.yaw+axis(ax)*1.08*seconds));panelPose.scale=Math.max(.62,Math.min(1.7,panelPose.scale-axis(ay)*.72*seconds))}
+      else if(editTarget==='anna'){annaPose.x=Math.max(-2.2,Math.min(2.2,px));annaPose.y=Math.max(.55,Math.min(2.6,py-floorY()));annaPose.z=Math.max(-4.5,Math.min(-.7,pz));annaPose.yaw=Math.max(-1.5,Math.min(1.5,annaPose.yaw+axis(ax)*1.08*seconds));annaPose.scale=Math.max(.45,Math.min(1.8,annaPose.scale-axis(ay)*.72*seconds))}
+      else if(editTarget==='tool'){toolPose.x=Math.max(-2,Math.min(2,px));toolPose.y=Math.max(-1,Math.min(1.6,py-(floorY()+1.15)));toolPose.z=Math.max(-2.2,Math.min(1.2,pz+.62));toolPose.yaw=Math.max(-1.5,Math.min(1.5,toolPose.yaw+axis(ax)*1.08*seconds));toolPose.scale=Math.max(.45,Math.min(2.2,toolPose.scale-axis(ay)*.72*seconds))}
+      else if(editTarget==='wave'){wavePose.x=Math.max(-2.2,Math.min(2.2,px));wavePose.y=Math.max(-1.2,Math.min(1.5,py-(floorY()+1.22)));wavePose.z=Math.max(-2.2,Math.min(1.1,pz+1.58));wavePose.yaw=Math.max(-1.5,Math.min(1.5,wavePose.yaw+axis(ax)*1.08*seconds));wavePose.scale=Math.max(.4,Math.min(2.6,wavePose.scale-axis(ay)*.72*seconds))}
+      else if(editTarget==='mannequin'){mannequinPose.x=Math.max(-2.2,Math.min(2.2,px));mannequinPose.y=Math.max(-.4,Math.min(1.8,py-floorY()));mannequinPose.z=Math.max(-2.2,Math.min(1.4,pz+2.78));mannequinPose.yaw=Math.max(-1.6,Math.min(1.6,mannequinPose.yaw+axis(ax)*1.08*seconds));mannequinPose.scale=Math.max(.5,Math.min(1.8,mannequinPose.scale-axis(ay)*.72*seconds))}
       actionLine='Moving '+(editTarget==='anna'?'ANNA':editTarget.toUpperCase())+' · stick X rotates · Y scales';lastMenu=0;
     }
     let end=[o[0]+d[0]*3,o[1]+d[1]*3,o[2]+d[2]*3],idx=-1,dist=3;
     const pc=panelCenter(),pn=panelNormal(),den=d[0]*pn[0]+d[1]*pn[1]+d[2]*pn[2];
     if(Math.abs(den)>.0001){const tt=((pc[0]-o[0])*pn[0]+(pc[1]-o[1])*pn[1]+(pc[2]-o[2])*pn[2])/den;if(tt>0&&tt<6){const hit=[o[0]+d[0]*tt,o[1]+d[1]*tt,o[2]+d[2]*tt],local=inverseTransformPoint(hit,panelPose,pc),lx=(local[0]-pc[0])/PANEL_W+.5,ly=.5-(local[1]-pc[1])/PANEL_H;if(lx>=0&&lx<=1&&ly>=0&&ly<=1){end=[hit[0]+pn[0]*.008,hit[1]+pn[1]*.008,hit[2]+pn[2]*.008];dist=tt;idx=menuTileIndex(lx,ly);if(idx>=0&&dist<nearest){nearest=dist;chosen=idx}}}}
-    rays.push(o[0],o[1],o[2],end[0],end[1],end[2]);const was=triggerDown.get(src)||false,down=tr>.62;if(down&&!was&&idx>=0)selectTile(idx,src);triggerDown.set(src,down);
+    rays.push(o[0],o[1],o[2],end[0],end[1],end[2]);const was=triggerDown.get(src)||false,down=tr>.62;if(down&&!was&&idx>=0)selectTile(idx,src);triggerDown.set(src,down);rayTargets.set(src,idx);
   }
   hovered=chosen??-1;return rays;
 }
 function drawControllerOverlay(mvp,rays){if(!rays.length)return;const tips=[];for(let i=0;i<rays.length;i+=6)tips.push(rays[i+3],rays[i+4],rays[i+5]);gl.disable(gl.DEPTH_TEST);drawWorld(mvp,rays,[.96,.82,1,1],gl.LINES,3);drawWorld(mvp,tips,[1,.96,1,1],gl.POINTS,11);gl.enable(gl.DEPTH_TEST)}
+function disposeGL(){
+  if(gl){
+    for(const shader of glShaders)try{gl.deleteShader(shader)}catch{}
+    for(const buffer of [worldBuf,uiBuf])if(buffer)try{gl.deleteBuffer(buffer)}catch{}
+    for(const texture of [uiTex,annaTex])if(texture)try{gl.deleteTexture(texture)}catch{}
+    for(const program of [worldProgram,uiProgram])if(program)try{gl.deleteProgram(program)}catch{}
+  }
+  glShaders.clear();
+  worldProgram=worldBuf=uiProgram=uiBuf=uiTex=annaTex=null;
+  menuCanvas=menuCtx=null;annaTexReady=false;lastMenu=0;gl=null;
+}
+function setEntryState(busy){
+  const enter=$('enter');if(enter){enter.disabled=busy||contextLost;enter.textContent=busy?'VR SESSION ACTIVE':'ENTER IMMERSIVE VR'}
+  const exit=$('exit');if(exit)exit.disabled=!busy;
+}
+function getLifecycle(){
+  if(xrLifecycle)return xrLifecycle;
+  if(!globalThis.NocturneXRSession)throw Error('VR session support failed to load. Reload this page.');
+  xrLifecycle=NocturneXRSession.create({
+    request:()=>{
+      if(!window.isSecureContext||!navigator.xr)throw Error('WebXR requires a supported headset browser on HTTPS.');
+      if(contextLost)throw Error('Graphics context is unavailable. Wait for recovery or reload.');
+      const root=$('xr-overlay'),options={optionalFeatures:['local-floor','bounded-floor','hand-tracking']};
+      if(root){options.optionalFeatures.push('dom-overlay');options.domOverlay={root};}
+      // Request directly from the click to preserve the browser's user activation.
+      return navigator.xr.requestSession('immersive-vr',options);
+    },
+    prepare:async(next,isCurrent)=>{
+      const canvas=$('xr-canvas'),nextGL=canvas?.getContext('webgl',{xrCompatible:true,alpha:false,antialias:true});
+      if(!nextGL)throw Error('WebGL context unavailable');
+      if(nextGL.makeXRCompatible)await nextGL.makeXRCompatible();
+      if(!isCurrent())return;
+      gl=nextGL;initGL();
+      const nextLayer=new XRWebGLLayer(next,gl);
+      next.updateRenderState({baseLayer:nextLayer,depthNear:.04,depthFar:60});
+      let space,mode='local-floor';
+      try{space=await next.requestReferenceSpace('local-floor')}catch(error){if(!isCurrent())return;space=await next.requestReferenceSpace('local');mode='local'}
+      if(!isCurrent())return;
+      layer=nextLayer;refSpace=space;refMode=mode;
+    },
+    started:next=>{
+      session=next;lastDisplayFrame=null;triggerDown.clear();escapeDown.clear();rayTargets.clear();
+      next.addEventListener('inputsourceschange',()=>{const live=new Set(next.inputSources);for(const map of [triggerDown,escapeDown,rayTargets])for(const source of map.keys())if(!live.has(source))map.delete(source)});
+      next.addEventListener('select',event=>{if(session===next&&!event.inputSource?.gamepad){const index=rayTargets.get(event.inputSource);if(index>=0)selectTile(index,event.inputSource)}});
+      next.addEventListener('visibilitychange',()=>{lastDisplayFrame=null;triggerDown.clear();escapeDown.clear();rayTargets.clear()});
+      sceneMode='live';panelOffset={x:0,y:0,z:0};panelPose={scale:1,yaw:0};actionLine='Immersive control deck · AI + face pack + chart + tool + waveform.';lastMenu=0;
+      loadAnnaFaceState(localStorage.getItem('nocturne.face-state.v1')||annaFaceState);
+      document.documentElement.classList.add('xr-active');
+      window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:true,mode:sceneMode}}));set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');setEntryState(true);
+      const frame=(t,f)=>{
+        if(session!==next||contextLost||!layer||!refSpace)return;
+        if(next.visibilityState==='hidden'){lastDisplayFrame=null;next.requestAnimationFrame(frame);return;}
+        try{
+          const dt=globalThis.NocturneViewerCore?.frameDelta(lastDisplayFrame,t)||0;lastDisplayFrame=t;
+          const motion=motionState();syncMotionRuntime(t,motion);updateAvatarRuntime(t);updateAnnaTexture(t);
+          const pose=f.getViewerPose(refSpace),rays=controllerInteraction(f,dt);
+          gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+          if(pose)for(const view of pose.views){const vp=layer.getViewport(view);gl.viewport(vp.x,vp.y,vp.width,vp.height);gl.scissor(vp.x,vp.y,vp.width,vp.height);gl.enable(gl.SCISSOR_TEST);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(f,view,t,rays,motion);const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix);renderMenu(mvp,t);drawControllerOverlay(mvp,rays);gl.disable(gl.SCISSOR_TEST)}
+          if(session===next)next.requestAnimationFrame(frame);
+        }catch(error){set('diag-line','VR rendering stopped: '+String(error?.message||error).slice(0,120));xrLifecycle.stop('render-error');}
+      };
+      next.requestAnimationFrame(frame);
+    },
+    stopped:reason=>{
+      session=null;layer=null;refSpace=null;lastDisplayFrame=null;hovered=-1;triggerDown.clear();escapeDown.clear();rayTargets.clear();disposeGL();
+      document.documentElement.classList.remove('xr-active');
+      window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:false}}));
+      set('xr-status',contextLost?'GRAPHICS INTERRUPTED':'VR READY');
+      if(!['setup-failed','render-error'].includes(reason))set('diag-line',contextLost?'Graphics interrupted. Re-enter VR after recovery.':'Immersive session ended.');
+      setEntryState(false);const route=pendingRoute;pendingRoute=null;if(route)location.assign(route);
+    },
+    failed:(error,phase)=>{
+      set('diag-line',(phase==='end'?'VR could not exit. Try Exit VR or the headset system menu. ':'VR start failed: ')+String(error?.message||error).slice(0,140));
+      set('xr-status',phase==='end'?'EXIT NEEDS RETRY':'VR START FAILED');setEntryState(phase==='end');
+    }
+  });
+  return xrLifecycle;
+}
+function handleContextLost(event){
+  event.preventDefault();contextLost=true;lastDisplayFrame=null;
+  set('xr-status','GRAPHICS INTERRUPTED');set('diag-line','Graphics interrupted. Ending VR…');
+  setEntryState(Boolean(xrLifecycle?.status().busy));
+  return xrLifecycle?.stop('context-lost');
+}
+function handleContextRestored(){
+  contextLost=false;disposeGL();const busy=Boolean(xrLifecycle?.status().busy);setEntryState(busy);
+  set('diag-line',busy?'Graphics recovered. Exit the old VR session, then enter again.':'Graphics recovered. Enter VR to resume.');
+  set('xr-status',busy?'EXIT VR TO RETRY':'VR READY');
+}
 async function enterFallback(e){
-  if(e){e.preventDefault();e.stopImmediatePropagation()}if(session){set('diag-line','Immersive session is already active.');return}
-  const cfg=loadTelemetry();if(!cfg.initialized){set('diag-line','Initialize Entry Speed, Depth and Stroke Speed before entering VR.');try{$('vr-session-dialog')?.showModal()}catch{}return}
-  const enter=$('enter');if(enter){enter.disabled=true;enter.textContent='OPENING VR…'}
+  if(e){e.preventDefault();e.stopImmediatePropagation()}
   try{
-    const test=await run();if(!test.immersive)throw Error('Quest reports immersive-vr unsupported');
-    const canvas=$('xr-canvas');gl=canvas.getContext('webgl',{xrCompatible:true,alpha:false,antialias:true});if(!gl)throw Error('WebGL context unavailable');if(gl.makeXRCompatible)await gl.makeXRCompatible();initGL();
-    const root=$('xr-overlay');try{session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor','hand-tracking','dom-overlay'],domOverlay:{root}})}catch{session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor','hand-tracking']})}
-    layer=new XRWebGLLayer(session,gl);session.updateRenderState({baseLayer:layer,depthNear:.04,depthFar:60});
-    try{refSpace=await session.requestReferenceSpace('local-floor');refMode='local-floor'}catch{refSpace=await session.requestReferenceSpace('local');refMode='local'}
-    session.addEventListener('end',()=>{session=null;layer=null;refSpace=null;hovered=-1;triggerDown.clear();window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:false}}));set('xr-status','VR READY');set('diag-line','Immersive session ended normally.');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}const exit=$('exit');if(exit)exit.disabled=true;const route=pendingRoute;pendingRoute=null;if(route)setTimeout(()=>location.assign(route),40)},{once:true});
-    sceneMode='live';panelOffset={x:0,y:0,z:0};panelPose={scale:1,yaw:0};actionLine='Immersive control deck · AI + face pack + chart + tool + waveform.';lastMenu=0;loadAnnaFaceState(localStorage.getItem('nocturne.face-state.v1')||annaFaceState);window.dispatchEvent(new CustomEvent('nocturne:vr-session',{detail:{active:true,mode:sceneMode}}));set('xr-status','IMMERSIVE VR');set('diag-line','Nocturne '+sceneMode+' field active.');const exit=$('exit');if(exit)exit.disabled=false;
-    const frame=(t,f)=>{if(!session)return;const motion=motionState();syncMotionRuntime(t,motion);updateAvatarRuntime(t);updateAnnaTexture(t);const pose=f.getViewerPose(refSpace),rays=controllerInteraction(f);gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);if(pose)for(const view of pose.views){const vp=layer.getViewport(view);gl.viewport(vp.x,vp.y,vp.width,vp.height);gl.scissor(vp.x,vp.y,vp.width,vp.height);gl.enable(gl.SCISSOR_TEST);gl.clearColor(.006,.004,.014,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawScene(f,view,t,rays,motion);const mvp=mul4(view.projectionMatrix,view.transform.inverse.matrix);renderMenu(mvp,t);drawControllerOverlay(mvp,rays);gl.disable(gl.SCISSOR_TEST)}session.requestAnimationFrame(frame)};session.requestAnimationFrame(frame);
-  }catch(err){set('diag-line','Direct VR start failed: '+String(err&&err.message||err).slice(0,140));set('xr-status','VR START FAILED');if(enter){enter.disabled=false;enter.textContent='ENTER IMMERSIVE VR'}session=null}
+    const lifecycle=getLifecycle();
+    if(lifecycle.status().busy){set('diag-line','A VR session is already opening or active.');return;}
+    const cfg=loadTelemetry();if(!cfg.initialized){set('diag-line','Initialize Entry Speed, Depth and Stroke Speed before entering VR.');try{$('vr-session-dialog')?.showModal()}catch{}return;}
+    setEntryState(true);if($('enter'))$('enter').textContent='OPENING VR…';
+    await lifecycle.start();if(!lifecycle.status().busy)setEntryState(false);
+  }catch(error){set('diag-line',String(error?.message||error));setEntryState(false);}
 }
 async function testControllers(e){
   if(e){e.preventDefault();e.stopImmediatePropagation()}if(!session){set('diag-line','Controller Test needs an active immersive session. Enter VR first.');return}
@@ -370,8 +464,10 @@ async function testControllers(e){
   set('diag-line',pulses?'Controller test sent '+pulses+' haptic pulse'+(pulses===1?'':'s')+'.':'Controllers are visible, but no haptic actuator is exposed.');
 }
 window.nocturneVrSelfTest=run;
-document.addEventListener('DOMContentLoaded',()=>{loadAnnaFaceState(localStorage.getItem('nocturne.face-state.v1')||'ANNA_02_ATTENTIVE').catch(()=>{});$('vr-home')?.addEventListener('click',e=>{e.preventDefault();navigateOut('/')});$('vr-live-nav')?.addEventListener('click',e=>{e.preventDefault();navigateOut('/live/')});$('vr-devices-nav')?.addEventListener('click',e=>{e.preventDefault();navigateOut('/devices/')});$('vr-exit-now')?.addEventListener('click',e=>{e.preventDefault();navigateOut('/vr/')});$('diag-run')?.addEventListener('click',run);setTimeout(run,0);const enter=$('enter');if(enter)enter.addEventListener('click',enterFallback,{capture:true});const setup=$('session-setup');if(setup)setup.addEventListener('click',()=>{try{$('vr-session-dialog')?.showModal()}catch{}},{capture:true});const form=$('vr-session-form');if(form)form.addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return;if(!form.reportValidity()){e.preventDefault();return}e.preventDefault();e.stopImmediatePropagation();commitFallbackVrSession();try{$('vr-session-dialog')?.close()}catch{}enterFallback()},{capture:true});const test=$('test');if(test)test.addEventListener('click',testControllers,{capture:true});const exit=$('exit');if(exit)exit.addEventListener('click',async e=>{if(session){e.preventDefault();e.stopImmediatePropagation();try{await session.end()}catch{}}},{capture:true})});
+document.addEventListener('DOMContentLoaded',()=>{loadAnnaFaceState(localStorage.getItem('nocturne.face-state.v1')||'ANNA_02_ATTENTIVE').catch(()=>{});$('vr-home')?.addEventListener('click',e=>{e.preventDefault();navigateOut('/')});$('vr-live-nav')?.addEventListener('click',e=>{e.preventDefault();navigateOut('/live/')});$('vr-devices-nav')?.addEventListener('click',e=>{e.preventDefault();navigateOut('/devices/')});$('vr-exit-now')?.addEventListener('click',e=>{e.preventDefault();navigateOut('/vr/')});$('diag-run')?.addEventListener('click',run);setTimeout(run,0);const enter=$('enter');if(enter)enter.addEventListener('click',enterFallback,{capture:true});const setup=$('session-setup');if(setup)setup.addEventListener('click',()=>{try{$('vr-session-dialog')?.showModal()}catch{}},{capture:true});const form=$('vr-session-form');if(form)form.addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return;if(!form.reportValidity()){e.preventDefault();return}e.preventDefault();e.stopImmediatePropagation();commitFallbackVrSession();try{$('vr-session-dialog')?.close()}catch{}enterFallback()},{capture:true});const test=$('test');if(test)test.addEventListener('click',testControllers,{capture:true});const canvas=$('xr-canvas');canvas?.addEventListener('webglcontextlost',handleContextLost);canvas?.addEventListener('webglcontextrestored',handleContextRestored);const exit=$('exit');if(exit)exit.addEventListener('click',async e=>{if(xrLifecycle?.status().busy){e.preventDefault();e.stopImmediatePropagation();await getLifecycle().stop('exit-button')}},{capture:true})});
 window.addEventListener('nocturne:embodied-state',e=>{embodiedState=String(e.detail?.state||'attentive');lastMenu=0});window.addEventListener('nocturne:vr-ai-status',e=>{aiStatus=String(e.detail?.text||'AI READY').slice(0,38);lastMenu=0});window.addEventListener('nocturne:vr-reset-view',()=>resetSpatialView());window.addEventListener('storage',e=>{if(e.key===EMBODIED_STATE_KEY&&e.newValue){embodiedState=e.newValue;lastMenu=0}if(e.key==='nocturne.face-state.v1'&&e.newValue)loadAnnaFaceState(e.newValue);if(e.key==='nocturne.devices.v1')lastMenu=0});
+window.addEventListener('pagehide',()=>{pendingRoute=null;xrLifecycle?.stop('pagehide')});
+window.addEventListener('nocturne:suspend',()=>{if(document.visibilityState!=='hidden')xrLifecycle?.stop('navigation')});
 window.addEventListener('error',e=>set('diag-line','VR script error: '+String(e.message||'unknown').slice(0,120)));
 window.addEventListener('unhandledrejection',e=>set('diag-line','VR promise error: '+String(e.reason&&e.reason.message||e.reason||'unknown').slice(0,120)));
 })();

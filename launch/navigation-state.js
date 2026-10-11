@@ -1,19 +1,23 @@
 /** Per-tab UI state only. Does not change Anna's relationship or grant permissions. */
 const PREFIX = 'nocturne.navigation.v1.';
 const MAX_AGE = 12 * 60 * 60 * 1000;
+const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function screenKey(pathname = location.pathname) {
   const p = pathname.replace(/\/+$/, '') || '/';
   return p === '/' || p === '/experience' ? 'home' : p.slice(1);
 }
 export function readNavigationState(key, storage, now = Date.now()) {
   try {
-    const item = JSON.parse((storage || globalThis.sessionStorage).getItem(PREFIX + key) || 'null');
-    if (!item || !Number.isFinite(item.at) || now < item.at || now - item.at > MAX_AGE) return null;
+    const raw = (storage || globalThis.sessionStorage).getItem(PREFIX + key);
+    if (!raw || raw.length > 100000) return null;
+    const item = JSON.parse(raw);
+    if (!isRecord(item) || !isRecord(item.value) || !Number.isFinite(item.at) || !Number.isFinite(now) || now < item.at || now - item.at > MAX_AGE) return null;
     return item.value;
   } catch { return null; }
 }
 export function writeNavigationState(key, value, storage, now = Date.now()) {
   try {
+    if (!isRecord(value) || !Number.isFinite(now)) return false;
     const store = storage || globalThis.sessionStorage;
     const json = JSON.stringify({ at: now, value });
     if (json.length > 100000) return false;

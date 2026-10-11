@@ -1,9 +1,19 @@
 import {listClips,getClip,saveClip,storageEstimate} from './video-state-core.js';
 
 export const ASSET_PACK_VERSION='NOCTURNE-ASSET-PACK-0.84.0';
-export const SHELL_CACHE='nocturne-shell-0840';
+export const SHELL_CACHE='nocturne-shell-0841-diag1';
 export const SHELL_ASSETS=[
   '/',
+  '/anna-home.js?v=0840',
+  '/anna-home.css?v=0840',
+  '/anna-psyche.js?v=0840',
+  '/anna-memory.js?v=0840',
+  '/anna-presence.js?v=0840',
+  '/anna-grounding.js?v=0840',
+  '/anna-experience.js?v=0840',
+  '/video-state-player.js?v=0840',
+  '/video-state.css?v=0840',
+  '/nocturne-icon.svg?v=0840',
   '/live/',
   '/vr/',
   '/experience.css?v=0840',
@@ -18,8 +28,19 @@ export const SHELL_ASSETS=[
   '/vr.js?v=0840',
   '/vr-fallback.js?v=0840',
   '/vr.css?v=0840',
-  '/navigation.css?v=0840',
-  '/navigation.js?v=0840',
+  '/ui-shell.css?v=0841',
+  '/ui-shell-core.js?v=0841',
+  '/ui-shell.js?v=0841',
+  '/viewer-core.js?v=0841',
+  '/xr-session-core.js?v=0841',
+  '/model-viewer/',
+  '/model-viewer.js?v=0841',
+  '/model-viewer.css?v=0841',
+  '/navigation.css?v=0841',
+  '/navigation.js?v=0841',
+  '/navigation-state.js?v=0840',
+  '/runtime-diagnostics.js?v=0841diag1',
+  '/browser-storage.js?v=0840',
   '/session-core.js?v=0840',
   '/app.webmanifest?v=0840'
 ];
@@ -43,15 +64,37 @@ export async function installServiceWorker(){
   }catch(error){return{supported:true,registered:false,error:errText(error)}}
 }
 
+// Keep shell cache keys in sync with nocturne-sw.js. Other query parameters
+// retain their meaning; only the shell build cache-buster is discarded.
+function shellCacheKey(path){
+  const url=new URL(path,location.origin);
+  url.searchParams.delete('v');url.hash='';
+  return new Request(url.href);
+}
+let privateShellMode=false;
+async function disableShellCaching(){
+  privateShellMode=true;
+  const names=await caches.keys();
+  await Promise.all(names.filter(name=>name.startsWith('nocturne-shell-')).map(name=>caches.delete(name)));
+}
 export async function cacheShell({onProgress=function(){}}={}){
+  const privateError='Offline shell caching is disabled for authenticated deployments.';
+  if(privateShellMode)return{cached:[],failed:[{path:'shell',error:privateError}]};
   if(!('caches'in window))return{cached:[],failed:[{path:'shell',error:'Cache Storage unavailable'}]};
-  const cache=await caches.open(SHELL_CACHE),cached=[],failed=[];
+  let cache;
+  try{cache=await caches.open(SHELL_CACHE)}catch(error){return{cached:[],failed:[{path:'shell',error:errText(error)}]}}
+  const cached=[],failed=[];
   for(let i=0;i<SHELL_ASSETS.length;i++){
     const path=SHELL_ASSETS[i];onProgress({stage:'shell',index:i+1,total:SHELL_ASSETS.length,percent:Math.round((i/SHELL_ASSETS.length)*25),label:'Caching '+path});
     try{
       const response=await fetch(path,{cache:'reload',credentials:'same-origin'});
-      if(!response.ok)throw Error('HTTP '+response.status);
-      await cache.put(path,response.clone());cached.push(path);
+      if(/(?:^|,)\s*private(?:\s|=|,|$)/i.test(response.headers.get('cache-control')||'')||response.status===401||response.status===403){
+        try{await disableShellCaching()}catch(error){failed.push({path:'shell',error:errText(error)})}
+        return{cached:[],failed:[...failed,{path,error:privateError}]};
+      }
+      if(privateShellMode)return{cached:[],failed:[...failed,{path,error:privateError}]};
+      if(!response.ok||response.status===206)throw Error('HTTP '+response.status);
+      await cache.put(shellCacheKey(path),response.clone());cached.push(path);
     }catch(error){failed.push({path,error:errText(error)})}
   }
   return{cached,failed};

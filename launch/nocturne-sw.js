@@ -1,7 +1,17 @@
-const VERSION='nocturne-sw-0.84.0';
-const SHELL='nocturne-shell-0840';
+const VERSION='nocturne-sw-0.84.1-diag1';
+const SHELL='nocturne-shell-0841-diag1';
 const CORE=[
   '/',
+  '/anna-home.js?v=0840',
+  '/anna-home.css?v=0840',
+  '/anna-psyche.js?v=0840',
+  '/anna-memory.js?v=0840',
+  '/anna-presence.js?v=0840',
+  '/anna-grounding.js?v=0840',
+  '/anna-experience.js?v=0840',
+  '/video-state-player.js?v=0840',
+  '/video-state.css?v=0840',
+  '/nocturne-icon.svg?v=0840',
   '/live/',
   '/vr/',
   '/experience.css?v=0840',
@@ -16,47 +26,95 @@ const CORE=[
   '/vr.js?v=0840',
   '/vr-fallback.js?v=0840',
   '/vr.css?v=0840',
-  '/navigation.css?v=0840',
-  '/navigation.js?v=0840',
+  '/ui-shell.css?v=0841',
+  '/ui-shell-core.js?v=0841',
+  '/ui-shell.js?v=0841',
+  '/viewer-core.js?v=0841',
+  '/xr-session-core.js?v=0841',
+  '/model-viewer/',
+  '/model-viewer.js?v=0841',
+  '/model-viewer.css?v=0841',
+  '/navigation.css?v=0841',
+  '/navigation.js?v=0841',
+  '/navigation-state.js?v=0840',
+  '/runtime-diagnostics.js?v=0841diag1',
+  '/browser-storage.js?v=0840',
   '/session-core.js?v=0840',
   '/app.webmanifest?v=0840'
 ];
+// v is the shell's build cache-buster. Keep functional query parameters distinct.
+function cacheKey(request){
+  const url=new URL(typeof request==='string'?request:request.url,location.origin);
+  url.searchParams.delete('v');
+  url.hash='';
+  return new Request(url.href,{headers:typeof request==='string'?undefined:request.headers});
+}
+function isPrivate(response){
+  return /(?:^|,)\s*private(?:\s|=|,|$)/i.test(response.headers.get('cache-control')||'');
+}
+let privateMode=false;
+async function disableOffline(){
+  privateMode=true;
+  try{
+    const names=await caches.keys();
+    await Promise.all(names.filter(name=>name.startsWith('nocturne-shell-')).map(name=>caches.delete(name)));
+  }catch{}
+}
+async function remember(request,response){
+  if(isPrivate(response)||response.status===401||response.status===403){
+    await disableOffline();
+    return;
+  }
+  if(privateMode||!response.ok||response.status===206)return;
+  try{
+    const cache=await caches.open(SHELL);
+    if(!privateMode)await cache.put(cacheKey(request),response.clone());
+  }catch{} // A full or unavailable cache must not break a successful request.
+}
+async function fallback(request,navigation){
+  if(privateMode)return undefined;
+  try{
+    const cache=await caches.open(SHELL);
+    const response=(await cache.match(cacheKey(request)))||(navigation?await cache.match(cacheKey('/')):undefined);
+    return privateMode?undefined:response;
+  }catch{return undefined;}
+}
+async function networkFirst(request,navigation){
+  let response;
+  try{response=await fetch(request,{cache:'no-cache'});}catch{}
+  if(response){
+    await remember(request,response);
+    // Authentication failures and missing routes must remain visible. Private
+    // responses must never be replaced by a previously cached public document.
+    if(response.status<500||isPrivate(response))return response;
+  }
+  return (await fallback(request,navigation))||response||Response.error();
+}
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
-    const cache=await caches.open(SHELL);
-    for(const url of CORE){try{const r=await fetch(url,{cache:'reload'});if(r.ok)await cache.put(url,r.clone())}catch{}}
+    for(const url of CORE){
+      try{await remember(url,await fetch(url,{cache:'reload'}));}catch{}
+    }
     await self.skipWaiting();
   })());
 });
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
-    const keys=await caches.keys();
-    await Promise.all(keys.filter(k=>k.startsWith('nocturne-shell-')&&k!==SHELL).map(k=>caches.delete(k)));
+    try{
+      const keys=await caches.keys();
+      await Promise.all(keys.filter(k=>k.startsWith('nocturne-shell-')&&k!==SHELL).map(k=>caches.delete(k)));
+    }catch{}
     await self.clients.claim();
   })());
 });
 self.addEventListener('fetch',event=>{
   const req=event.request,url=new URL(req.url);
   if(url.origin!==location.origin)return;
-  if(url.pathname.startsWith('/v1/')||url.pathname.startsWith('/media/'))return;
-  if(req.method!=='GET')return;
-  if(req.mode==='navigate'){
-    event.respondWith((async()=>{
-      try{
-        const fresh=await fetch(req);
-        const cache=await caches.open(SHELL);cache.put(req,fresh.clone()).catch(()=>{});
-        return fresh;
-      }catch{
-        return (await caches.match(req))||(await caches.match('/'))||Response.error();
-      }
-    })());
-    return;
-  }
-  if(/\.(?:js|css|webmanifest|json)$/i.test(url.pathname)){
-    event.respondWith((async()=>{
-      const cached=await caches.match(req);
-      const refresh=fetch(req).then(async r=>{if(r.ok){const cache=await caches.open(SHELL);await cache.put(req,r.clone())}return r}).catch(()=>null);
-      return cached||(await refresh)||Response.error();
-    })());
+  if(req.headers.has('authorization')){event.waitUntil(disableOffline());return;}
+  if(req.method!=='GET'||/^\/(?:api|v1|media)(?:\/|$)/.test(url.pathname))return;
+  if(req.cache==='no-store'||req.headers.has('range'))return;
+  const navigation=req.mode==='navigate';
+  if(navigation||url.pathname==='/nocturne-icon.svg'||/\.(?:js|css|webmanifest|json)$/i.test(url.pathname)){
+    event.respondWith(networkFirst(req,navigation));
   }
 });
