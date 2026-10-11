@@ -33,6 +33,7 @@ const fs=require('node:fs');
    await page.goto(url+'/live/');await waitPortrait(page,'calm');await dismiss(page);
    const result=await page.evaluate(async()=>{const image=document.getElementById('anna-poster');await image.decode();return{width:image.naturalWidth,height:image.naturalHeight,gridCount:(await NocturneFacePack.list()).length,fit:getComputedStyle(image).objectFit,opacity:getComputedStyle(image).opacity,issue:document.getElementById('nocturne-navigation-state').textContent}});
    assert.deepEqual(result,{width:944,height:1667,gridCount:0,fit:'cover',opacity:'1',issue:'More'},name+' fresh-device portrait');
+   assert.equal(await page.locator('#empty').isVisible(),false,name+' decoded portrait has no empty-state overlay');
    assert.ok(requests.every(request=>request.endsWith('/neutral-20261011.webp')),name+' no unselected image requested');
    const picker=await page.locator('#neutral-portrait-select').boundingBox();assert.ok(picker.width<=viewport.width&&picker.height>=44,name+' accessible native picker');
    fs.mkdirSync('reports',{recursive:true});await page.locator('#anna-poster').screenshot({path:'reports/neutral-portrait-'+name+'.png'});
@@ -59,6 +60,7 @@ const fs=require('node:fs');
    await page.route('**/portraits/*.webp',route=>fail?route.abort():route.continue());
    await page.goto(url+'/live/');await page.waitForFunction(()=>document.getElementById('nocturne-runtime-message').dataset.status.includes('portrait-unavailable'));await dismiss(page);
    const old=await page.evaluate(()=>({src:document.getElementById('anna-poster').getAttribute('src'),width:document.getElementById('anna-poster').naturalWidth}));assert.match(old.src,/^data:image\/jpeg/);assert.equal(old.width,120);
+   assert.equal(await page.locator('#anna-poster').getAttribute('data-portrait'),null,'failed initial load does not apply loaded-portrait styling');
    fail=false;await page.locator('#neutral-portrait-select').selectOption('friendly');await waitPortrait(page,'friendly');await ctx.close();console.log('PASS failed request retains basic portrait and explicit selection recovers');
   }
   {

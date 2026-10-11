@@ -73,3 +73,10 @@ test('a local grid that wins the load race stays on screen when the portrait fin
 test('explicit reselection retries a failed image while preserving successful deduplication',async()=>{
  const h=boot();h.images[0].onerror();await flush();const retried=h.api.choose('calm');assert.equal(h.images.length,2);await ready(h.images[1]);assert.equal(await retried,true);await h.api.choose('calm');assert.equal(h.images.length,2);assert.equal(h.poster.dataset.portrait,'calm');
 });
+
+test('neutral portrait hides only the obsolete empty-state decoration after successful decode',()=>{
+ const css=readFileSync(new URL('../launch/neutral-portrait.css',import.meta.url),'utf8');
+ assert.match(css,/#avatar #anna-poster\[data-portrait\]~#empty\{display:none!important\}/);
+ assert.doesNotMatch(css,/#anna-face|#avatar-session-strip|#performance/);
+ const h=boot();assert.equal(h.poster.dataset.portrait,undefined);
+});

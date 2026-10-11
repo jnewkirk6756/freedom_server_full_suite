@@ -4,3 +4,5 @@
 .neutral-portrait-picker select:focus-visible{outline:2px solid #d6a6ff!important;outline-offset:3px!important}
 .neutral-portrait-picker small{color:#ae9ebb!important;font:400 11px/1.4 system-ui!important;letter-spacing:normal!important}
 #anna-poster[data-portrait]{image-rendering:auto;object-position:50% 32%!important}
+/* A decoded still is real content; keep the old empty-state decoration off it. */
+#avatar #anna-poster[data-portrait]~#empty{display:none!important}
