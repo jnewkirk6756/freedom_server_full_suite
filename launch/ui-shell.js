@@ -14,7 +14,7 @@
     // Visual viewport changes are used only for UI placement, never app state.
     function viewport(){
       const vv=window.visualViewport;
-      const state=NocturneUICore.viewportState({layoutWidth:innerWidth,layoutHeight:innerHeight,visualHeight:vv?.height,offsetTop:vv?.offsetTop,editable:document.activeElement?.matches('input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea,[contenteditable=true]'),insideNavigation:nav.contains(document.activeElement)});
+      const state=NocturneUICore.viewportState({layoutWidth:innerWidth,layoutHeight:innerHeight,visualHeight:vv?.height,offsetTop:vv?.offsetTop,visualScale:vv?.scale,coarsePointer:window.matchMedia?.('(any-pointer: coarse)')?.matches===true,editable:document.activeElement?.matches('input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea,[contenteditable=true]'),insideNavigation:nav.contains(document.activeElement)});
       root.style.setProperty('--nocturne-viewport-height',state.visibleHeight+'px');
       root.style.setProperty('--nocturne-keyboard-inset',state.keyboardInset+'px');
       root.classList.toggle('nocturne-keyboard-open',state.keyboardOpen);

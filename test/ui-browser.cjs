@@ -7,6 +7,7 @@ const {spawn}=require('node:child_process');
 const {once}=require('node:events');
 const fs=require('node:fs');
 const {verifyNeutralScaleRange}=require('./neutral-range-browser-helper.cjs');
+const {verifyMobileShellKeyboard}=require('./mobile-shell-browser-helper.cjs');
 const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/player/','/matrix/','/nps/','/commission/','/director/','/video-router/','/photo-space/','/travel/','/venice-setup/','/app/','/launcher/'];
 (async()=>{
  const child=spawn(process.execPath,['launch/server.mjs'],{env:{PATH:process.env.PATH,HOST:'127.0.0.1',PORT:'0'},stdio:['ignore','pipe','pipe']});
@@ -46,15 +47,8 @@ const routes=['/','/live/','/devices/','/vr/','/model-viewer/','/world/','/playe
    assert.equal(await page.evaluate(()=>document.activeElement.id),'settings',name+' focus restored');
    await page.locator('#nocturne-screen-menu > summary').click();await page.locator('#nocturne-screen-filter').fill('model');
    assert.equal(await page.locator('[data-screen-link]:visible').count(),1,name+' screen filter');
-   if(viewport.width<=600){
-    // Synthetic VisualViewport tests complement, and do not replace, real iOS keyboard checks.
-    await page.evaluate(()=>{
-     const vv=new EventTarget();Object.assign(vv,{height:Math.max(250,innerHeight-300),offsetTop:0});Object.defineProperty(window,'visualViewport',{configurable:true,value:vv});
-     document.getElementById('nocturne-screen-filter').focus();window.dispatchEvent(new Event('resize'));
-    });
-    assert.equal(await page.locator('#nocturne-screen-filter').isVisible(),true,name+' search survives keyboard');
-    assert.equal(await page.evaluate(()=>document.documentElement.classList.contains('nocturne-menu-keyboard-open')),true);
-   }
+   await verifyMobileShellKeyboard(page,{label:name,touch:viewport.width<=844});
+   await page.locator('#nocturne-screen-menu > summary').click();
    await page.locator('#nocturne-close-menu').click();await page.locator('#nocturne-screen-menu > summary').click();await page.locator('#nocturne-display-preferences').click();
    await page.locator('#nocturne-high-contrast').check();await page.locator('#nocturne-preferences button').click();await page.reload();
    await page.waitForFunction(()=>document.documentElement.dataset.nocturneContrast==='high');

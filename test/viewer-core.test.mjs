@@ -203,6 +203,34 @@ test('pointer drag, pinch and cancellation retain bounded view state without stu
   app.canvas.dispatch('pointermove', { pointerId: 1, clientX: 500, clientY: 500 }); assert.deepEqual(app.state().transform, state);
   app.canvas.dispatch('pointerdown', { pointerId: 3, pointerType: 'mouse', button: 2, clientX: 0, clientY: 0 }); assert.equal(app.state().activePointers, 0);
 });
+test('a third touch is ignored and losing one captured touch rebases the remaining drag', () => {
+  const app = createViewerHarness();
+  const pointer = (name, pointerId, clientX, clientY) => app.canvas.dispatch(name, { pointerId, pointerType: 'touch', clientX, clientY });
+  pointer('pointerdown', 1, 100, 100); pointer('pointerdown', 2, 200, 100); pointer('pointerdown', 3, 300, 100);
+  assert.equal(app.state().activePointers, 2); assert.equal(app.canvas.hasPointerCapture(3), false);
+  const before = app.state().transform;
+  pointer('pointermove', 3, 600, 500); assert.deepEqual(app.state().transform, before);
+  pointer('lostpointercapture', 1); assert.equal(app.state().activePointers, 1);
+  pointer('pointermove', 2, 200, 100); assert.deepEqual(app.state().transform, before, 'one-finger transition does not jump');
+  pointer('pointermove', 2, 215, 100); close(app.state().transform.rotation.y - before.rotation.y, 15 * 0.008);
+  pointer('pointercancel', 2); assert.equal(app.state().activePointers, 0);
+  assert.equal(app.canvas.classes.has('is-dragging'), false);
+});
+test('blur, visibility, pagehide and graphics interruption clear capture before new input', () => {
+  for (const interruption of ['blur', 'visibility', 'pagehide', 'graphics']) {
+    const app = createViewerHarness(); app.tick(0);
+    app.canvas.dispatch('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 100, clientY: 100 });
+    const before = app.state().transform;
+    if (interruption === 'blur') app.window.dispatch('blur');
+    if (interruption === 'visibility') { app.document.hidden = true; app.document.dispatch('visibilitychange'); }
+    if (interruption === 'pagehide') app.window.dispatch('pagehide');
+    if (interruption === 'graphics') { app.setLost(true); app.canvas.dispatch('webglcontextlost'); }
+    assert.equal(app.state().activePointers, 0, interruption);
+    assert.equal(app.canvas.hasPointerCapture(1), false, interruption);
+    app.canvas.dispatch('pointermove', { pointerId: 1, clientX: 500, clientY: 500 });
+    assert.deepEqual(app.state().transform, before, interruption + ' ignores stale input');
+  }
+});
 test('context loss pauses drawing and restoration rebuilds resources while preserving choices', () => {
   const app = createViewerHarness(); app.tick(0);
   app.canvas.dispatch('keydown', { key: '+' });
@@ -217,6 +245,21 @@ test('context loss pauses drawing and restoration rebuilds resources while prese
   assert.deepEqual(app.state().transform, before.transform); assert.equal(app.state().shape, 'prism');
   assert.equal(app.calls.buffers, buffers + 3); assert.equal(app.elements.get('viewer-unavailable').hidden, true);
 });
+test('repeated graphics recovery has one on-demand frame and accessible control state', () => {
+  const app = createViewerHarness(); app.tick(0);
+  for (let cycle = 1; cycle <= 3; cycle++) {
+    app.setLost(true); app.canvas.dispatch('webglcontextlost');
+    assert.equal(app.canvas.attributes['aria-disabled'], 'true');
+    assert.equal(app.elements.get('reset-model').disabled, true);
+    app.setLost(false); app.canvas.dispatch('webglcontextrestored');
+    assert.equal(app.state().recoveredCount, cycle);
+    assert.equal(app.canvas.attributes['aria-disabled'], 'false');
+    assert.equal(app.elements.get('reset-model').disabled, false);
+    assert.equal(app.frames.size, 1); app.tick(cycle * 10000); assert.equal(app.frames.size, 0);
+    app.canvas.dispatch('keydown', { key: 'ArrowRight' }); app.tick(cycle * 10000 + 16);
+    assert.match(app.elements.get('viewer-status').textContent, /Rotation adjusted/);
+  }
+});
 test('system and shared reduced-motion preferences prevent autonomous rotation', () => {
   for (const settings of [{ reducedMotion: true }, { sharedReducedMotion: true }]) {
     const app = createViewerHarness(settings); app.tick(0);
@@ -230,6 +273,17 @@ test('system and shared reduced-motion preferences prevent autonomous rotation',
   app.document.documentElement.dataset.nocturneMotion = 'reduce'; app.window.dispatch('nocturne:display-preferences', { detail: { reduceMotion: true } }); app.tick(1100);
   assert.equal(app.state().autoRotate, false); assert.equal(app.frames.size, 0);
 });
+test('changing system reduced motion stops rotation while preserving keyboard exploration', () => {
+  const app = createViewerHarness(); app.tick(0);
+  app.elements.get('auto-rotate').checked = true; app.elements.get('auto-rotate').dispatch('change'); app.tick(100); app.tick(120);
+  app.motion.matches = true; app.motion.dispatch('change'); app.tick(200);
+  assert.equal(app.state().autoRotate, false); assert.equal(app.elements.get('auto-rotate').checked, false);
+  assert.equal(app.elements.get('auto-rotate').disabled, true); assert.equal(app.frames.size, 0);
+  const before = app.state().transform.rotation.y; app.canvas.dispatch('keydown', { key: 'ArrowRight' });
+  assert.ok(app.state().transform.rotation.y > before);
+  app.motion.matches = false; app.motion.dispatch('change');
+  assert.equal(app.elements.get('auto-rotate').disabled, false); assert.equal(app.state().autoRotate, false, 'preference removal never restarts motion automatically');
+});
 test('hidden/pagehide pause and pageshow resumes without a giant animation step', () => {
   const app = createViewerHarness(); app.tick(0);
   app.elements.get('auto-rotate').checked = true; app.elements.get('auto-rotate').dispatch('change'); app.tick(100);
@@ -238,6 +292,19 @@ test('hidden/pagehide pause and pageshow resumes without a giant animation step'
   app.document.hidden = false; app.document.dispatch('visibilitychange'); app.tick(30000); close(app.state().transform.rotation.y, before);
   app.window.dispatch('pagehide'); assert.equal(app.frames.size, 0);
   app.window.dispatch('pageshow'); app.tick(60000); close(app.state().transform.rotation.y, before);
+});
+test('graphics restored while a page is suspended can initialize on return', () => {
+  const app = createViewerHarness(); app.tick(0);
+  app.canvas.dispatch('keydown', { key: '+' }); const before = app.state().transform;
+  app.window.dispatch('pagehide');
+  app.setLost(true); app.canvas.dispatch('webglcontextlost');
+  app.setLost(false); app.canvas.dispatch('webglcontextrestored');
+  assert.equal(app.frames.size, 0, 'suspended page does not start a render loop');
+  app.window.dispatch('pageshow'); app.tick(30000);
+  assert.equal(app.state().contextState, 'ready');
+  assert.equal(app.elements.get('model-scale').disabled, false);
+  assert.deepEqual(app.state().transform, before);
+  assert.equal(app.frames.size, 0, 'restored static viewer returns to on-demand rendering');
 });
 test('quality switches reallocate a bounded viewport and WebGL failure is visibly recoverable', () => {
   const app = createViewerHarness();

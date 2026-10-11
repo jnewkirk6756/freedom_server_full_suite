@@ -63,3 +63,22 @@ test('synchronous end failure remains retryable',async()=>{
  assert.equal(await h.core.stop(),false);assert.equal(await h.core.stop(),false);assert.equal(calls,2);
  h.session.end=async()=>{calls++};assert.equal(await h.core.stop(),true);assert.equal(calls,3);
 });
+
+test('late setup completion from an ended session cannot replace a new active session',async()=>{
+ const first=new Session(),second=new Session(),pending=deferred(),ready=deferred(),started=[];
+ let requests=0;
+ const h=setup({request:async()=>++requests===1?first:second,prepare:async target=>{if(target===first){ready.resolve();await pending.promise}},started:target=>started.push(target)});
+ const entering=h.core.start();await ready.promise;first.dispatchEvent(new Event('end'));
+ assert.equal(await h.core.start(),true);assert.equal(h.core.status().session,second);
+ pending.resolve();assert.equal(await entering,false);assert.deepEqual(started,[second]);
+ assert.equal(h.core.status().state,'active');await h.core.stop();assert.equal(second.calls,1);
+});
+
+test('late setup rejection from an ended session does not tear down its replacement',async()=>{
+ const first=new Session(),second=new Session(),pending=deferred(),ready=deferred();let requests=0;
+ const h=setup({request:async()=>++requests===1?first:second,prepare:async target=>{if(target===first){ready.resolve();await pending.promise}}});
+ const entering=h.core.start();await ready.promise;first.dispatchEvent(new Event('end'));await h.core.start();
+ pending.reject(Error('Old reference-space failure'));assert.equal(await entering,false);
+ assert.equal(h.core.status().session,second);assert.equal(h.core.status().state,'active');assert.equal(second.calls,0);
+ assert.equal(h.events.some(event=>event.startsWith('error:')),false);await h.core.stop();
+});

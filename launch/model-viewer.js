@@ -286,7 +286,12 @@
   observer?.observe(stage);
   document.addEventListener('visibilitychange', () => { if (document.hidden) { clearPointers(); cancelFrame(); } else { lastTime = null; resize(); invalidate(); } });
   window.addEventListener('pagehide', () => { stopped = true; clearPointers(); cancelFrame(); });
-  window.addEventListener('pageshow', () => { stopped = false; lastTime = null; resize(); invalidate(); });
+  window.addEventListener('pageshow', () => {
+    stopped = false; lastTime = null;
+    // A restored context may arrive while pagehide has paused initialization.
+    if (contextState === 'starting') initialize();
+    else { resize(); invalidate(); }
+  });
   // Read-only inspection hook for browser QA; all controls use the same core functions.
   window.NocturneModelViewer = Object.freeze({ getState: () => ({ transform: core.normalizeTransform(transform), shape, material, mode, quality, qualityPreference, contextState, autoRotate, activePointers: pointers.size, recoveredCount, canvasWidth: canvas.width, canvasHeight: canvas.height }) });
   chooseShape(shape, false); chooseMaterial(material, false); $('viewer-quality').value = qualityPreference;

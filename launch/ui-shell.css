@@ -40,11 +40,12 @@ html[data-nocturne-motion=reduce] *,html[data-nocturne-motion=reduce] *::before,
   body[data-nocturne-screen=devices] .device-fields{grid-template-columns:minmax(0,1fr)}
   body[data-nocturne-screen=home] .mode{flex-wrap:wrap;gap:8px}
   body[data-nocturne-screen=home] #panel{left:8px;right:8px;width:auto;border:1px solid #685078;border-radius:20px}
-  html.nocturne-menu-keyboard-open #nocturne-navigation{bottom:calc(var(--nocturne-keyboard-inset,0px) + 8px)}
-  html.nocturne-menu-keyboard-open #nocturne-screen-menu .nocturne-menu-panel{max-height:calc(var(--nocturne-viewport-height,100dvh) - 94px)}
-  html.nocturne-keyboard-open #nocturne-navigation,html.nocturne-keyboard-open #nocturne-nav-spacer{display:none}
-  html.nocturne-keyboard-open body[data-nocturne-screen] :is(#panel,#menu,#feelings){bottom:8px;max-height:calc(var(--nocturne-viewport-height,100dvh) - 24px)}
 }
+/* The viewport policy also recognizes touch keyboards in landscape. */
+html.nocturne-menu-keyboard-open #nocturne-navigation{bottom:calc(var(--nocturne-keyboard-inset,0px) + 8px)}
+html.nocturne-menu-keyboard-open #nocturne-screen-menu .nocturne-menu-panel{max-height:max(0px,calc(var(--nocturne-viewport-height,100dvh) - 94px))}
+html.nocturne-keyboard-open #nocturne-navigation,html.nocturne-keyboard-open #nocturne-nav-spacer{display:none}
+html.nocturne-keyboard-open body[data-nocturne-screen] :is(#panel,#menu,#feelings){bottom:8px;max-height:calc(var(--nocturne-viewport-height,100dvh) - 24px)}
 @media(max-height:500px){
   #nocturne-screen-menu .nocturne-menu-panel{max-height:calc(var(--nocturne-viewport-height,100dvh) - 88px);padding:12px}
   body[data-nocturne-screen] dialog{max-height:calc(var(--nocturne-viewport-height,100dvh) - 16px)}

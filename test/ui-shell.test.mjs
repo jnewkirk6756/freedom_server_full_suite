@@ -16,6 +16,20 @@ test('browser controls and pinch offset are not mistaken for a keyboard',()=>{
 test('desktop viewport and invalid measurements cannot hide the navigation',()=>{
  assert.equal(viewport({layoutWidth:1200,editable:true,visualHeight:400}).keyboardOpen,false);assert.equal(viewport({layoutWidth:NaN,editable:true,visualHeight:400}).keyboardOpen,false);assert.equal(viewport({visualHeight:NaN}).visibleHeight,844);
 });
+test('landscape touch keyboard keeps navigation search above the obscured viewport',()=>{
+ const measurements={layoutWidth:844,layoutHeight:390,visualHeight:190,coarsePointer:true,editable:true};
+ const search=viewport({...measurements,insideNavigation:true});
+ assert.equal(search.menuKeyboardOpen,true);assert.equal(search.keyboardOpen,false);assert.equal(search.keyboardInset,200);
+ assert.equal(viewport(measurements).keyboardOpen,true);
+ assert.equal(viewport({...measurements,editable:false}).menuKeyboardOpen,false);
+ assert.equal(viewport({...measurements,coarsePointer:false}).keyboardOpen,false,'ordinary desktop resizing does not imply a mobile keyboard');
+});
+test('pinch zoom does not move or hide navigation when a text field retains focus',()=>{
+ for(const layoutWidth of [390,844]){
+  const state=viewport({layoutWidth,visualHeight:350,editable:true,insideNavigation:true,coarsePointer:true,visualScale:2});
+  assert.equal(state.menuKeyboardOpen,false);assert.equal(state.keyboardOpen,false);
+ }
+});
 test('all screens get safe shell identifiers, accessible search and correctly ordered scripts',()=>{
  const doc='<html><head></head><body><main></main></body></html>';
  for(const route of ['/','/live/','/vr/','/devices/','/model-viewer/','/world/']){
