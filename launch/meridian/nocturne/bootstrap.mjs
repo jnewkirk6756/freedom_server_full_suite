@@ -1,10 +1,9 @@
 /** Mount only after approval. Disabled by default; never generates or copies a key. */
 import {createNocturneRoute,nodeAdapter} from './route.mjs';
-export async function initializeMeridianRoute(env=process.env,{loadSharp=()=>import('sharp')}={}){
+export async function initializeMeridianRoute(env=process.env,{}={}){
  if(env.MERIDIAN_BRIDGE_ENABLED!=='true'||!env.MERIDIAN_BRIDGE_APPROVAL_REFERENCE)return async()=>false;
  try{
-  const sharp=(await loadSharp()).default;
-  const handler=createNocturneRoute({enabled:true,audience:env.MERIDIAN_NOCTURNE_ORIGIN,keyId:env.MERIDIAN_VERIFY_KEY_ID,publicJwk:JSON.parse(env.MERIDIAN_VERIFY_PUBLIC_JWK),apiKey:env.OPENAI_API_KEY,sharp});
+  const handler=createNocturneRoute({enabled:true,audience:env.MERIDIAN_NOCTURNE_ORIGIN,keyId:env.MERIDIAN_VERIFY_KEY_ID,publicJwk:JSON.parse(env.MERIDIAN_VERIFY_PUBLIC_JWK),apiKey:env.OPENAI_API_KEY});
   return nodeAdapter(handler);
  }catch{
   // A bad new bridge configuration must not bring down the existing Nocturne app.
