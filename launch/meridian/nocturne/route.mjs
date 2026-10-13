@@ -5,11 +5,11 @@ import {createImageValidator} from './render-media.mjs';
 import {createPublicKey,verify} from 'node:crypto';
 import {Readable} from 'node:stream';
 /** In-memory cache is defense-in-depth only; Site D1 owns durable one-dispatch state. */
-export function createNocturneRoute({enabled=false,audience,keyId,publicJwk,apiKey,sharp,fetchImpl=globalThis.fetch,now=Date.now}={}){
+export function createNocturneRoute({enabled=false,audience,keyId,publicJwk,apiKey,fetchImpl=globalThis.fetch,now=Date.now}={}){
  let key=null;if(publicJwk){key=createPublicKey({key:publicJwk,format:'jwk'});if(key.asymmetricKeyType!=='ed25519')throw new TypeError('Ed25519 public key required.');}
  let validAudience=false;try{const u=new URL(audience);validAudience=u.protocol==='https:'&&u.origin===audience&&!u.username&&!u.password;}catch{}
  const ready=enabled===true&&!!key&&!!keyId&&validAudience&&typeof apiKey==='string'&&!!apiKey.trim();
- const seen=new Map();const validateImage=createImageValidator(sharp);
+ const seen=new Map();const validateImage=createImageValidator();
  const render=createRenderClient({enabled,apiKey,validateImage,fetchImpl});
  return async function handle(request){
   try{
