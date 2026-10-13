@@ -133,6 +133,12 @@ function usageNanodollars(usage) {
   const cached = usage.input_tokens_details.cached_tokens ?? 0;
   return (usage.input_tokens - cached) * 400 + cached * 100 + usage.output_tokens * 1600;
 }
+function safeMaterialProviderError(value){
+ const types=new Set(['invalid_request_error','authentication_error','permission_error','rate_limit_error','server_error','insufficient_quota']);
+ const codes=new Set(['invalid_api_key','model_not_found','unsupported_parameter','unsupported_value','invalid_parameter','invalid_value','invalid_request_error','insufficient_quota','rate_limit_exceeded','permission_denied','access_denied','billing_hard_limit_reached','context_length_exceeded','account_deactivated','organization_deactivated','unsupported_country_region_territory','server_error']);
+ const param=typeof value?.param==='string'&&value.param.length<=100&&/^(model|input|instructions|tools|tool_choice|max_tool_calls|parallel_tool_calls|include|max_output_tokens|text|store|background|stream|service_tier|truncation)(?:\.[a-z_]{1,40}|\[\d{1,2}\])*$/.test(value.param)?value.param:null;
+ return {type:types.has(value?.type)?value.type:null,code:codes.has(value?.code)?value.code:null,param};
+}
 function summarizeAccounting(calls) {
   // Keep this allowlisted. Never include provider errors, prompt text, URLs or headers.
   const safeCalls = calls.map(c => ({ ...c, usage: c.usage ? structuredClone(c.usage) : null }));
@@ -409,7 +415,7 @@ function validateProducts(body, evidence, maxProducts) {
  * getApiKey is a synchronous server-held key getter supplied by the host. Its result
  * is sent only to the fixed OpenAI endpoint. Never expose this module to browser code.
  */
-export function createMaterialLookupClient({ enabled = false, getApiKey, fetchImpl = globalThis.fetch, now = Date.now, timeoutMs = MATERIAL_LIMITS.timeoutMs } = {}) {
+export function createMaterialLookupClient({ enabled = false, getApiKey, fetchImpl = globalThis.fetch, now = Date.now, timeoutMs = MATERIAL_LIMITS.timeoutMs, log = entry => console.warn(JSON.stringify(entry)) } = {}) {
   if (typeof fetchImpl !== 'function' || typeof now !== 'function' ||
       !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > MATERIAL_LIMITS.timeoutMs) {
     throw new TypeError('A bounded material lookup transport is required.');
@@ -438,7 +444,7 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
           const call = {
             stage, model: MATERIAL_MODEL, attempted: true, clientRequestId: randomUUID(),
             providerRequestId: null, providerResponseId: null, httpStatus: null,
-            responseStatus: null, outcome: 'pending', searchToolCallsObserved: null, usage: null,
+            responseStatus: null, outcome: 'pending', searchToolCallsObserved: null, usage: null, providerError:null,
           };
           calls.push(call);
           const controller = new AbortController();
@@ -456,6 +462,7 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
             // Parse bounded JSON even on errors: retain any valid usage while discarding all error bodies.
             const body = await readResponse(response, controller.signal);
             call.providerResponseId = safeId(body.id);
+            if(!response.ok)call.providerError=safeMaterialProviderError(body.error);
             call.usage = safeUsage(body.usage);
             call.responseStatus = ['completed', 'failed', 'incomplete', 'cancelled', 'queued', 'in_progress'].includes(body.status) ? body.status : null;
             if (Array.isArray(body.output)) call.searchToolCallsObserved = body.output.filter(x => x?.type === 'web_search_call').length;
@@ -471,6 +478,7 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
           } catch (error) {
             const safeError = error instanceof MaterialLookupError ? error : controller.signal.aborted ? abortError(controller.signal) : new MaterialLookupError('MATERIAL_LOOKUP_TRANSPORT_FAILED');
             call.outcome = safeError.code;
+            try{log({event:'meridian_material_provider_failure',stage:call.stage,httpStatus:call.httpStatus,providerRequestId:call.providerRequestId,providerResponseId:call.providerResponseId,classification:[401,403].includes(call.httpStatus)?'access_denied':call.httpStatus===400?'invalid_request':call.httpStatus===429?'limit':call.httpStatus===null?'transport':'provider_response',error:safeError.code,providerError:call.providerError,usage:call.usage,searchToolCallsObserved:call.searchToolCallsObserved});}catch{}
             throw safeError;
           } finally {
             clearTimeout(timer);
