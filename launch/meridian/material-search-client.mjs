@@ -186,7 +186,7 @@ function summarizeAccounting(calls) {
   };
 }
 
-const EXTRACTION_COUNT_FIELDS = ['sourceMissingURLCount','sourceInvalidURLCount','sourceNonHTTPSCount','sourceUnselectedHostCount','sourceSelectedSubdomainCount','sourceRootPathCount','sourceFragmentCount','sourceOtherProductPathCount','sourceEligibleProductPathCount','outputTextCharacterCount','sourceListCount', 'selectedProductURLCount', 'paragraphCount', 'urlCitationCount', 'mappedCitationCount', 'acceptedEvidenceCount', 'rejectedUnlistedURLParagraphs', 'rejectedMixedURLParagraphs', 'normalizationJSONParsed', 'normalizationProductCount', 'validatedProductCount', 'productShapeFailureCount', 'productIdentityQuoteFailureCount', 'productPriceFailureCount'];
+const EXTRACTION_COUNT_FIELDS = ['sourceMissingURLCount','sourceInvalidURLCount','sourceNonHTTPSCount','sourceUnselectedHostCount','sourceSelectedSubdomainCount','sourceRootPathCount','sourceFragmentCount','sourceOtherProductPathCount','sourceEligibleProductPathCount','outputTextCharacterCount','sourceListCount', 'selectedProductURLCount', 'paragraphCount', 'urlCitationCount', 'mappedCitationCount', 'acceptedEvidenceCount', 'rejectedUnlistedURLParagraphs', 'rejectedMixedURLParagraphs', 'normalizationJSONParsed', 'normalizationProductCount', 'validatedProductCount', 'productShapeFailureCount', 'productIdentityQuoteFailureCount', 'productPriceFailureCount', 'rejectedProductCount', 'productSourceMissingCount', 'productSourceDuplicateCount', 'productNameInvalidCount', 'productQuoteInvalidCount', 'productQuoteNotInEvidenceCount', 'productNameNotInQuoteCount', 'productIdentifierInvalidCount', 'productIdentifierMissingCount', 'productSkuNotInQuoteCount', 'productSkuLabelMismatchCount', 'productModelNotInQuoteCount', 'productModelLabelMismatchCount'];
 const RESPONSE_OUTPUT_TYPES = ['message', 'reasoning', 'web_search_call', 'function_call', 'file_search_call', 'computer_call', 'mcp_call', 'image_generation_call'];
 function responseShape(body) {
   const typeCounts = Object.fromEntries([...RESPONSE_OUTPUT_TYPES, 'unknown'].map(type => [type, 0]));
@@ -479,36 +479,57 @@ function validateProducts(body, evidence, maxProducts, diagnostics, allowEmpty =
   diagnostics.normalizationProductCount = Array.isArray(normalized?.products) ? normalized.products.length : null;
   if (!exactKeys(normalized, ['products']) || !Array.isArray(normalized.products) || normalized.products.length > maxProducts) { diagnostics.productShapeFailureCount++; fail('MATERIAL_LOOKUP_PRODUCT_INVALID'); }
   if (!normalized.products.length && !allowEmpty) fail('MATERIAL_LOOKUP_NO_PRODUCTS');
-  const sources = new Map(evidence.map(s => [s.id, s])); const seen = new Set();
+  const sources = new Map(evidence.map(s => [s.id, s]));
+  // Multiple normalized claims for one source are ambiguous. Drop all such rows,
+  // even when one looked valid, rather than selecting whichever arrived first.
+  const sourceCounts = new Map();
+  for (const p of normalized.products) if (plain(p) && typeof p.sourceId === 'string') sourceCounts.set(p.sourceId, (sourceCounts.get(p.sourceId) ?? 0) + 1);
   const result = [];
+  const reject = (counter, detail) => {
+    diagnostics[counter]++;
+    if (detail) diagnostics[detail]++;
+    diagnostics.rejectedProductCount++;
+  };
   for (const p of normalized.products) {
-    if (!exactKeys(p, NORMALIZED_KEYS)) { diagnostics.productShapeFailureCount++; fail('MATERIAL_LOOKUP_PRODUCT_INVALID'); }
+    if (!exactKeys(p, NORMALIZED_KEYS)) { reject('productShapeFailureCount'); continue; }
     const source = sources.get(p.sourceId);
-    if (!source || seen.has(source.id) || !safeText(p.name, 300) || !safeText(p.quote, 1500) ||
-        !source.text.includes(p.quote) || !p.quote.includes(p.name) ||
-        !(p.sku === null || safeText(p.sku, 100)) || !(p.model === null || safeText(p.model, 100)) ||
-        (!p.sku && !p.model) || (p.sku && (!p.quote.includes(p.sku) || !identifierInQuote(p.quote, p.sku, 'sku'))) ||
-        (p.model && (!p.quote.includes(p.model) || !identifierInQuote(p.quote, p.model, 'model')))) {
-      diagnostics.productIdentityQuoteFailureCount++;
-      fail('MATERIAL_LOOKUP_PRODUCT_INVALID');
+    // Same strict proof requirements as before, now isolated per product. Never
+    // repair model text, rewrite identifiers, or infer a quote.
+    const identityFailure = !source ? 'productSourceMissingCount' :
+      sourceCounts.get(p.sourceId) !== 1 ? 'productSourceDuplicateCount' :
+      !safeText(p.name, 300) ? 'productNameInvalidCount' :
+      !safeText(p.quote, 1500) ? 'productQuoteInvalidCount' :
+      !source.text.includes(p.quote) ? 'productQuoteNotInEvidenceCount' :
+      !p.quote.includes(p.name) ? 'productNameNotInQuoteCount' :
+      !(p.sku === null || safeText(p.sku, 100)) || !(p.model === null || safeText(p.model, 100)) ? 'productIdentifierInvalidCount' :
+      !p.sku && !p.model ? 'productIdentifierMissingCount' :
+      p.sku && !p.quote.includes(p.sku) ? 'productSkuNotInQuoteCount' :
+      p.sku && !identifierInQuote(p.quote, p.sku, 'sku') ? 'productSkuLabelMismatchCount' :
+      p.model && !p.quote.includes(p.model) ? 'productModelNotInQuoteCount' :
+      p.model && !identifierInQuote(p.quote, p.model, 'model') ? 'productModelLabelMismatchCount' : null;
+    if (identityFailure) { reject('productIdentityQuoteFailureCount', identityFailure); continue; }
+    let priced = p.unitPriceCents !== null;
+    const amounts = priced ? pricesIn(p.quote) : null;
+    const priceInvalid = priced ?
+      !Number.isSafeInteger(p.unitPriceCents) || p.unitPriceCents < 1 || p.unitPriceCents > 100000000 ||
+      !PRICE_UNITS.includes(p.priceUnit) || amounts.size !== 1 || !amounts.has(p.unitPriceCents) ||
+      !UNIT_WORDS[p.priceUnit].some(word => contains(p.quote, word)) : p.priceUnit !== null;
+    if (priceInvalid) {
+      // Identity is independently proven above. Discard the entire unsupported
+      // price/unit pair, never infer a replacement or count this retained row as rejected.
+      diagnostics.productPriceFailureCount++;
+      priced = false;
     }
-    const priced = p.unitPriceCents !== null;
-    if (priced) {
-      const amounts = pricesIn(p.quote);
-      if (!Number.isSafeInteger(p.unitPriceCents) || p.unitPriceCents < 1 || p.unitPriceCents > 100000000 ||
-          !PRICE_UNITS.includes(p.priceUnit) || amounts.size !== 1 || !amounts.has(p.unitPriceCents) ||
-          !UNIT_WORDS[p.priceUnit].some(word => contains(p.quote, word))) { diagnostics.productPriceFailureCount++; fail('MATERIAL_LOOKUP_PRODUCT_INVALID'); }
-    } else if (p.priceUnit !== null) { diagnostics.productPriceFailureCount++; fail('MATERIAL_LOOKUP_PRODUCT_INVALID'); }
     result.push({
       id: `product_${result.length + 1}`, sourceId: source.id, storeId: source.storeId,
       name: p.name, sku: p.sku, model: p.model, quote: p.quote, url: source.url,
-      unitPriceCents: p.unitPriceCents, priceUnit: p.priceUnit,
+      unitPriceCents: priced ? p.unitPriceCents : null, priceUnit: priced ? p.priceUnit : null,
       priceScope: priced ? 'online' : 'unknown', availability: 'unknown',
       quantity: null, quantityBasis: 'unknown', lineTotalCents: null,
     });
-    seen.add(source.id);
     diagnostics.validatedProductCount = result.length;
   }
+  if (!result.length && !allowEmpty) fail('MATERIAL_LOOKUP_PRODUCT_INVALID');
   return result;
 }
 
@@ -607,7 +628,7 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
           // A completed search with no evidence is an explicit unresolved result for
           // requested SKUs. Preserve its receipt; never retry or invent a fallback.
           if(error?.code!=='MATERIAL_LOOKUP_NO_EVIDENCE'||!validated.productSelections.length)throw error;
-          return {...resolveProductSelections([],validated.productSelections),evidence:[],accounting:summarizeAccounting(calls)};
+          return {...resolveProductSelections([],validated.productSelections),evidence:[],materialCoverage:{status:'partial',designCoverageComplete:false,rejectedProductCount:0},accounting:summarizeAccounting(calls)};
         }
         lookupStage = 'normalize_response';
         const normalize = await request('normalize', normalizeRequest(evidence, validated.maxProducts));
@@ -616,9 +637,10 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
         const selected = resolveProductSelections(validated.productSelections.length?validatedProducts.filter(product=>exactSkuInQuote(product.quote,product.sku)):validatedProducts,validated.productSelections),products=selected.products;
         lookupStage = 'serialize_result';
         const usedEvidence = evidence.filter(s => products.some(p => p.sourceId === s.id));
-        const result = { ...selected, evidence: usedEvidence, accounting: summarizeAccounting(calls) };
+        const materialCoverage = {status:'partial',designCoverageComplete:false,rejectedProductCount:extractionDiagnostics.rejectedProductCount};
+        const result = { ...selected, evidence: usedEvidence, materialCoverage, accounting: summarizeAccounting(calls) };
         if (bytes(JSON.stringify(result)) > MATERIAL_LIMITS.resultBytes) fail('MATERIAL_LOOKUP_RESPONSE_TOO_LARGE');
-        try{log({event:'meridian_material_lookup_complete',productCount:products.length,evidenceCount:usedEvidence.length,accounting:result.accounting});}catch{}
+        try{log({event:'meridian_material_lookup_complete',productCount:products.length,evidenceCount:usedEvidence.length,materialCoverage,extraction:Object.fromEntries(EXTRACTION_COUNT_FIELDS.map(key=>[key,count(extractionDiagnostics[key])?extractionDiagnostics[key]:null])),accounting:result.accounting});}catch{}
         return result;
       } catch (error) {
         const safeError = error instanceof MaterialLookupError ? error : wholeController.signal.aborted ? abortError(wholeController.signal) : new MaterialLookupError('MATERIAL_LOOKUP_RESPONSE_INVALID');
