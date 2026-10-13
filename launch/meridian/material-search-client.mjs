@@ -53,6 +53,7 @@ const SAFE_MESSAGES = Object.freeze({
   MATERIAL_LOOKUP_CANCELLED: 'Material lookup was cancelled. Provider costs may still require review.',
   MATERIAL_LOOKUP_TIMEOUT: 'Material lookup timed out. Provider costs may still require review.',
   MATERIAL_LOOKUP_TRANSPORT_FAILED: 'Material lookup could not complete. No automatic retry was made.',
+  MATERIAL_LOOKUP_TOOL_CONFIGURATION_INVALID: 'The provider rejected the online-search tool configuration. No automatic retry was made.',
   MATERIAL_LOOKUP_PROVIDER_REJECTED: 'The provider did not accept the material lookup. No automatic retry was made.',
   MATERIAL_LOOKUP_RESPONSE_INVALID: 'The material lookup response could not be verified.',
   MATERIAL_LOOKUP_RESPONSE_TOO_LARGE: 'The material lookup response exceeded its limit.',
@@ -137,7 +138,18 @@ function safeMaterialProviderError(value){
  const types=new Set(['invalid_request_error','authentication_error','permission_error','rate_limit_error','server_error','insufficient_quota']);
  const codes=new Set(['invalid_api_key','model_not_found','unsupported_parameter','unsupported_value','invalid_parameter','invalid_value','invalid_request_error','insufficient_quota','rate_limit_exceeded','permission_denied','access_denied','billing_hard_limit_reached','context_length_exceeded','account_deactivated','organization_deactivated','unsupported_country_region_territory','server_error']);
  const param=typeof value?.param==='string'&&value.param.length<=100&&/^(model|input|instructions|tools|tool_choice|max_tool_calls|parallel_tool_calls|include|max_output_tokens|text|store|background|stream|service_tier|truncation)(?:\.[a-z_]{1,40}|\[\d{1,2}\])*$/.test(value.param)?value.param:null;
- return {type:types.has(value?.type)?value.type:null,code:codes.has(value?.code)?value.code:null,param};
+ const message=typeof value?.message==='string'&&value.message.length<=4096?value.message:'';
+ const toolTypes=['web_search','web_search_preview','web_search_2025_08_26'].filter(token=>new RegExp('(?:^|[^a-z0-9_])'+token+'(?:$|[^a-z0-9_])','i').test(message));
+ const toolOptions=['filters','allowed_domains','external_web_access','search_context_size','max_tool_calls','parallel_tool_calls','tool_choice'].filter(token=>new RegExp('(?:^|[^a-z0-9_])'+token+'(?:$|[^a-z0-9_])','i').test(message));
+ const messageClass=/not supported|unsupported|does not support/i.test(message)&&/model|gpt-/i.test(message)&&toolTypes.length?'tool_model_incompatible':/not permitted|not allowed|permission|access denied/i.test(message)?'tool_access_restricted':/unknown parameter|unrecognized|unsupported parameter/i.test(message)?'unsupported_tool_option':null;
+ return {type:types.has(value?.type)?value.type:null,code:codes.has(value?.code)?value.code:null,param,...(messageClass||toolTypes.length||toolOptions.length?{details:{messageClass,toolTypes,toolOptions}}:{})};
+}
+function safeToolsRejectionMessage(message,{apiKey,designBrief}){
+ if(typeof message!=='string')return null;
+ let out=message.slice(0,4096);
+ for(const value of [apiKey,designBrief,JSON.stringify(designBrief)])if(typeof value==='string'&&value.length>=8)out=out.split(value).join('[REDACTED]');
+ out=out.replace(/bearer\s+[^\s'"<>]+/gi,'Bearer [REDACTED]').replace(/sk-[A-Za-z0-9_-]+/g,'[REDACTED_KEY]').replace(/[A-Za-z0-9_\-]{32,}/g,'[REDACTED_TOKEN]').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim();
+ return out.slice(0,500)||null;
 }
 function summarizeAccounting(calls) {
   // Keep this allowlisted. Never include provider errors, prompt text, URLs or headers.
@@ -446,6 +458,7 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
             providerRequestId: null, providerResponseId: null, httpStatus: null,
             responseStatus: null, outcome: 'pending', searchToolCallsObserved: null, usage: null, providerError:null,
           };
+          let providerToolsMessage=null;
           calls.push(call);
           const controller = new AbortController();
           const onAbort = () => controller.abort(wholeController.signal.reason);
@@ -463,10 +476,11 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
             const body = await readResponse(response, controller.signal);
             call.providerResponseId = safeId(body.id);
             if(!response.ok)call.providerError=safeMaterialProviderError(body.error);
+            if(response.status===400&&body.error?.type==='invalid_request_error'&&body.error?.param==='tools')providerToolsMessage=safeToolsRejectionMessage(body.error.message,{apiKey,designBrief:validated.designBrief});
             call.usage = safeUsage(body.usage);
             call.responseStatus = ['completed', 'failed', 'incomplete', 'cancelled', 'queued', 'in_progress'].includes(body.status) ? body.status : null;
             if (Array.isArray(body.output)) call.searchToolCallsObserved = body.output.filter(x => x?.type === 'web_search_call').length;
-            if (!response.ok) fail('MATERIAL_LOOKUP_PROVIDER_REJECTED');
+            if (!response.ok) fail(response.status===400&&call.providerError?.param==='tools'?'MATERIAL_LOOKUP_TOOL_CONFIGURATION_INVALID':'MATERIAL_LOOKUP_PROVIDER_REJECTED',[400,401,403,404,409,422,429].includes(response.status)?response.status:502);
             if (body.status !== 'completed') fail('MATERIAL_LOOKUP_INCOMPLETE');
             if (!safeId(body.id) || !Array.isArray(body.output) ||
                 (body.model !== MATERIAL_MODEL && body.model !== 'gpt-4.1-mini-2025-04-14') ||
@@ -478,7 +492,7 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
           } catch (error) {
             const safeError = error instanceof MaterialLookupError ? error : controller.signal.aborted ? abortError(controller.signal) : new MaterialLookupError('MATERIAL_LOOKUP_TRANSPORT_FAILED');
             call.outcome = safeError.code;
-            try{log({event:'meridian_material_provider_failure',stage:call.stage,httpStatus:call.httpStatus,providerRequestId:call.providerRequestId,providerResponseId:call.providerResponseId,classification:[401,403].includes(call.httpStatus)?'access_denied':call.httpStatus===400?'invalid_request':call.httpStatus===429?'limit':call.httpStatus===null?'transport':'provider_response',error:safeError.code,providerError:call.providerError,usage:call.usage,searchToolCallsObserved:call.searchToolCallsObserved});}catch{}
+            try{log({event:'meridian_material_provider_failure',stage:call.stage,httpStatus:call.httpStatus,providerRequestId:call.providerRequestId,providerResponseId:call.providerResponseId,classification:[401,403].includes(call.httpStatus)?'access_denied':call.httpStatus===400?'invalid_request':call.httpStatus===429?'limit':call.httpStatus===null?'transport':'provider_response',error:safeError.code,providerError:call.providerError,...(providerToolsMessage?{providerToolsMessage}:{}),usage:call.usage,searchToolCallsObserved:call.searchToolCallsObserved});}catch{}
             throw safeError;
           } finally {
             clearTimeout(timer);
