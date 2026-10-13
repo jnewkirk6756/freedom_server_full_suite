@@ -49,7 +49,7 @@ export function createRenderClient({enabled=false,apiKey,fetchImpl=globalThis.fe
   if(enabled!==true)fail('AI_DISABLED','Image generation is not activated.',503);
   if(typeof apiKey!=='string'||!apiKey.trim())fail('PROVIDER_NOT_CONFIGURED','Existing image provider access is not configured.',503);
   await validateRenderPayload(rawBody,validateImage);
-  let billing=null;
+  let billing=null,outputBytes=null;
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
    const response=await fetchImpl('https://api.openai.com/v1/images/edits',{method:'POST',redirect:'error',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:rawBody,signal:controller.signal});
@@ -59,10 +59,9 @@ export function createRenderClient({enabled=false,apiKey,fetchImpl=globalThis.fe
    const body=await boundedResponse(response,controller.signal);
    billing=billingEvidence(body.usage,response.headers.get('x-request-id'));
    if(!Array.isArray(body.data)||body.data.length!==1||typeof body.data[0]?.b64_json!=='string')fail('PROVIDER_INVALID_RESPONSE','The provider did not return one image.',502);
-   const bytes=decodeBase64(body.data[0].b64_json,RENDER_LIMITS.outputBytes);
-   const decoded=await validateImage(bytes,{mime:'image/webp',maxBytes:RENDER_LIMITS.outputBytes,maxEdge:1024,normalize:true,lossless:true});
+   let decoded;try{outputBytes=decodeBase64(body.data[0].b64_json,RENDER_LIMITS.outputBytes);decoded=await validateImage(outputBytes,{mime:'image/webp',maxBytes:RENDER_LIMITS.outputBytes,maxEdge:1024,normalize:true,lossless:true});}catch(e){const allowed=new Set(['BASE64','CONTAINER','TRUNCATED','CHUNK_BOUNDS','PROVENANCE_CHUNK','UNSUPPORTED_CHUNK','DIMENSIONS_OR_FRAME','EXIF_ORIENTATION','STRUCTURE']);fail('OUTPUT_'+(allowed.has(e?.imageReason)?e.imageReason:'STRUCTURE'),'The generated output needs format review. No retry was made.',502);}
    if(decoded.width!==1024||decoded.height!==1024)fail('PROVIDER_INVALID_RESPONSE','The generated image has unexpected dimensions.',502);
    return {bytes:decoded.bytes,mime:'image/webp',width:1024,height:1024,illustrative:true,geometryVerified:false,billing};
-  }catch(e){if(e instanceof ContractError){e.billing=billing;throw e;}const failure=new ContractError(controller.signal.aborted?'PROVIDER_OUTCOME_UNKNOWN':'PROVIDER_TRANSPORT_FAILED','Image generation outcome needs review. No automatic retry was made.',502);failure.billing=billing;throw failure;}finally{clearTimeout(timer);}
+  }catch(e){if(e instanceof ContractError){e.billing=billing;if(outputBytes&&outputBytes.length<=RENDER_LIMITS.outputBytes)e.quarantineBytes=outputBytes;throw e;}const failure=new ContractError(controller.signal.aborted?'PROVIDER_OUTCOME_UNKNOWN':'PROVIDER_TRANSPORT_FAILED','Image generation outcome needs review. No automatic retry was made.',502);failure.billing=billing;throw failure;}finally{clearTimeout(timer);}
  };
 }

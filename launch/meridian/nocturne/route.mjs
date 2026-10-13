@@ -30,7 +30,7 @@ export function createNocturneRoute({enabled=false,audience,keyId,publicJwk,apiK
    seen.set(replayKey,envelope.expiresAt*1000);
    const result=await render(Buffer.from(raw));
    return new Response(result.bytes,{headers:{'Content-Type':'image/webp','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','X-Meridian-Geometry-Verified':'false','X-Meridian-Billing':b64url(encode(JSON.stringify(result.billing)))}});
-  }catch(e){return new Response(JSON.stringify({error:e instanceof ContractError?e.code:'RENDER_FAILED'}),{status:e instanceof ContractError?e.status:502,headers:{'Content-Type':'application/json','Cache-Control':'no-store',...(e?.billing?{'X-Meridian-Billing':b64url(encode(JSON.stringify(e.billing)))}:{})}});}
+  }catch(e){if(e instanceof ContractError&&e.quarantineBytes)return new Response(e.quarantineBytes,{status:422,headers:{'Content-Type':'application/octet-stream','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','X-Meridian-Quarantine':'1','X-Meridian-Output-Failure':e.code,'X-Meridian-Billing':b64url(encode(JSON.stringify(e.billing)))}});return new Response(JSON.stringify({error:e instanceof ContractError?e.code:'RENDER_FAILED'}),{status:e instanceof ContractError?e.status:502,headers:{'Content-Type':'application/json','Cache-Control':'no-store',...(e?.billing?{'X-Meridian-Billing':b64url(encode(JSON.stringify(e.billing)))}:{})}});}
  };
 }
 /** Exact render POST and non-billable readiness GET only. Legacy paths retain existing Basic middleware. */
