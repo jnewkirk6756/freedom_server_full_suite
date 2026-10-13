@@ -1,6 +1,7 @@
+import {RETAILER_IDS} from './store-catalog.mjs';
 /** Bounded, exact, store-scoped SKU requests. This module performs no I/O. */
 export const MAX_PRODUCT_SELECTIONS = 6;
-const STORE_IDS = new Set(['home-depot', 'lowes', 'floor-and-decor']);
+const STORE_IDS = new Set(RETAILER_IDS);
 const plain = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function validateProductSelections(value, selectedStoreIds) {
   if (value === undefined) return [];
@@ -49,3 +50,4 @@ export function hasCompleteProductSelections(snapshot) {
     return matches.length === 1 && matches[0].id === item.productId;
   });
 }
+
