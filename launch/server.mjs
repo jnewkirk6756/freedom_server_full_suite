@@ -1,4 +1,5 @@
 /** Staging host. Private account writes remain disabled; scoped Director and media-cache actions are enabled. */
+import {initializeMeridianRoute} from './meridian/nocturne/bootstrap.mjs';
 import {withNavigation} from './navigation.mjs';
 import {withRuntimeDiagnostics} from './runtime-diagnostics.mjs';
 import {createAccessPolicy} from './access-policy.mjs';
@@ -13,6 +14,7 @@ import {mediaPing,mediaManifest,mediaGet,mediaPut,mediaDelete,mediaStats} from '
 const here=path.dirname(fileURLToPath(import.meta.url));
 const bindHost=process.env.HOST||'127.0.0.1';
 const access=createAccessPolicy(process.env,{bindHost});
+const meridianExactPostRoute=await initializeMeridianRoute(process.env);
 const source=path.resolve(here,'../aurelia-preview/index.html');
 const localSource=path.resolve(here,'../preview/index.html');
 const template=fs.readFileSync(fs.existsSync(source)?source:localSource,'utf8');
@@ -51,6 +53,7 @@ export const server=http.createServer(async(req,res)=>{
  try{
   if(req.url.length>2048)return reply(414,'text/plain','URL too long');
   const u=new URL(req.url,'http://staging.invalid');
+  if(await meridianExactPostRoute(req,res))return;
   const gate=access.check(req,u.pathname);
   if(gate.private)headers['cache-control']='private, no-store';
   if(gate.headers)Object.assign(headers,gate.headers);
@@ -168,3 +171,4 @@ async function startupSelfTest(port){
 }
 server.requestTimeout=15000;server.headersTimeout=10000;
 server.listen(Number(process.env.PORT||8787),bindHost,()=>{const port=server.address().port;console.log('Nocturne '+version+' private preview started. VENICE_CREDENTIAL_PRESENT='+Boolean(process.env.VENICE_API_KEY)+' BOUND_PORT='+port);/* Startup never invokes the legacy live-provider self-test. Use npm test for credential-free checks. */if(access.configured&&process.env.NOCTURNE_ALLOW_SHARED_MEDIA_WRITES==='1')mediaPing().then(async ok=>{console.log('NOCTURNE_MEDIA_SYNC_CONNECTED='+ok);if(ok){try{const seeded=await seedBuiltinMedia();if(seeded.length)console.log('NOCTURNE_MEDIA_SEEDED='+seeded.join(','));const rows=await mediaManifest(),stats=await mediaStats();console.log('NOCTURNE_MEDIA_SYNC_STATES='+rows.map(x=>x.id).join(','));console.log('NOCTURNE_MEDIA_SYNC_BYTES='+stats.usedBytes+'/'+stats.capacityBytes);}catch(e){console.log('NOCTURNE_MEDIA_SYNC_MANIFEST_ERROR='+String(e.message).slice(0,80));}}}).catch(()=>console.log('NOCTURNE_MEDIA_SYNC_CONNECTED=false'));});
+
