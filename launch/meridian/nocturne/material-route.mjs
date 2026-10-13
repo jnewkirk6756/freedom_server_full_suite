@@ -1,5 +1,6 @@
 import {createPublicKey,verify,randomUUID} from 'node:crypto';import {Readable} from 'node:stream';
 import {ContractError,fail} from '../shared/errors.mjs';
+import {validateProductSelections} from '../shared/product-selections.mjs';
 import {validateEnvelope,canonical,unb64url,boundedBytes,digest} from '../shared/protocol.mjs';
 import {createMaterialLookupClient,MaterialLookupError,MATERIAL_LIMITS} from '../material-search-client.mjs';
 const transportContexts=new WeakMap();
@@ -35,13 +36,14 @@ export function createMaterialRoute({enabled=false,audience,keyId,publicJwk,apiK
    const encoded=JSON.stringify(probe);lifecycle({event:'meridian_material_transport_probe',stage:'complete',jobId:envelope.jobId,providerCalls:0,byteLength:Buffer.byteLength(encoded)});
    return new Response(encoded,{status:200,headers:{'content-type':'application/json','cache-control':'private, no-store','x-content-type-options':'nosniff'}});
   }
-  const keys=['selectedStoreIds','zip','prompt','materialTier','mode'];if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==keys.length||Object.keys(body).some(k=>!keys.includes(k))||!Array.isArray(body.selectedStoreIds)||body.selectedStoreIds.length<1||body.selectedStoreIds.length>3||new Set(body.selectedStoreIds).size!==body.selectedStoreIds.length||body.selectedStoreIds.some(id=>!['home-depot','lowes','floor-and-decor'].includes(id))||!(body.zip===null||typeof body.zip==='string'&&/^\d{5}$/.test(body.zip))||typeof body.prompt!=='string'||body.prompt.length>6000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(body.prompt)||!['budget','mid_grade','premium'].includes(body.materialTier)||!['quick_concept','measured_plan'].includes(body.mode))fail('INVALID_INPUT','Invalid selected-store request.');
+  const keys=['selectedStoreIds','zip','prompt','materialTier','mode',...(Object.hasOwn(body??{},'productSelections')?['productSelections']:[])];if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==keys.length||Object.keys(body).some(k=>!keys.includes(k))||!Array.isArray(body.selectedStoreIds)||body.selectedStoreIds.length<1||body.selectedStoreIds.length>3||new Set(body.selectedStoreIds).size!==body.selectedStoreIds.length||body.selectedStoreIds.some(id=>!['home-depot','lowes','floor-and-decor'].includes(id))||!(body.zip===null||typeof body.zip==='string'&&/^\d{5}$/.test(body.zip))||typeof body.prompt!=='string'||body.prompt.length>6000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(body.prompt)||!['budget','mid_grade','premium'].includes(body.materialTier)||!['quick_concept','measured_plan'].includes(body.mode))fail('INVALID_INPUT','Invalid selected-store request.');
+  let productSelections;try{productSelections=validateProductSelections(body.productSelections,body.selectedStoreIds);}catch{fail('INVALID_INPUT','Use up to six exact SKUs, each mapped to a selected store.');}
   const designBrief=`Find real renovation products for this design: ${body.prompt.replace(/[\n\r\t]+/g,' ')}. Material tier ${body.materialTier}. Project ZIP ${body.zip??'not supplied'}; do not claim local price or stock without location evidence. No quantities may be inferred from this brief.`;
   if(new TextEncoder().encode(designBrief).length>MATERIAL_LIMITS.designBriefBytes)fail('INVALID_INPUT','Design brief exceeds lookup limits.');
   seen.set(replayKey,envelope.expiresAt*1000);
   applicationAccepted=true;applicationJobId=envelope.jobId;const transport=transportContexts.get(request);if(transport)transport.jobId=envelope.jobId;
   console.info(JSON.stringify({event:'meridian_material_request',stage:'provider_dispatch',jobId:envelope.jobId}));
-  const result=await lookup.lookup({selectedStoreIds:body.selectedStoreIds,designBrief,maxProducts:6});
+  const result=await lookup.lookup({selectedStoreIds:body.selectedStoreIds,designBrief,maxProducts:6,...(productSelections.length?{productSelections}:{})});
   applicationAccounting=result.accounting;
   lifecycle({event:'meridian_material_result_ready',jobId:applicationJobId,productCount:result.products?.length??null,providerRequestIds:result.accounting?.calls?.map(c=>c.providerRequestId).filter(Boolean)??[]});
   const text=JSON.stringify({ok:true,...result});if(new TextEncoder().encode(text).length>512*1024)fail('MATERIAL_RESPONSE_LIMIT','Lookup response exceeded limits.',502);
