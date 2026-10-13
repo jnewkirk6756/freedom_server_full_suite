@@ -5,7 +5,8 @@
  */
 import { createHash, randomUUID } from 'node:crypto';
 
-export const MATERIAL_MODEL = 'gpt-4.1-mini';
+export const MATERIAL_MODEL = 'gpt-5.4-mini';
+export const MATERIAL_MODEL_SNAPSHOT = 'gpt-5.4-mini-2026-03-17';
 const ENDPOINT = 'https://api.openai.com/v1/responses';
 export const MATERIAL_LIMITS = Object.freeze({
   providerRequests: 2,
@@ -18,6 +19,9 @@ export const MATERIAL_LIMITS = Object.freeze({
   searchOutputTokens: 2400,
   normalizeOutputTokens: 2400,
   outputTextBytes: 24000,
+  responseItems: 32,
+  reasoningItems: 8,
+  reasoningItemBytes: 32768,
   evidenceBytes: 16000,
   evidenceItems: 12,
   evidenceTextCharacters: 1500,
@@ -26,13 +30,13 @@ export const MATERIAL_LIMITS = Object.freeze({
   timeoutMs: 75000,
 });
 export const MATERIAL_PRICING = Object.freeze({
-  version: 'openai-gpt-4.1-mini-standard-2026-10-13',
+  version: 'openai-gpt-5.4-mini-standard-2026-10-13',
   currency: 'USD',
-  inputPerMillion: 0.40,
-  cachedInputPerMillion: 0.10,
-  outputPerMillion: 1.60,
+  inputPerMillion: 0.75,
+  cachedInputPerMillion: 0.075,
+  outputPerMillion: 4.50,
   webSearchPerCall: 0.01,
-  webSearchContentInputTokensPerCall: 8000,
+  webSearchContentInputTokensPerCall: null,
   invoiceVerified: false,
 });
 export const MATERIAL_STORE_DOMAINS = Object.freeze({
@@ -132,7 +136,7 @@ function safeUsage(usage) {
 function usageNanodollars(usage) {
   if (!usage) return null;
   const cached = usage.input_tokens_details.cached_tokens ?? 0;
-  return (usage.input_tokens - cached) * 400 + cached * 100 + usage.output_tokens * 1600;
+  return (usage.input_tokens - cached) * 750 + cached * 75 + usage.output_tokens * 4500;
 }
 function safeMaterialProviderError(value){
  const types=new Set(['invalid_request_error','authentication_error','permission_error','rate_limit_error','server_error','insufficient_quota']);
@@ -159,10 +163,10 @@ function summarizeAccounting(calls) {
   const possibleCalls = safeCalls.some(c => c.stage === 'search' && c.attempted) ? 1 : 0;
   const knownTokenNano = safeCalls.reduce((n, c) => n + (usageNanodollars(c.usage) ?? 0), 0);
   const usageComplete = safeCalls.length > 0 && safeCalls.every(c => c.usage !== null && c.searchToolCallsObserved !== null);
-  // Reported input may already include search content. Add the fixed block conservatively,
-  // explicitly as an estimate, rather than pretending this is an exact provider invoice.
+  // Use validated provider-reported token counts plus the observed search fee.
+  // This model has no fixed 8,000-token search-content billing block. Invoice unverified.
   const observedToolNano = observedCalls * 10000000;
-  const extraSearchContentNano = observedCalls * 8000 * 400;
+
   return {
     model: MATERIAL_MODEL, currency: 'USD', pricingVersion: MATERIAL_PRICING.version,
     calls: safeCalls, providerRequestsAttempted: safeCalls.filter(c => c.attempted).length,
@@ -171,8 +175,8 @@ function summarizeAccounting(calls) {
     usageComplete, providerChargeVerified: false, mayHaveIncurredCost: safeCalls.some(c => c.attempted),
     knownReportedTokenCostUpperMicros: Math.ceil(knownTokenNano / 1000),
     knownObservedSearchToolCostMicros: Math.ceil(observedToolNano / 1000),
-    additionalFixedSearchContentEstimateMicros: Math.ceil(extraSearchContentNano / 1000),
-    conservativeObservedEstimateMicros: usageComplete ? Math.ceil((knownTokenNano + observedToolNano + extraSearchContentNano) / 1000) : null,
+    additionalFixedSearchContentEstimateMicros: 0,
+    conservativeObservedEstimateMicros: usageComplete ? Math.ceil((knownTokenNano + observedToolNano) / 1000) : null,
     searchContentAlreadyInReportedInput: 'unknown',
     requiresCostReview: safeCalls.length > 0 && (!usageComplete || safeCalls.some(c => c.outcome !== 'completed')),
   };
@@ -182,8 +186,8 @@ function summarizeAccounting(calls) {
  * Adapter for the hosted ledger. This must be called only on this client's trusted
  * server-produced accounting; it is not a validator for browser-supplied receipts.
  * "verified_provider_response" identifies transport provenance, not an invoice.
- * usageCostMicros is the documented conservative estimate including the tool fee
- * and an extra fixed search block; chargeVerified remains false.
+ * usageCostMicros estimates reported tokens and observed tool fees. There is no
+ * model-specific fixed search block; chargeVerified remains false.
  */
 export function normalizeMaterialAccounting(accounting) {
   const calls = Array.isArray(accounting?.calls) ? accounting.calls : [];
@@ -201,7 +205,7 @@ export function normalizeMaterialAccounting(accounting) {
     receipts.push({
       providerRequestId, model: MATERIAL_MODEL, pricingVersion: MATERIAL_PRICING.version,
       currency: 'USD', chargeVerified: false,
-      usageCostMicros: Math.ceil((tokenNano + webSearchCalls * (10000000 + 8000 * 400)) / 1000),
+      usageCostMicros: Math.ceil((tokenNano + webSearchCalls * 10000000) / 1000),
       webSearchCalls,
       usage: {
         input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.total_tokens,
@@ -235,7 +239,7 @@ const NORMALIZE_SCHEMA = {
 function searchRequest(input) {
   return {
     model: MATERIAL_MODEL, store: false, background: false, stream: false,
-    service_tier: 'default', truncation: 'disabled',
+    service_tier: 'default', truncation: 'disabled', reasoning: { effort: 'low' },
     instructions: SEARCH_INSTRUCTIONS,
     input: JSON.stringify({ selectedStoreIds: input.selectedStoreIds, designBrief: input.designBrief, maximumProducts: input.maxProducts }),
     tools: [{ type: 'web_search', filters: { allowed_domains: input.selectedStoreIds.map(id => MATERIAL_STORE_DOMAINS[id]) }, external_web_access: true, search_context_size: 'low' }],
@@ -246,7 +250,7 @@ function searchRequest(input) {
 function normalizeRequest(evidence, maxProducts) {
   return {
     model: MATERIAL_MODEL, store: false, background: false, stream: false,
-    service_tier: 'default', truncation: 'disabled', instructions: NORMALIZE_INSTRUCTIONS,
+    service_tier: 'default', truncation: 'disabled', reasoning: { effort: 'none' }, instructions: NORMALIZE_INSTRUCTIONS,
     input: JSON.stringify({ maximumProducts: maxProducts, evidence: evidence.map(({ id, text }) => ({ sourceId: id, text })) }),
     tools: [], tool_choice: 'none', parallel_tool_calls: false,
     max_output_tokens: MATERIAL_LIMITS.normalizeOutputTokens,
@@ -292,6 +296,24 @@ async function readResponse(response, signal) {
   if (!plain(data)) fail('MATERIAL_LOOKUP_RESPONSE_INVALID');
   return data;
 }
+/** Validate only bounded reasoning framing, then discard it before evidence handling.
+ * Never log, forward, normalize, persist or treat reasoning text as source evidence. */
+function discardReasoningItems(body) {
+  if (!Array.isArray(body.output) || body.output.length > MATERIAL_LIMITS.responseItems) fail('MATERIAL_LOOKUP_RESPONSE_INVALID');
+  const reasoning = body.output.filter(item => item?.type === 'reasoning');
+  if (reasoning.length > MATERIAL_LIMITS.reasoningItems) fail('MATERIAL_LOOKUP_RESPONSE_TOO_LARGE');
+  for (const item of reasoning) {
+    if (!plain(item) || !safeId(item.id) || !Array.isArray(item.summary) || item.summary.length > 16 ||
+        (item.status !== undefined && item.status !== null && !['in_progress', 'completed', 'incomplete'].includes(item.status)) ||
+        (item.content !== undefined && item.content !== null && (!Array.isArray(item.content) || item.content.length > 16)) ||
+        (item.encrypted_content !== undefined && item.encrypted_content !== null && typeof item.encrypted_content !== 'string')) {
+      fail('MATERIAL_LOOKUP_RESPONSE_INVALID');
+    }
+    if (bytes(JSON.stringify(item)) > MATERIAL_LIMITS.reasoningItemBytes) fail('MATERIAL_LOOKUP_RESPONSE_TOO_LARGE');
+  }
+  body.output = body.output.filter(item => item.type !== 'reasoning');
+}
+
 function outputTexts(body) {
   if (!Array.isArray(body.output) || body.output.length > 32) fail('MATERIAL_LOOKUP_RESPONSE_INVALID');
   const textParts = [];
@@ -484,10 +506,11 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
             if (!response.ok) fail(response.status===400&&call.providerError?.param==='tools'?'MATERIAL_LOOKUP_TOOL_CONFIGURATION_INVALID':'MATERIAL_LOOKUP_PROVIDER_REJECTED',[400,401,403,404,409,422,429].includes(response.status)?response.status:502);
             if (body.status !== 'completed') fail('MATERIAL_LOOKUP_INCOMPLETE');
             if (!safeId(body.id) || !Array.isArray(body.output) ||
-                (body.model !== MATERIAL_MODEL && body.model !== 'gpt-4.1-mini-2025-04-14') ||
+                (body.model !== MATERIAL_MODEL && body.model !== MATERIAL_MODEL_SNAPSHOT) ||
                 (stage === 'search' && call.searchToolCallsObserved !== 1) ||
                 (stage === 'normalize' && call.searchToolCallsObserved !== 0) ||
-                body.output.some(x => !['message', 'web_search_call'].includes(x?.type))) fail('MATERIAL_LOOKUP_RESPONSE_INVALID');
+                body.output.some(x => !['message', 'web_search_call', 'reasoning'].includes(x?.type))) fail('MATERIAL_LOOKUP_RESPONSE_INVALID');
+            discardReasoningItems(body);
             call.outcome = 'completed';
             return { body, requestId: call.providerRequestId };
           } catch (error) {
