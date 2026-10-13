@@ -426,7 +426,8 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
         let apiKey;
         try { apiKey = typeof getApiKey === 'function' ? getApiKey() : null; }
         catch { fail('MATERIAL_LOOKUP_NOT_CONFIGURED', 503); }
-        if (typeof apiKey !== 'string' || !apiKey.trim() || apiKey.length > 4096 || /[\r\n]/u.test(apiKey)) fail('MATERIAL_LOOKUP_NOT_CONFIGURED', 503);
+        if (typeof apiKey === 'string') apiKey = apiKey.trim();
+        if (typeof apiKey !== 'string' || !apiKey || apiKey.length > 4096 || /[\u0000-\u0020\u007f]/u.test(apiKey)) fail('MATERIAL_LOOKUP_NOT_CONFIGURED', 503);
         wholeTimer = setTimeout(() => wholeController.abort(new MaterialLookupError('MATERIAL_LOOKUP_TIMEOUT', 504)), timeoutMs);
         onCallerAbort = () => wholeController.abort(new MaterialLookupError('MATERIAL_LOOKUP_CANCELLED', 499));
         validated.signal?.addEventListener('abort', onCallerAbort, { once: true });

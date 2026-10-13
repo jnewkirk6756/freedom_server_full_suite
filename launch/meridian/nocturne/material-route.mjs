@@ -6,11 +6,13 @@ export const MATERIAL_PATH='/v1/meridian/materials/search';
 export function createMaterialRoute({enabled=false,audience,keyId,publicJwk,apiKey,fetchImpl=globalThis.fetch,now=Date.now}={}){
  let key=null;if(publicJwk){key=createPublicKey({key:publicJwk,format:'jwk'});if(key.asymmetricKeyType!=='ed25519')throw new TypeError('Ed25519 required.');}
  let validAudience=false;try{const u=new URL(audience);validAudience=u.protocol==='https:'&&u.origin===audience&&!u.username&&!u.password;}catch{}
- const lookup=createMaterialLookupClient({enabled,getApiKey:()=>apiKey,fetchImpl,now});const seen=new Map();
- const ready=enabled===true&&key&&typeof keyId==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(keyId)&&validAudience&&typeof apiKey==='string'&&!!apiKey.trim()&&apiKey.length<=4096&&!/[\r\n]/.test(apiKey);
+ const normalizedApiKey=typeof apiKey==='string'?apiKey.trim():null;
+ const lookup=createMaterialLookupClient({enabled,getApiKey:()=>normalizedApiKey,fetchImpl,now});const seen=new Map();
+ const reasonCode=enabled!==true?'MATERIAL_LOOKUP_DISABLED':!key||typeof keyId!=='string'||!/^[a-zA-Z0-9_-]{1,100}$/.test(keyId)?'MATERIAL_VERIFICATION_NOT_CONFIGURED':!validAudience?'MATERIAL_AUDIENCE_NOT_CONFIGURED':typeof normalizedApiKey!=='string'||!normalizedApiKey||normalizedApiKey.length>4096||/[\u0000-\u0020\u007f]/.test(normalizedApiKey)?'MATERIAL_PROVIDER_NOT_CONFIGURED':null;
+ const ready=reasonCode===null;
  return async request=>{try{
   const u=new URL(request.url);if(u.search)return null;
-  if(request.method==='GET'&&u.pathname===MATERIAL_PATH+'/ready')return Response.json({ready:!!ready,protocol:'meridian-materials-v1',verificationKeyId:keyId??null},{status:ready?200:503,headers:{'cache-control':'no-store'}});
+  if(request.method==='GET'&&u.pathname===MATERIAL_PATH+'/ready')return Response.json({ready:!!ready,protocol:'meridian-materials-v1',verificationKeyId:keyId??null,reasonCode},{status:ready?200:503,headers:{'cache-control':'no-store'}});
   if(request.method!=='POST'||u.pathname!==MATERIAL_PATH)return null;
   if(!ready)fail('MATERIAL_LOOKUP_DISABLED','Online product lookup is not enabled.',503);
   if(request.headers.has('origin')||request.headers.has('cookie'))fail('SERVER_ONLY','Server connection required.',403);
