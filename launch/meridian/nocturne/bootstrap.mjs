@@ -5,7 +5,7 @@ export async function initializeMeridianRoute(env=process.env,{}={}){
  if(env.MERIDIAN_BRIDGE_ENABLED!=='true'||!env.MERIDIAN_BRIDGE_APPROVAL_REFERENCE)return async()=>false;
  try{
   const handler=createNocturneRoute({enabled:true,audience:env.MERIDIAN_NOCTURNE_ORIGIN,keyId:env.MERIDIAN_VERIFY_KEY_ID,publicJwk:JSON.parse(env.MERIDIAN_VERIFY_PUBLIC_JWK),apiKey:env.OPENAI_API_KEY});
-  const images=nodeAdapter(handler);const materials=materialNodeAdapter(createMaterialRoute({enabled:env.MERIDIAN_MATERIAL_LOOKUP_ENABLED==='true'&&!!env.MERIDIAN_MATERIAL_APPROVAL_REFERENCE,audience:env.MERIDIAN_NOCTURNE_ORIGIN,keyId:env.MERIDIAN_VERIFY_KEY_ID,publicJwk:JSON.parse(env.MERIDIAN_VERIFY_PUBLIC_JWK),apiKey:env.OPENAI_API_KEY}));
+  const images=nodeAdapter(handler);const materials=materialNodeAdapter(createMaterialRoute({transportProbe:env.MERIDIAN_MATERIAL_TRANSPORT_PROBE==='true',enabled:env.MERIDIAN_MATERIAL_LOOKUP_ENABLED==='true'&&!!env.MERIDIAN_MATERIAL_APPROVAL_REFERENCE,audience:env.MERIDIAN_NOCTURNE_ORIGIN,keyId:env.MERIDIAN_VERIFY_KEY_ID,publicJwk:JSON.parse(env.MERIDIAN_VERIFY_PUBLIC_JWK),apiKey:env.OPENAI_API_KEY}));
   return async(req,res)=>await materials(req,res)||await images(req,res);
  }catch{
   // A bad new bridge configuration must not bring down the existing Nocturne app.

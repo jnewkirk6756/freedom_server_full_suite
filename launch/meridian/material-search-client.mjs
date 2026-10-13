@@ -525,6 +525,7 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
             providerRequestId: null, providerResponseId: null, httpStatus: null,
             responseStatus: null, outcome: 'pending', searchToolCallsObserved: null, usage: null, providerError:null,
           };
+          const stageStarted=Date.now();
           let providerToolsMessage=null;
           calls.push(call);
           const controller = new AbortController();
@@ -557,6 +558,7 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
                 body.output.some(x => !['message', 'web_search_call', 'reasoning'].includes(x?.type))) fail('MATERIAL_LOOKUP_RESPONSE_INVALID');
             discardReasoningItems(body);
             call.outcome = 'completed';
+            try{log({event:'meridian_material_provider_complete',stage,elapsedMs:Math.max(0,Date.now()-stageStarted),providerRequestId:call.providerRequestId,providerResponseId:call.providerResponseId,httpStatus:call.httpStatus,usage:call.usage,searchToolCallsObserved:call.searchToolCallsObserved});}catch{}
             return { body, requestId: call.providerRequestId };
           } catch (error) {
             const safeError = error instanceof MaterialLookupError ? error : controller.signal.aborted ? abortError(controller.signal) : new MaterialLookupError('MATERIAL_LOOKUP_TRANSPORT_FAILED');
@@ -583,6 +585,7 @@ export function createMaterialLookupClient({ enabled = false, getApiKey, fetchIm
         const usedEvidence = evidence.filter(s => products.some(p => p.sourceId === s.id));
         const result = { products, evidence: usedEvidence, accounting: summarizeAccounting(calls) };
         if (bytes(JSON.stringify(result)) > MATERIAL_LIMITS.resultBytes) fail('MATERIAL_LOOKUP_RESPONSE_TOO_LARGE');
+        try{log({event:'meridian_material_lookup_complete',productCount:products.length,evidenceCount:usedEvidence.length,accounting:result.accounting});}catch{}
         return result;
       } catch (error) {
         const safeError = error instanceof MaterialLookupError ? error : wholeController.signal.aborted ? abortError(wholeController.signal) : new MaterialLookupError('MATERIAL_LOOKUP_RESPONSE_INVALID');
