@@ -10,7 +10,7 @@ export function createMaterialRoute({enabled=false,audience,keyId,publicJwk,apiK
  const lookup=createMaterialLookupClient({enabled,getApiKey:()=>normalizedApiKey,fetchImpl,now});const seen=new Map();
  const reasonCode=enabled!==true?'MATERIAL_LOOKUP_DISABLED':!key||typeof keyId!=='string'||!/^[a-zA-Z0-9_-]{1,100}$/.test(keyId)?'MATERIAL_VERIFICATION_NOT_CONFIGURED':!validAudience?'MATERIAL_AUDIENCE_NOT_CONFIGURED':typeof normalizedApiKey!=='string'||!normalizedApiKey||normalizedApiKey.length>4096||/[\u0000-\u0020\u007f]/.test(normalizedApiKey)?'MATERIAL_PROVIDER_NOT_CONFIGURED':null;
  const ready=reasonCode===null;
- return async request=>{try{
+ return async request=>{let applicationAccepted=false,applicationAccounting=null,applicationJobId=null;try{
   const u=new URL(request.url);if(u.search)return null;
   if(request.method==='GET'&&u.pathname===MATERIAL_PATH+'/ready')return Response.json({ready:!!ready,protocol:'meridian-materials-v1',verificationKeyId:keyId??null,reasonCode},{status:ready?200:503,headers:{'cache-control':'no-store'}});
   if(request.method!=='POST'||u.pathname!==MATERIAL_PATH)return null;
@@ -27,11 +27,15 @@ export function createMaterialRoute({enabled=false,audience,keyId,publicJwk,apiK
   const designBrief=`Find real renovation products for this design: ${body.prompt.replace(/[\n\r\t]+/g,' ')}. Material tier ${body.materialTier}. Project ZIP ${body.zip??'not supplied'}; do not claim local price or stock without location evidence. No quantities may be inferred from this brief.`;
   if(new TextEncoder().encode(designBrief).length>MATERIAL_LIMITS.designBriefBytes)fail('INVALID_INPUT','Design brief exceeds lookup limits.');
   seen.set(replayKey,envelope.expiresAt*1000);
+  applicationAccepted=true;applicationJobId=envelope.jobId;
   console.info(JSON.stringify({event:'meridian_material_request',stage:'provider_dispatch',jobId:envelope.jobId}));
   const result=await lookup.lookup({selectedStoreIds:body.selectedStoreIds,designBrief,maxProducts:6});
-  const text=JSON.stringify(result);if(new TextEncoder().encode(text).length>512*1024)fail('MATERIAL_RESPONSE_LIMIT','Lookup response exceeded limits.',502);
+  applicationAccounting=result.accounting;
+  const text=JSON.stringify({ok:true,...result});if(new TextEncoder().encode(text).length>512*1024)fail('MATERIAL_RESPONSE_LIMIT','Lookup response exceeded limits.',502);
   return new Response(text,{headers:{'content-type':'application/json','cache-control':'private, no-store','x-content-type-options':'nosniff'}});
- }catch(e){const safe=e instanceof ContractError?e.code:typeof e?.code==='string'&&/^[A-Z_]{1,60}$/.test(e.code)?e.code:'MATERIAL_LOOKUP_FAILED';return Response.json({error:safe,...(e?.accounting?{accounting:e.accounting}:{})},{status:e instanceof ContractError||e instanceof MaterialLookupError?e.status:502,headers:{'cache-control':'no-store'}});}};
+ }catch(e){const safe=e instanceof ContractError?e.code:typeof e?.code==='string'&&/^[A-Z_]{1,60}$/.test(e.code)?e.code:'MATERIAL_LOOKUP_FAILED',errorStatus=e instanceof ContractError||e instanceof MaterialLookupError?e.status:502,accounting=e?.accounting??applicationAccounting;
+  if(applicationAccepted){console.warn(JSON.stringify({event:'meridian_material_application_failure',jobId:applicationJobId,error:safe,errorStatus}));return Response.json({ok:false,error:safe,errorStatus,accounting:accounting??null},{status:200,headers:{'cache-control':'private, no-store','x-content-type-options':'nosniff'}});}
+  return Response.json({error:safe,...(accounting?{accounting}:{})},{status:errorStatus,headers:{'cache-control':'no-store'}});}};
 }
 export function materialNodeAdapter(handler){return async(req,res)=>{const u=new URL(req.url,'https://nocturne.invalid');if(u.search||!((req.method==='POST'&&u.pathname===MATERIAL_PATH)||(req.method==='GET'&&u.pathname===MATERIAL_PATH+'/ready')))return false;
  let stage='request';try{const request=new Request(u,{method:req.method,headers:req.headers,...(req.method==='POST'?{body:Readable.toWeb(req),duplex:'half'}:{})});stage='handler';const response=await handler(request);stage='response';const bytes=Buffer.from(await response.arrayBuffer());res.writeHead(response.status,Object.fromEntries(response.headers));res.end(bytes);}catch{const code=stage==='request'?'MATERIAL_ADAPTER_REQUEST_INVALID':stage==='handler'?'MATERIAL_ADAPTER_HANDLER_FAILED':'MATERIAL_ADAPTER_RESPONSE_FAILED';console.warn(JSON.stringify({event:'meridian_material_adapter_failure',code}));if(!res.headersSent){res.writeHead(502,{'content-type':'application/json','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(JSON.stringify({error:code}));}else res.end();}
