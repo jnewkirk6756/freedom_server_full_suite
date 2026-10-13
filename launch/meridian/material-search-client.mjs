@@ -147,7 +147,8 @@ function safeMaterialProviderError(value){
 function safeToolsRejectionMessage(message,{apiKey,designBrief}){
  if(typeof message!=='string')return null;
  let out=message.slice(0,4096);
- for(const value of [apiKey,designBrief,JSON.stringify(designBrief)])if(typeof value==='string'&&value.length>=8)out=out.split(value).join('[REDACTED]');
+ const roomPrompt=typeof designBrief==='string'?/^Find real renovation products for this design: ([\s\S]*)\. Material tier (?:budget|mid_grade|premium)\. Project ZIP /.exec(designBrief)?.[1]:null;
+ for(const value of [apiKey,designBrief,JSON.stringify(designBrief),roomPrompt])if(typeof value==='string'&&value.length>=8)out=out.split(value).join('[REDACTED]');
  out=out.replace(/bearer\s+[^\s'"<>]+/gi,'Bearer [REDACTED]').replace(/sk-[A-Za-z0-9_-]+/g,'[REDACTED_KEY]').replace(/[A-Za-z0-9_\-]{32,}/g,'[REDACTED_TOKEN]').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim();
  return out.slice(0,500)||null;
 }
