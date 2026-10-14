@@ -1,0 +1,6 @@
+import {ASSIST_MODEL} from './measurement-assist.mjs';
+export const ASSIST_PRICING_VERSION='openai-gpt-5.4-mini-standard-2026-10-13';
+const int=n=>Number.isSafeInteger(n)&&n>=0&&n<=100000000;
+const safeID=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,200}$/.test(x);
+export function assistUsage(value){const u=value?.usage,c=u?.input_tokens_details?.cached_tokens??u?.cached_input_tokens??0;if(!u||![u.input_tokens,u.output_tokens,u.total_tokens,c].every(int)||u.total_tokens!==u.input_tokens+u.output_tokens||c>u.input_tokens||!safeID(value.providerRequestId)||!safeID(value.providerResponseId)||value.model!==ASSIST_MODEL)return null;return {providerRequestId:value.providerRequestId,providerResponseId:value.providerResponseId,model:ASSIST_MODEL,usage:{input_tokens:u.input_tokens,output_tokens:u.output_tokens,total_tokens:u.total_tokens,cached_input_tokens:c}};}
+export function assistOperatingEvidence(value){const u=assistUsage(value);if(!u)return null;return {source:'verified_provider_response',complete:true,chargeVerified:false,receipts:[{providerRequestId:u.providerRequestId,model:u.model,pricingVersion:ASSIST_PRICING_VERSION,currency:'USD',chargeVerified:false,webSearchCalls:0,usageCostMicros:Math.ceil(((u.usage.input_tokens-u.usage.cached_input_tokens)*750+u.usage.cached_input_tokens*75+u.usage.output_tokens*4500)/1000),usage:u.usage}]};}
