@@ -11,6 +11,7 @@ export function validateProductSelections(value, selectedStoreIds) {
     if (!plain(item) || Object.keys(item).sort().join(',') !== 'sku,storeId' ||
         !STORE_IDS.has(item.storeId) || !selectedStoreIds.includes(item.storeId) ||
         typeof item.sku !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$/.test(item.sku)) throw new TypeError('Invalid store-scoped SKU selections.');
+    if(item.storeId==='amazon'&&!/^[A-Z0-9]{10}$/.test(item.sku))throw new TypeError('Amazon requires a 10-character uppercase ASIN.');
     const key = item.storeId + ':' + item.sku;
     if (seen.has(key)) throw new TypeError('Duplicate store-scoped SKU selection.');
     seen.add(key);
@@ -22,7 +23,7 @@ export function validateProductSelections(value, selectedStoreIds) {
 export function exactSkuInQuote(quote, sku) {
   if (typeof quote !== 'string' || typeof sku !== 'string') return false;
   const escaped = sku.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const labelled = new RegExp('\\b(?:SKU|Item|Internet|Product)(?:\\s*(?:number|no\\.?|#|:)){0,2}\\s*(' + escaped + ')(?![A-Za-z0-9_/-]|\\.[A-Za-z0-9])', 'gi');
+  const labelled = new RegExp('\\b(?:SKU|Item|Internet|Product|ASIN)(?:\\s*(?:number|no\\.?|#|:)){0,2}\\s*(' + escaped + ')(?![A-Za-z0-9_/-]|\\.[A-Za-z0-9])', 'gi');
   return [...quote.matchAll(labelled)].some(match => match[1] === sku);
 }
 /** Match SKU only, never model, partial identifier, case-folding or another store.

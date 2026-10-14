@@ -9,7 +9,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/p/name/numeric-id",
     "website": "https://www.homedepot.com/l/store-locator",
-    "priceCheck": true
+    "priceCheck": true,
+    "bestFor": "Tools, building materials, and home improvement"
   },
   {
     "id": "lowes",
@@ -19,7 +20,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/pd/name/numeric-id",
     "website": "https://www.lowes.com/store/",
-    "priceCheck": true
+    "priceCheck": true,
+    "bestFor": "Appliances, tools, and home improvement supplies"
   },
   {
     "id": "floor-and-decor",
@@ -29,7 +31,20 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/category/product-name-numeric-id.html",
     "website": "https://www.flooranddecor.com/stores",
-    "priceCheck": true
+    "priceCheck": true,
+    "bestFor": "Flooring, tile, and installation materials"
+  },
+  {
+    "id": "amazon",
+    "name": "Amazon Marketplace",
+    "domain": "amazon.com",
+    "group": "furniture",
+    "kind": "marketplace",
+    "productPathHint": "/dp/ASIN or /gp/product/ASIN (10 uppercase letters/digits)",
+    "website": "https://www.amazon.com/",
+    "priceCheck": false,
+    "bestFor": "Home decor and kitchen accessories",
+    "sellerNotice": "Marketplace listing · seller, price and stock not verified"
   },
   {
     "id": "ikea",
@@ -39,7 +54,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/us/en/p/product-name-numeric-id/",
     "website": "https://www.ikea.com/us/en/",
-    "priceCheck": true
+    "priceCheck": true,
+    "bestFor": "Home furniture, storage, and furnishings"
   },
   {
     "id": "wayfair",
@@ -49,7 +65,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/category/pdp/product-name-id.html",
     "website": "https://www.wayfair.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Furniture, home decor, and outdoor furnishings"
   },
   {
     "id": "west-elm",
@@ -59,7 +76,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/products/product-name/",
     "website": "https://www.westelm.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Modern furniture, home decor, and lighting"
   },
   {
     "id": "pottery-barn",
@@ -69,7 +87,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/products/product-name/",
     "website": "https://www.potterybarn.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Home furniture, decor, and outdoor furniture"
   },
   {
     "id": "crate-and-barrel",
@@ -79,7 +98,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/product-name/snumeric-id",
     "website": "https://www.crateandbarrel.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Furniture, tableware, and home decor"
   },
   {
     "id": "cb2",
@@ -89,7 +109,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/product-name/snumeric-id",
     "website": "https://www.cb2.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Modern furniture and contemporary home decor"
   },
   {
     "id": "ashley",
@@ -99,7 +120,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/p/product_name/product-id.html",
     "website": "https://www.ashleyfurniture.com/",
-    "priceCheck": true
+    "priceCheck": true,
+    "bestFor": "Living room, bedroom, and dining furniture"
   },
   {
     "id": "article",
@@ -109,7 +131,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/product/numeric-id/product-name",
     "website": "https://www.article.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Contemporary and mid-century modern furniture"
   },
   {
     "id": "room-and-board",
@@ -119,7 +142,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/catalog/room/category/product-name",
     "website": "https://www.roomandboard.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Modern furniture and customizable storage"
   },
   {
     "id": "polywood",
@@ -129,7 +153,8 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/products/product-name-model",
     "website": "https://www.polywood.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Outdoor patio seating and furniture"
   },
   {
     "id": "trex",
@@ -139,7 +164,8 @@ const storeRows = [
     "kind": "manufacturer",
     "productPathHint": "/products/decking/product-name/ or /products/railing/product-name/",
     "website": "https://www.trex.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Composite decking and deck materials"
   },
   {
     "id": "timbertech",
@@ -149,7 +175,8 @@ const storeRows = [
     "kind": "manufacturer",
     "productPathHint": "/product/product-name/",
     "website": "https://www.timbertech.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Composite decking, railing, and outdoor living"
   },
   {
     "id": "belgard",
@@ -159,7 +186,8 @@ const storeRows = [
     "kind": "manufacturer",
     "productPathHint": "/product/product-name/",
     "website": "https://www.belgard.com/",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Pavers, retaining walls, and outdoor kitchens"
   },
   {
     "id": "siteone",
@@ -169,13 +197,14 @@ const storeRows = [
     "kind": "supplier",
     "productPathHint": "/en/product-name/p/product-id",
     "website": "https://www.siteone.com/en/store-finder",
-    "priceCheck": false
+    "priceCheck": false,
+    "bestFor": "Landscape supplies, irrigation, and outdoor lighting"
   }
 ];
 export const RETAILER_CATALOG = Object.freeze(Object.fromEntries(storeRows.map(row=>[row.id,Object.freeze({...row,lookupSupported:row.kind!=='manufacturer'})])));
 export const RETAILER_IDS = Object.freeze(storeRows.filter(row=>row.kind!=='manufacturer').map(row=>row.id));
 export const DEFAULT_STORE_IDS = Object.freeze(['home-depot','lowes','floor-and-decor']);
-export const MAX_SELECTED_STORES = 3;
+export const MAX_SELECTED_STORES = 5;
 export const RETAILER_NAMES = Object.freeze(Object.fromEntries(storeRows.filter(row=>row.kind!=='manufacturer').map(row=>[row.id,row.name])));
 export const RETAILER_DOMAINS = Object.freeze(Object.fromEntries(storeRows.filter(row=>row.kind!=='manufacturer').map(row=>[row.id,row.domain])));
 export const RETAILER_GROUPS = Object.freeze([
@@ -184,6 +213,7 @@ export const RETAILER_GROUPS = Object.freeze([
  Object.freeze({id:'exterior',name:'Outdoor living & landscape',description:'Patio furniture, decking, railings, pavers and landscape supplies'})
 ]);
 const STORE_PRODUCT_PATTERNS = Object.freeze({
+ amazon:/^\/(?:dp|gp\/product)\/([A-Z0-9]{10})\/?$|^\/[A-Za-z0-9_-]+\/dp\/([A-Z0-9]{10})\/?$/u,
  'home-depot':/^\/p\/(?:[^/]+\/)?[0-9]{6,}\/?$/u,
  lowes:/^\/pd\/[^/]+\/[0-9]{6,}\/?$/u,
  'floor-and-decor':/^\/[^?#]+-[0-9]{6,}\.html$/u,
@@ -208,3 +238,6 @@ export function isRetailerProductURL(value,storeId){
  try{const u=new URL(value),host=RETAILER_CATALOG[storeId].domain;return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&!u.hash&&(u.hostname===host||u.hostname==='www.'+host)&&STORE_PRODUCT_PATTERNS[storeId].test(u.pathname);}catch{return false;}
 }
 export function supportsRetailerPriceCheck(storeId){return Object.hasOwn(RETAILER_CATALOG,storeId)&&RETAILER_CATALOG[storeId].priceCheck;}
+
+/** Amazon product identity comes from the exact ASIN detail path, never a search page. */
+export function amazonProductASIN(value){if(!isRetailerProductURL(value,'amazon'))return null;const match=STORE_PRODUCT_PATTERNS.amazon.exec(new URL(value).pathname);return match?.[1]||match?.[2]||null;}

@@ -10,9 +10,9 @@ for(const [storeId,url]of Object.entries(storeFixtureURLs))test(storeId+' select
  assert.equal(result.requestedProductsComplete,true);assert.equal(result.products[0].storeId,storeId);assert.equal(result.products[0].sku,'ABC123');assert.equal(result.products[0].url,url);assert.equal(result.products[0].availability,'unknown');assert.equal(result.evidence[0].kind,'search_index');assert.equal(fake.requests.length,2);
  assert.deepEqual(fake.requests[0].tools[0].filters.allowed_domains,[MATERIAL_STORE_DOMAINS[storeId]]);assert.equal(fake.requests[0].max_tool_calls,1);assert.equal(fake.requests[1].tools.length,0);assert.match(JSON.parse(fake.requests[0].input).selectedSources[0].productPathHint,/\//);assert.equal(isRetailerProductURL(url,storeId),true);
 });
-test('unsupported manufacturer, four stores and duplicates stop before any provider call',async()=>{
+test('unsupported manufacturer, six stores and duplicates stop before any provider call',async()=>{
  const fake=mockProductProvider(),client=createMaterialLookupClient({enabled:true,getApiKey:()=> 'mock_test_key',fetchImpl:fake.fetchImpl,log:()=>{}});
- for(const ids of [['trex'],['timbertech'],['belgard'],RETAILER_IDS.slice(0,4),['ikea','ikea']])await assert.rejects(()=>client.lookup({selectedStoreIds:ids,designBrief:'Sofa'}),e=>e.code==='MATERIAL_LOOKUP_INPUT_INVALID');assert.equal(fake.requests.length,0);
+ for(const ids of [['trex'],['timbertech'],['belgard'],RETAILER_IDS.slice(0,6),['ikea','ikea']])await assert.rejects(()=>client.lookup({selectedStoreIds:ids,designBrief:'Sofa'}),e=>e.code==='MATERIAL_LOOKUP_INPUT_INVALID');assert.equal(fake.requests.length,0);
 });
 test('uncited, category, spoofed and unselected product sources never become new-store products',async()=>{
  for(const url of ['https://www.westelm.com/shop/furniture/','https://www.westelm.com.evil.test/products/sofa/','https://evil.westelm.com/products/sofa/','https://www.ikea.com/us/en/p/test-12345678/']){
@@ -26,8 +26,18 @@ test('starting prices, samples and financing preserve identity but discard unpro
 test('signed Node route accepts expanded store and rejects replay without another provider request',async()=>{
  const {publicKey,privateKey}=generateKeyPairSync('ed25519'),now=Date.now(),audience='https://staging.onrender.com',fake=mockProductProvider();
  const route=createMaterialRoute({enabled:true,audience,keyId:'key_one',publicJwk:publicKey.export({format:'jwk'}),apiKey:'mock_test_key',fetchImpl:fake.fetchImpl,now:()=>now});
- const body={selectedStoreIds:['west-elm'],zip:null,prompt:'Test Product sofa',materialTier:'mid_grade',mode:'quick_concept',productSelections:[{storeId:'west-elm',sku:'ABC123'}]},raw=encode(JSON.stringify(body));
+ const body={selectedStoreIds:['west-elm','amazon','home-depot','ikea','lowes'],zip:null,prompt:'Test Product sofa',materialTier:'mid_grade',mode:'quick_concept',productSelections:[{storeId:'west-elm',sku:'ABC123'}]},raw=encode(JSON.stringify(body));
  const envelope={version:VERSION,issuer:SITE_ORIGIN,audience,path:MATERIAL_PATH,method:'POST',tenantId:'tenant',jobId:'job_one',payloadSha256:await digest(raw),maximumMicros:100000,nonce:'test_nonce_12345678901234567890',issuedAt:Math.floor(now/1000),expiresAt:Math.floor(now/1000)+20,keyId:'key_one'};
  const headers={'content-type':'application/json','x-meridian-envelope':b64url(encode(JSON.stringify(envelope))),'x-meridian-signature':sign(null,canonical(envelope),privateKey).toString('base64url')};
  const request=()=>new Request(audience+MATERIAL_PATH,{method:'POST',headers,body:raw});const response=await route(request());assert.equal(response.status,200);const result=await response.json();assert.equal(result.ok,true);assert.equal(result.products[0].storeId,'west-elm');assert.equal((await route(request())).status,409);assert.equal(fake.requests.length,2);
+});
+
+test('five-store Amazon pipeline requires a matching cited ASIN and leaves all marketplace offers unpriced',async()=>{
+ const sku='B012345678',url='https://www.amazon.com/dp/'+sku,fake=mockProductProvider({storeId:'amazon',url,sku,quote:'Test Product ASIN '+sku+' is $29.99 each.'}),client=createMaterialLookupClient({enabled:true,getApiKey:()=> 'mock_test_key',fetchImpl:fake.fetchImpl,log:()=>{}});
+ const result=await client.lookup({selectedStoreIds:['amazon','home-depot','lowes','ikea','west-elm'],designBrief:'Lamp',productSelections:[{storeId:'amazon',sku}]});assert.equal(result.requestedProductsComplete,true);assert.equal(result.products[0].sku,sku);assert.equal(result.products[0].unitPriceCents,null);assert.equal(result.products[0].priceUnit,null);assert.equal(result.products[0].availability,'unknown');assert.equal(fake.requests.length,2);assert.equal(fake.requests[0].max_tool_calls,1);assert.equal(fake.requests[0].tools[0].filters.allowed_domains.length,5);
+});
+test('Amazon model-only and mismatched ASIN evidence never becomes a marketplace product',async()=>{
+ for(const [sku,quote]of [['B999999999','Test Product ASIN B999999999 is $29.99 each.'],['B012345678','Test Product Model B012345678 is $29.99 each.']]){
+ const fake=mockProductProvider({storeId:'amazon',url:'https://www.amazon.com/dp/B012345678',sku,quote}),client=createMaterialLookupClient({enabled:true,getApiKey:()=> 'mock_test_key',fetchImpl:fake.fetchImpl,log:()=>{}});const result=await client.lookup({selectedStoreIds:['amazon'],designBrief:'Lamp',productSelections:[{storeId:'amazon',sku:'B012345678'}]});assert.equal(result.products.length,0);assert.equal(result.requestedProductsComplete,false);
+ }
 });
