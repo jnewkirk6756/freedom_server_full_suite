@@ -1,3 +1,4 @@
+import {serveQuestDev} from './meridian-quest-dev-route.mjs';
 /** Staging host. Private account writes remain disabled; scoped Director and media-cache actions are enabled. */
 import {initializeMeridianRoute} from './meridian/nocturne/bootstrap.mjs';
 import {withNavigation} from './navigation.mjs';
@@ -53,6 +54,7 @@ export const server=http.createServer(async(req,res)=>{
  try{
   if(req.url.length>2048)return reply(414,'text/plain','URL too long');
   const u=new URL(req.url,'http://staging.invalid');
+  if(serveQuestDev(req,res,u.pathname))return;
   if(await meridianExactPostRoute(req,res))return;
   const gate=access.check(req,u.pathname);
   if(gate.private)headers['cache-control']='private, no-store';

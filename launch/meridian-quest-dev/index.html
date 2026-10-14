@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#07131c">
+  <title>Meridian Quest · Developer test</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./dev.css">
+  <script type="module" src="./dev.mjs"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">MERIDIAN RENDER <span>QUEST LAB</span></p>
+      <div class="heading"><div><h1>Your room. Your workspace.</h1><p class="lead">An open developer test for AR measuring, VR, sound and local photos.</p></div><span class="badge">No account needed</span></div>
+      <p class="privacy">Photos stay in this page’s memory. Nothing is uploaded or saved to an account. Reloading clears this test. No customer records, pricing or paid AI tools are connected.</p>
+    </header>
+    <section class="workspace card" aria-labelledby="workspace-title">
+      <div class="section-top"><h2 id="workspace-title">Headset workspace</h2><span class="build">DEV 2026.10.14.1 · source a306ae2</span></div>
+      <p id="status" role="status" aria-live="polite">Loading local workspace…</p>
+      <canvas id="workspace" aria-label="Preview of the floating Quest workspace"></canvas>
+      <div class="actions"><button id="enter-ar" class="primary" disabled>Enter passthrough AR</button><button id="enter-vr" disabled>Enter VR</button><button id="exit-xr" class="quiet" disabled>Exit immersive view</button><button id="snapshot" class="quiet" disabled>Virtual snapshot</button></div>
+      <p id="support" class="hint">Checking browser and headset support…</p>
+      <p id="reading" class="reading">Measurements appear inside AR.</p>
+      <a id="download" hidden download="meridian-virtual-only.png">Download virtual snapshot</a>
+    </section>
+    <div class="columns">
+      <section class="card" aria-labelledby="photo-title"><p class="eyebrow">LOCAL REFERENCE</p><h2 id="photo-title">Bring a photo into view</h2><p>A flat 2D reference beside your measuring tools. No 3D reconstruction or generated edits.</p>
+        <label class="file-button">Choose a local photo<input id="photo" type="file" accept="image/jpeg,image/png,image/webp"></label>
+        <button id="clear-photo" class="quiet" disabled>Clear photo</button>
+        <p id="photo-status" class="hint" role="status">JPG, PNG or WebP · up to 15 MB and 24 megapixels.</p>
+        <img id="photo-preview" hidden alt="Your local reference photo">
+        <details><summary>Use a real room camera</summary><p>Optional, separate camera permission. Available only when this browser exposes a real environment camera. Passthrough AR itself cannot be saved as a photo.</p>
+          <video id="camera-preview" hidden muted playsinline autoplay aria-label="Live local room camera preview"></video>
+          <div class="actions"><button id="camera-start" disabled>Enable room camera</button><button id="camera-capture" disabled>Use this frame</button><button id="camera-stop" class="quiet" disabled>Stop camera</button></div>
+          <p id="camera-status" class="hint" role="status">Camera is off. A local file works if camera access is unavailable.</p>
+        </details>
+      </section>
+      <section class="card" aria-labelledby="how-title"><p class="eyebrow">GET STARTED</p><h2 id="how-title">Measure in passthrough AR</h2><ol><li>Open this link in Meta Quest Browser and choose <strong>Enter passthrough AR</strong>.</li><li>Select <strong>Measure</strong> on the floating panel. Aim at a detected surface dot, then press the trigger for A and B.</li><li>If there is no surface dot, choose <strong>Controller position</strong> explicitly. Place the tracked controller origin at each safely reachable point.</li><li>Use <strong>Tools &amp; area</strong> for endpoint snap, undo and two perpendicular sides of a rectangle. Squeeze the grip to recenter the panel.</li></ol>
+        <p class="warning">Stay stationary in a clear space. Measurements are approximate. Verify with a tape or laser before estimates or cutting. Tracking interruptions and ending XR clear measurements.</p>
+        <details open><summary>Sound and feedback</summary><div class="feedback"><button id="sound" aria-pressed="false">Sound on</button><label>Volume <input id="volume" type="range" min="0" max="100" value="35"></label><label><input id="haptics" type="checkbox"> Gentle controller haptics</label><button id="test-sound" class="quiet">Test sound</button></div><p class="hint">Short sounds are synthesized locally. Audio starts only after a click. Haptics are optional.</p></details>
+      </section>
+    </div>
+    <footer>Standalone developer test · No room shell or approved plan loaded · Virtual snapshots exclude passthrough imagery but include your chosen reference photo.</footer>
+    <noscript>This test needs JavaScript for the local workspace. Nothing runs without it.</noscript>
+  </main>
+</body>
+</html>
