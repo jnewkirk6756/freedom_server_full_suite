@@ -39,7 +39,7 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/us/en/p/product-name-numeric-id/",
     "website": "https://www.ikea.com/us/en/",
-    "priceCheck": false
+    "priceCheck": true
   },
   {
     "id": "wayfair",
@@ -99,7 +99,7 @@ const storeRows = [
     "kind": "retailer",
     "productPathHint": "/p/product_name/product-id.html",
     "website": "https://www.ashleyfurniture.com/",
-    "priceCheck": false
+    "priceCheck": true
   },
   {
     "id": "article",
