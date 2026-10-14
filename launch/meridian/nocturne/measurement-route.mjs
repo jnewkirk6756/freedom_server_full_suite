@@ -2,16 +2,18 @@ import {createPublicKey,verify} from 'node:crypto';
 import {Readable} from 'node:stream';
 import {ASSIST_PATH,ASSIST_PROTOCOL,ASSIST_ALLOWANCE_MICROS,validateAssistInput} from '../shared/measurement-assist.mjs';
 import {validateEnvelope,canonical,unb64url,boundedBytes,digest} from '../shared/protocol.mjs';
-import {createMeasurementAssistClient} from '../measurement-assist-client.mjs';
+import {createMeasurementAssistClient,normalizeMeasurementApiKey} from '../measurement-assist-client.mjs';
 const error=(code,status=400)=>Object.assign(new Error('Measurement review unavailable.'),{code,status});
 export function createMeasurementRoute({enabled=false,audience,keyId,publicJwk,apiKey,fetchImpl=globalThis.fetch,now=Date.now}={}){
  let key=null;if(publicJwk){key=createPublicKey({key:publicJwk,format:'jwk'});if(key.asymmetricKeyType!=='ed25519')throw Error('Ed25519 required');}
  let validAudience=false;try{const u=new URL(audience);validAudience=u.protocol==='https:'&&u.origin===audience&&!u.username&&!u.password;}catch{}
- const ready=enabled===true&&!!key&&/^[A-Za-z0-9_-]{1,100}$/.test(keyId||'')&&validAudience&&typeof apiKey==='string'&&!!apiKey.trim()&&!/[\u0000-\u0020\u007f]/.test(apiKey)&&apiKey.length<=4096;
- const run=createMeasurementAssistClient({enabled,apiKey,fetchImpl}),seen=new Map();
+ const normalizedApiKey=normalizeMeasurementApiKey(apiKey);
+ const reasonCode=enabled!==true?'MEASUREMENT_ASSIST_DISABLED':!key||typeof keyId!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(keyId)?'MEASUREMENT_VERIFICATION_NOT_CONFIGURED':!validAudience?'MEASUREMENT_AUDIENCE_NOT_CONFIGURED':!normalizedApiKey?'MEASUREMENT_PROVIDER_NOT_CONFIGURED':null;
+ const ready=reasonCode===null;
+ const run=createMeasurementAssistClient({enabled,apiKey:normalizedApiKey,fetchImpl}),seen=new Map();
  return async request=>{let accepted=false;try{
   const u=new URL(request.url);if(u.search)return null;
-  if(request.method==='GET'&&u.pathname===ASSIST_PATH+'/ready')return Response.json({ready,protocol:ASSIST_PROTOCOL,verificationKeyId:keyId??null},{status:ready?200:503,headers:{'cache-control':'no-store'}});
+  if(request.method==='GET'&&u.pathname===ASSIST_PATH+'/ready')return Response.json({ready,protocol:ASSIST_PROTOCOL,verificationKeyId:keyId??null,reasonCode},{status:ready?200:503,headers:{'cache-control':'no-store'}});
   if(request.method!=='POST'||u.pathname!==ASSIST_PATH)return null;
   if(!ready)throw error('MEASUREMENT_ASSIST_DISABLED',503);
   if(request.headers.has('origin')||request.headers.has('cookie'))throw error('SERVER_ONLY',403);

@@ -15,7 +15,7 @@ test('abort bounds a hanging fetch even if a transport ignores its signal; no re
 test('bounded response rejects oversize JSON without retries',async()=>{let calls=0;const run=createMeasurementAssistClient({enabled:true,apiKey:'fixture',fetchImpl:async()=>{calls++;return new Response('x'.repeat(65537));}});await assert.rejects(()=>run(input()),e=>e.code==='MEASUREMENT_RESPONSE_LIMIT');assert.equal(calls,1);});
 test('input extras, invalid values, disabled service and missing credential invoke no provider',async()=>{let calls=0;for(const args of [{enabled:false,apiKey:'fixture'},{enabled:true,apiKey:null}]){const run=createMeasurementAssistClient({...args,fetchImpl:async()=>{calls++;}});await assert.rejects(()=>run(input()));}const run=createMeasurementAssistClient({enabled:true,apiKey:'fixture',fetchImpl:async()=>{calls++;}});await assert.rejects(()=>run({...input(),images:['private']}));assert.equal(calls,0);});
 // Synthetic in-memory signing key only, never stored or used with a live service.
-function routeFixture(){const {publicKey,privateKey}=generateKeyPairSync('ed25519');let calls=0;const now=Date.now(),audience='https://fixture.onrender.com';const route=createMeasurementRoute({enabled:true,audience,keyId:'fixture-key',publicJwk:publicKey.export({format:'jwk'}),apiKey:'fixture-only',now:()=>now,fetchImpl:async()=>{calls++;return response(providerBody());}});return {route,privateKey,now,audience,get calls(){return calls;}};}
+function routeFixture(apiKey='fixture-only'){const {publicKey,privateKey}=generateKeyPairSync('ed25519');let calls=0;const now=Date.now(),audience='https://fixture.onrender.com';const route=createMeasurementRoute({enabled:true,audience,keyId:'fixture-key',publicJwk:publicKey.export({format:'jwk'}),apiKey,now:()=>now,fetchImpl:async(_url,options)=>{calls++;assert.equal(options.headers.authorization,'Bearer fixture-only');return response(providerBody());}});return {route,privateKey,now,audience,get calls(){return calls;}};}
 async function signed(f,{payload=input(),path=ASSIST_PATH,maximumMicros=100000,envelopeChanges={},headers={}}={}){const raw=encode(JSON.stringify(payload)),t=Math.floor(f.now/1000),envelope={version:'meridian-oneway-v1',issuer:SITE_ORIGIN,audience:f.audience,path,method:'POST',tenantId:'fixture-tenant',jobId:'fixture-job',payloadSha256:await digest(raw),maximumMicros,nonce:'nonce_fixture_abcdefghijklmnop',issuedAt:t,expiresAt:t+20,keyId:'fixture-key',...envelopeChanges};return new Request(f.audience+ASSIST_PATH,{method:'POST',headers:{'content-type':'application/json','x-meridian-envelope':b64url(encode(JSON.stringify(envelope))),'x-meridian-signature':b64url(sign(null,canonical(envelope),f.privateKey)),...headers},body:raw});}
 test('readiness and unsigned transport have zero provider calls',async()=>{const f=routeFixture(),ready=await f.route(new Request(f.audience+ASSIST_PATH+'/ready'));assert.equal((await ready.json()).protocol,ASSIST_PROTOCOL);assert.equal((await f.route(new Request(f.audience+ASSIST_PATH,{method:'POST',body:'{}'}))).status,403);assert.equal(f.calls,0);});
 test('valid signed body dispatches once and same nonce replay is rejected',async()=>{const f=routeFixture(),request=await signed(f),a=await f.route(request.clone());assert.equal((await a.json()).ok,true);assert.equal((await f.route(request.clone())).status,409);assert.equal(f.calls,1);});
@@ -24,3 +24,30 @@ test('signed invalid body fails before provider, no fake result',async()=>{const
 
 import {initializeMeridianRoute} from '../launch/meridian/nocturne/bootstrap.mjs';
 test('bootstrap imports the complete existing bridge and stays closed without approved bridge config',async()=>{const handler=await initializeMeridianRoute({});assert.equal(await handler({url:ASSIST_PATH,method:'POST'},{}),false);const invalid=await initializeMeridianRoute({MERIDIAN_BRIDGE_ENABLED:'true',MERIDIAN_BRIDGE_APPROVAL_REFERENCE:'fixture'});let status;const response={writeHead:value=>status=value,end(){}};assert.equal(await invalid({url:ASSIST_PATH,method:'POST'},response),true);assert.equal(status,503);assert.equal(await invalid({url:'/quest-demo/',method:'GET'},response),false);});
+
+
+test('route normalizes surrounding credential whitespace like the existing material route; authorization remains required',async()=>{
+ for(const credential of ['fixture-only',' \tfixture-only\r\n','\u00a0fixture-only\u00a0']){
+  const f=routeFixture(credential),r=await f.route(new Request(f.audience+ASSIST_PATH+'/ready'));
+  assert.equal(r.status,200);assert.deepEqual(await r.json(),{ready:true,protocol:ASSIST_PROTOCOL,verificationKeyId:'fixture-key',reasonCode:null});
+  const denied=await f.route(new Request(f.audience+ASSIST_PATH,{method:'POST',body:'{}'}));assert.equal(denied.status,403);assert.equal((await denied.json()).error,'BAD_ENVELOPE');assert.equal(f.calls,0);
+  assert.equal((await (await f.route(await signed(f))).json()).ok,true);assert.equal(f.calls,1);
+ }
+});
+test('client independently normalizes surrounding whitespace before the one provider dispatch',async()=>{
+ let calls=0;const run=createMeasurementAssistClient({enabled:true,apiKey:' \tfixture-only\r\n',fetchImpl:async(_url,options)=>{calls++;assert.equal(options.headers.authorization,'Bearer fixture-only');return response(providerBody());}});
+ assert.equal((await run(input())).provider,'openai');assert.equal(calls,1);
+});
+test('empty, internal whitespace/control, oversized and non-string credentials remain disabled with nonsecret reason only',async()=>{
+ for(const credential of ['', ' \t\r\n','fixture only','fixture\r\nonly','fixture\u007fonly','x'.repeat(4097),null,123]){
+  const f=routeFixture(credential),r=await f.route(new Request(f.audience+ASSIST_PATH+'/ready'));assert.equal(r.status,503);assert.deepEqual(await r.json(),{ready:false,protocol:ASSIST_PROTOCOL,verificationKeyId:'fixture-key',reasonCode:'MEASUREMENT_PROVIDER_NOT_CONFIGURED'});
+  assert.equal((await f.route(await signed(f))).status,503);assert.equal(f.calls,0);
+  const run=createMeasurementAssistClient({enabled:true,apiKey:credential,fetchImpl:async()=>assert.fail('must not reach provider')});await assert.rejects(()=>run(input()),e=>e.code==='MEASUREMENT_PROVIDER_NOT_CONFIGURED');
+ }
+});
+test('readiness identifies nonsecret disabled, verification and audience categories',async()=>{
+ const {publicKey}=generateKeyPairSync('ed25519');const config={enabled:true,audience:'https://fixture.onrender.com',keyId:'fixture-key',publicJwk:publicKey.export({format:'jwk'}),apiKey:'fixture-only',fetchImpl:async()=>assert.fail('must not reach provider')};
+ for(const [change,reasonCode] of [[{enabled:false},'MEASUREMENT_ASSIST_DISABLED'],[{publicJwk:null},'MEASUREMENT_VERIFICATION_NOT_CONFIGURED'],[{keyId:'invalid key'},'MEASUREMENT_VERIFICATION_NOT_CONFIGURED'],[{audience:'https://fixture.onrender.com/'},'MEASUREMENT_AUDIENCE_NOT_CONFIGURED']]){
+  const route=createMeasurementRoute({...config,...change}),r=await route(new Request(config.audience+ASSIST_PATH+'/ready'));assert.equal(r.status,503);assert.equal((await r.json()).reasonCode,reasonCode);
+ }
+});
